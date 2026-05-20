@@ -1,128 +1,187 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import AccountTable from '../components/accounts/AccountTable.astro';
-import SummaryCard from '../components/dashboard/SummaryCard.astro';
-import { IconShield, IconTrendingUp, IconCalendar, IconArchive } from '../components/icons';
-import { accountsData, getTotalBalance, getAccountsByCategory } from '../data/accounts';
-import { formatCurrency } from '../utils/format';
+import AccountSummaryTable from '../components/accounts/AccountSummaryTable.astro';
+import DistributionChart from '../components/accounts/DistributionChart.astro';
+import AccountCard from '../components/accounts/AccountCard.astro';
+import RecentTransactions from '../components/accounts/RecentTransactions.astro';
+import { formatCurrencyCOP } from '../utils/format';
 
-const totalBalance = getTotalBalance();
-const emergencyAccounts = getAccountsByCategory('emergency');
-const investmentAccounts = getAccountsByCategory('investment');
-const retirementAccounts = getAccountsByCategory('retirement');
-const contingencyAccounts = getAccountsByCategory('contingency');
+const summaryEntities = [
+  { name: 'Global66', contingency: null, emergency: formatCurrencyCOP(12373439), investment: null, retirement: null, total: formatCurrencyCOP(12373439) },
+  { name: 'MejorCDT', contingency: null, emergency: null, investment: null, retirement: formatCurrencyCOP(15400000), total: formatCurrencyCOP(15400000) },
+  { name: 'NU', contingency: formatCurrencyCOP(723441), emergency: formatCurrencyCOP(6682672), investment: null, retirement: formatCurrencyCOP(3069046), total: formatCurrencyCOP(10475159) },
+  { name: 'Tyba', contingency: null, emergency: null, investment: formatCurrencyCOP(1207282), retirement: formatCurrencyCOP(23011959), total: formatCurrencyCOP(24219241) },
+  { name: 'XTB', contingency: null, emergency: null, investment: formatCurrencyCOP(3582865), retirement: null, total: formatCurrencyCOP(3582865) },
+];
 
-const emergencyTotal = emergencyAccounts.reduce((sum, acc) => sum + acc.balance, 0);
-const investmentTotal = investmentAccounts.reduce((sum, acc) => sum + acc.balance, 0);
-const retirementTotal = retirementAccounts.reduce((sum, acc) => sum + acc.balance, 0);
-const contingencyTotal = contingencyAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+const summaryFooter = {
+  label: 'SUMA TOTAL',
+  contingency: formatCurrencyCOP(985441),
+  emergency: formatCurrencyCOP(19836745),
+  investment: formatCurrencyCOP(12047315),
+  retirement: formatCurrencyCOP(42006005),
+  total: formatCurrencyCOP(74875506),
+};
 
-const iconShield = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>`;
-const iconTrending = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>`;
-const iconCalendar = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>`;
-const iconArchive = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>`;
+const distributionFunds = [
+  { label: 'Retirement', color: 'bg-retirement', amount: formatCurrencyCOP(42006005) },
+  { label: 'Emergency', color: 'bg-emergency', amount: formatCurrencyCOP(19836745) },
+  { label: 'Investment', color: 'bg-investment', amount: formatCurrencyCOP(12047315) },
+];
+
+const accountCards = [
+  {
+    initial: 'G',
+    name: 'Global66',
+    description: 'Digital Wallet - High Liquidity',
+    balance: formatCurrencyCOP(12373439),
+    category: 'EMERGENCY',
+    categoryColor: 'background-color: rgba(239, 68, 68, 0.1); color: #991b1b;',
+    categoryId: '4829',
+    isActive: true,
+  },
+  {
+    initial: 'M',
+    name: 'MejorCDT',
+    description: 'Fixed Income Certificate',
+    balance: formatCurrencyCOP(15400000),
+    category: 'RETIREMENT',
+    categoryColor: 'background-color: rgba(16, 185, 129, 0.1); color: #065f46;',
+    categoryId: '1042',
+  },
+  {
+    initial: 'N',
+    name: 'Nubank (NU)',
+    description: 'Savings & Cajitas System',
+    balance: formatCurrencyCOP(10475159),
+    category: 'MULTI-FUND',
+    categoryColor: 'background-color: rgba(218, 226, 253, 1); color: #3f465c;',
+    fundDots: ['bg-contingency', 'bg-emergency', 'bg-retirement'],
+  },
+  {
+    initial: 'T',
+    name: 'Tyba',
+    description: 'FIC & Retirement Funds',
+    balance: formatCurrencyCOP(24219241),
+    category: 'INVESTMENT',
+    categoryColor: 'background-color: rgba(245, 158, 11, 0.1); color: #92400e;',
+    categoryId: '8821',
+  },
+  {
+    initial: 'X',
+    name: 'XTB Broker',
+    description: 'Stock Market & ETFs',
+    balance: formatCurrencyCOP(3582865),
+    category: 'INVESTMENT',
+    categoryColor: 'background-color: rgba(245, 158, 11, 0.1); color: #92400e;',
+    categoryId: '5540',
+  },
+];
+
+const recentTransactions = [
+  {
+    icon: 'payments',
+    title: 'Transferencia Recibida - XTB',
+    date: '16 MAY 2026',
+    category: 'INVERSIÓN',
+    amount: `+${formatCurrencyCOP(382100)}`,
+    amountColor: 'text-retirement',
+    status: 'Completado',
+  },
+  {
+    icon: 'savings',
+    title: 'Ahorro Programado - NU',
+    date: '08 MAY 2026',
+    category: 'CONTINGENCY',
+    amount: `+${formatCurrencyCOP(568611)}`,
+    status: 'Completado',
+  },
+];
 ---
 
-<Layout title="Accounts" activePage="accounts">
-  <div class="space-y-6">
-    <!-- Page Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-headline-lg font-bold text-on-surface">Accounts</h1>
-        <p class="text-body-md text-on-surface-variant mt-1">Manage your financial accounts</p>
-      </div>
-      <button class="px-4 py-2 bg-primary text-on-primary rounded hover:bg-primary/90 transition-colors">
-        Add Account
+<Layout title="Cuentas" activePage="accounts">
+  <!-- Page Heading -->
+  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+    <div>
+      <h2 class="text-headline-lg font-headline-lg text-on-surface">Gestión de Cuentas</h2>
+      <p class="text-body-md font-body-md text-on-surface-variant">Visión agregada de capital por entidad y tipo de fondo.</p>
+    </div>
+    <div class="flex gap-2">
+      <button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-body-md flex items-center shadow-sm hover:opacity-90 transition-opacity">
+        <span class="material-symbols-outlined mr-2">add</span>
+        Nueva Cuenta
+      </button>
+      <button class="border border-outline px-4 py-2 rounded-lg font-bold text-body-md flex items-center bg-surface hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined mr-2">download</span>
+        Exportar
       </button>
     </div>
+  </div>
 
-    <!-- Category Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <SummaryCard
-        title="Emergency Fund"
-        value={formatCurrency(emergencyTotal)}
-        change={`${emergencyAccounts.length} accounts`}
-        changeType="neutral"
-        icon={iconShield}
-        accentColor="emergency"
-      />
-      
-      <SummaryCard
-        title="Investments"
-        value={formatCurrency(investmentTotal)}
-        change={`${investmentAccounts.length} accounts`}
-        changeType="neutral"
-        icon={iconTrending}
-        accentColor="investment"
-      />
-      
-      <SummaryCard
-        title="Retirement"
-        value={formatCurrency(retirementTotal)}
-        change={`${retirementAccounts.length} accounts`}
-        changeType="neutral"
-        icon={iconCalendar}
-        accentColor="retirement"
-      />
-      
-      <SummaryCard
-        title="Contingency"
-        value={formatCurrency(contingencyTotal)}
-        change={`${contingencyAccounts.length} accounts`}
-        changeType="neutral"
-        icon={iconArchive}
-        accentColor="contingency"
-      />
-    </div>
+  <!-- Bento Grid - Section 1: Distribution Table -->
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-stack-lg">
+    <AccountSummaryTable entities={summaryEntities} footer={summaryFooter} />
+    <DistributionChart title="Fondo de Retiro" percentage={56} funds={distributionFunds} />
+  </section>
 
-    <!-- Accounts Table -->
-    <div class="bg-white rounded-lg shadow-card p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-on-surface">All Accounts</h2>
-        <div class="flex items-center space-x-2">
-          <select class="px-3 py-1.5 border border-outline-variant rounded text-sm focus:outline-none focus:ring-2 focus:ring-contingency">
-            <option value="all">All Types</option>
-            <option value="checking">Checking</option>
-            <option value="savings">Savings</option>
-            <option value="investment">Investment</option>
-            <option value="credit">Credit</option>
-          </select>
-          <select class="px-3 py-1.5 border border-outline-variant rounded text-sm focus:outline-none focus:ring-2 focus:ring-contingency">
-            <option value="all">All Categories</option>
-            <option value="emergency">Emergency</option>
-            <option value="investment">Investment</option>
-            <option value="retirement">Retirement</option>
-            <option value="contingency">Contingency</option>
-          </select>
-        </div>
-      </div>
-      
-      <AccountTable accounts={accountsData} />
-    </div>
-
-    <!-- Account Summary -->
-    <div class="bg-white rounded-lg shadow-card p-6">
-      <h3 class="text-lg font-semibold text-on-surface mb-4">Account Summary</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="p-4 bg-surface-container-low rounded-lg">
-          <p class="text-label-caps text-on-surface-variant uppercase">Total Assets</p>
-          <p class="text-headline-md font-bold text-on-surface mt-1 financial-figure">
-            {formatCurrency(accountsData.filter(a => a.balance > 0).reduce((sum, a) => sum + a.balance, 0))}
-          </p>
-        </div>
-        <div class="p-4 bg-surface-container-low rounded-lg">
-          <p class="text-label-caps text-on-surface-variant uppercase">Total Liabilities</p>
-          <p class="text-headline-md font-bold text-error mt-1 financial-figure">
-            {formatCurrency(Math.abs(accountsData.filter(a => a.balance < 0).reduce((sum, a) => sum + a.balance, 0)))}
-          </p>
-        </div>
-        <div class="p-4 bg-surface-container-low rounded-lg">
-          <p class="text-label-caps text-on-surface-variant uppercase">Net Worth</p>
-          <p class:list={['text-headline-md font-bold mt-1 financial-figure', totalBalance >= 0 ? 'text-retirement' : 'text-error']}>
-            {formatCurrency(totalBalance)}
-          </p>
+  <!-- Section 2: Account Cards -->
+  <section class="space-y-stack-md mb-stack-lg">
+    <div class="flex items-center justify-between">
+      <h3 class="text-headline-md font-headline-md">Cartera de Activos</h3>
+      <div class="flex items-center text-on-surface-variant gap-4">
+        <span class="text-body-md">Ordernar por: <strong>Balance</strong></span>
+        <div class="flex bg-surface-container rounded-lg p-1">
+          <button class="p-1 bg-surface-container-highest rounded">
+            <span class="material-symbols-outlined">grid_view</span>
+          </button>
+          <button class="p-1 hover:bg-surface-container-high transition-colors rounded">
+            <span class="material-symbols-outlined">view_list</span>
+          </button>
         </div>
       </div>
     </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {accountCards.map((card) => (
+        <AccountCard
+          initial={card.initial}
+          name={card.name}
+          description={card.description}
+          balance={card.balance}
+          category={card.category}
+          categoryColor={card.categoryColor}
+          categoryId={card.categoryId}
+          fundDots={card.fundDots}
+          isActive={card.isActive}
+        />
+      ))}
+      <!-- Add New Card Placeholder -->
+      <div class="bg-surface-container-low border border-dashed border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center text-center hover:bg-surface-container-high transition-colors cursor-pointer group">
+        <div class="w-12 h-12 rounded-full border-2 border-dashed border-outline-variant flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+          <span class="material-symbols-outlined text-outline">add</span>
+        </div>
+        <p class="text-body-md font-bold text-on-surface-variant">Vincular Nueva Cuenta</p>
+        <p class="text-label-caps text-on-surface-variant opacity-70">Soporta API & Manual</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom Section: Transactions History Snapshot -->
+  <RecentTransactions transactions={recentTransactions} />
+
+  <!-- Sticky Footer Summary for Mobile View -->
+  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-lowest border-t border-outline-variant p-4 z-50 flex justify-between items-center">
+    <div>
+      <p class="text-label-caps text-on-surface-variant">TOTAL PATRIMONIO</p>
+      <p class="text-data-display font-data-display">{formatCurrencyCOP(74875506)}</p>
+    </div>
+    <button class="bg-primary text-on-primary w-12 h-12 rounded-full shadow-lg flex items-center justify-center">
+      <span class="material-symbols-outlined">add</span>
+    </button>
   </div>
 </Layout>
+
+<style>
+  .account-card-active {
+    border-left: 3px solid black;
+  }
+</style>
