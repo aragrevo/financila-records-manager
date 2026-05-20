@@ -93,6 +93,11 @@ export class DashboardService {
     return accounts.map(a => a.name);
   }
 
+  async getMovementAccountsData(): Promise<{ id: string; name: string }[]> {
+    const accounts = await this.getAccounts();
+    return accounts.map(a => ({ id: a.id, name: a.name }));
+  }
+
   async getMovementTypes(): Promise<string[]> {
     return ['income', 'expense', 'transfer', 'investment'];
   }

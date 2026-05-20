@@ -9,24 +9,32 @@ const { currentPage, totalPages } = Astro.props;
 const pages = Array.from({ length: Math.min(totalPages, 3) }, (_, i) => i + 1);
 ---
 
-<div class="border-t border-outline-variant px-6 py-4 bg-surface flex justify-between items-center">
+<div
+  class="border-t border-outline-variant px-6 py-3 bg-surface flex justify-between items-center"
+>
   <div class="flex gap-2">
-    <button class="p-2 border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors">
+    <button
+      class="px-2 py-1 border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors text-label-caps"
+    >
       <span class="material-symbols-outlined">chevron_left</span>
     </button>
-    {pages.map((page) => (
-      <button
-        class:list={[
-          'px-4 py-2 rounded-lg text-label-caps',
-          page === currentPage
-            ? 'bg-primary text-on-primary'
-            : 'border border-outline-variant hover:bg-surface-container-high transition-colors',
-        ]}
-      >
-        {page}
-      </button>
-    ))}
-    <button class="p-2 border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors">
+    {
+      pages.map((page) => (
+        <button
+          class:list={[
+            "px-4 py-2 rounded-lg text-label-caps ",
+            page === currentPage
+              ? "bg-primary text-on-primary"
+              : "border border-outline-variant hover:bg-surface-container-high transition-colors",
+          ]}
+        >
+          {page}
+        </button>
+      ))
+    }
+    <button
+      class="p-1 border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors text-label-caps"
+    >
       <span class="material-symbols-outlined">chevron_right</span>
     </button>
   </div>

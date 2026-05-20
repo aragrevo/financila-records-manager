@@ -6,7 +6,10 @@ export const GET: APIRoute = async ({ url }) => {
   try {
     const accountId = url.searchParams.get('accountId');
     const categoryId = url.searchParams.get('categoryId');
-    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const type = url.searchParams.get('type');
+    const dateStart = url.searchParams.get('dateStart');
+    const dateEnd = url.searchParams.get('dateEnd');
+    const limit = parseInt(url.searchParams.get('limit') || '100');
     const offset = parseInt(url.searchParams.get('offset') || '0');
 
     let txnIds: string[] = [];
@@ -16,18 +19,31 @@ export const GET: APIRoute = async ({ url }) => {
     } else if (categoryId) {
       txnIds = await redis.zrange(`${KEYS.TRANSACTIONS_BY_CATEGORY}:${categoryId}`, 0, -1, { rev: true });
     } else {
-      txnIds = await redis.zrange(`${KEYS.TRANSACTIONS_BY_DATE}:user-001`, offset, offset + limit - 1, { rev: true });
+      txnIds = await redis.zrange(`${KEYS.TRANSACTIONS_BY_DATE}:user-001`, 0, -1, { rev: true });
     }
 
-    const transactions: Transaction[] = [];
-    for (const id of txnIds.slice(offset, offset + limit)) {
+    let transactions: Transaction[] = [];
+    for (const id of txnIds) {
       const txn = await redis.hgetall<Transaction>(`${KEYS.TRANSACTION}:${id}`);
-      if (txn) {
+      if (txn && txn.id) {
         transactions.push(txn);
       }
     }
 
-    return new Response(JSON.stringify(transactions), {
+    if (type) {
+      transactions = transactions.filter(t => t.type === type);
+    }
+    if (dateStart) {
+      transactions = transactions.filter(t => t.date >= dateStart);
+    }
+    if (dateEnd) {
+      transactions = transactions.filter(t => t.date <= dateEnd);
+    }
+
+    const total = transactions.length;
+    transactions = transactions.slice(offset, offset + limit);
+
+    return new Response(JSON.stringify({ transactions, total }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

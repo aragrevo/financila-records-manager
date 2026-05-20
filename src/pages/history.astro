@@ -64,7 +64,7 @@ const formattedMovements = movements.map((mov) => ({
   <MovementsTable movements={movements} />
 
   <!-- Pagination -->
-  <Pagination currentPage={1} totalPages={45} />
+  <Pagination currentPage={1} totalPages={formattedMovements.length / 10} />
 
   <!-- Create Transaction Modal -->
   <div
