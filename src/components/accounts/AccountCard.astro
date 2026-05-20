@@ -1,0 +1,65 @@
+---
+interface Props {
+  initial: string;
+  name: string;
+  description: string;
+  balance: string;
+  category: string;
+  categoryColor: string;
+  categoryId?: string;
+  fundDots?: string[];
+  isActive?: boolean;
+}
+
+const {
+  initial,
+  name,
+  description,
+  balance,
+  category,
+  categoryColor,
+  categoryId,
+  fundDots,
+  isActive = false,
+} = Astro.props;
+---
+
+<div class:list={[
+  'bg-surface-container-lowest border border-outline-variant rounded-xl p-5 hover:shadow-md transition-all group',
+  isActive && 'account-card-active',
+]}>
+  <div class="flex justify-between items-start mb-4">
+    <div class="w-12 h-12 rounded bg-surface-container flex items-center justify-center font-bold text-headline-md text-primary">
+      {initial}
+    </div>
+    <div class="flex flex-col items-end">
+      <span
+        class="px-2 py-0.5 text-label-caps rounded-full"
+        style={categoryColor}
+      >
+        {category}
+      </span>
+      {categoryId && (
+        <span class="text-mono-data text-on-surface-variant mt-1">ID: {categoryId}</span>
+      )}
+      {fundDots && (
+        <div class="flex gap-1 mt-1">
+          {fundDots.map((dotColor) => (
+            <span class:list={['w-2 h-2 rounded-full', dotColor]}></span>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+  <h4 class="text-data-display font-data-display mb-1 group-hover:text-primary transition-colors">{name}</h4>
+  <p class="text-body-md text-on-surface-variant mb-4">{description}</p>
+  <div class="pt-4 border-t border-outline-variant flex justify-between items-end">
+    <div>
+      <p class="text-label-caps text-on-surface-variant">BALANCE ACTUAL</p>
+      <p class="text-headline-md font-headline-md">{balance}</p>
+    </div>
+    <button class="p-2 bg-surface-container rounded-full hover:bg-primary hover:text-on-primary transition-all">
+      <span class="material-symbols-outlined">arrow_forward</span>
+    </button>
+  </div>
+</div>
