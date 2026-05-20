@@ -16,31 +16,47 @@ interface Props {
 const { transactions } = Astro.props;
 ---
 
-<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
+<section
+  class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm"
+>
   <div class="flex items-center justify-between mb-6">
     <h3 class="text-headline-md font-headline-md">Movimientos Recientes</h3>
-    <a class="text-body-md font-bold text-primary flex items-center hover:underline" href="#">
-      Ver todo el historial
-      <span class="material-symbols-outlined ml-1">open_in_new</span>
+    <a
+      class="text-body-md font-bold text-primary flex items-center hover:no-underline group"
+      href="/history"
+    >
+      <span class="group-hover:underline"> Ver todo el historial </span>
+      <span
+        class="material-symbols-outlined ml-1 hover:no-underline group-hover:underline-offset-0"
+        >open_in_new</span
+      >
     </a>
   </div>
   <div class="space-y-4">
-    {transactions.map((txn) => (
-      <div class="flex items-center justify-between p-3 hover:bg-surface-container transition-colors rounded-lg">
-        <div class="flex items-center">
-          <div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center mr-4">
-            <span class="material-symbols-outlined text-primary">{txn.icon}</span>
+    {
+      transactions.map((txn) => (
+        <div class="flex items-center justify-between p-3 hover:bg-surface-container transition-colors rounded-lg">
+          <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center mr-4">
+              <span class="material-symbols-outlined text-primary">
+                {txn.icon}
+              </span>
+            </div>
+            <div>
+              <p class="text-body-md font-bold">{txn.title}</p>
+              <p class="text-label-caps text-on-surface-variant">
+                {txn.date} • {txn.category}
+              </p>
+            </div>
           </div>
-          <div>
-            <p class="text-body-md font-bold">{txn.title}</p>
-            <p class="text-label-caps text-on-surface-variant">{txn.date} • {txn.category}</p>
+          <div class="text-right">
+            <p class:list={["text-body-md font-bold", txn.amountColor]}>
+              {txn.amount}
+            </p>
+            <p class="text-mono-data text-on-surface-variant">{txn.status}</p>
           </div>
         </div>
-        <div class="text-right">
-          <p class:list={['text-body-md font-bold', txn.amountColor]}>{txn.amount}</p>
-          <p class="text-mono-data text-on-surface-variant">{txn.status}</p>
-        </div>
-      </div>
-    ))}
+      ))
+    }
   </div>
 </section>
