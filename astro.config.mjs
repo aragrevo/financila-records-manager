@@ -6,5 +6,6 @@ import tailwind from '@astrojs/tailwind';
 export default defineConfig({
   site: 'https://financial-records.example.com',
   trailingSlash: 'never',
+  output: 'static',
   integrations: [tailwind()],
 });
