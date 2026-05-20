@@ -1,44 +1,48 @@
 ---
-import Card from '../ui/Card.astro';
-
 interface Props {
   title: string;
   value: string;
-  change?: string;
-  changeType?: 'positive' | 'negative' | 'neutral';
+  subtitle?: string;
+  subtitleType?: 'positive' | 'neutral';
   icon: string;
-  accentColor?: 'emergency' | 'investment' | 'retirement' | 'contingency';
+  accentColor: 'primary' | 'emergency' | 'investment' | 'retirement';
 }
 
-const {
-  title,
-  value,
-  change,
-  changeType = 'neutral',
-  icon,
-  accentColor,
-} = Astro.props;
+const { title, value, subtitle, subtitleType = 'neutral', icon, accentColor } = Astro.props;
 
-const changeClasses = {
-  positive: 'text-retirement',
-  negative: 'text-error',
+const accentColors = {
+  primary: 'bg-primary',
+  emergency: 'bg-red-500',
+  investment: 'bg-amber-500',
+  retirement: 'bg-emerald-600',
+};
+
+const iconColors = {
+  primary: 'text-primary/40 group-hover:text-primary',
+  emergency: 'text-red-500/40 group-hover:text-red-500',
+  investment: 'text-amber-500/40 group-hover:text-amber-500',
+  retirement: 'text-emerald-600/40 group-hover:text-emerald-600',
+};
+
+const subtitleColors = {
+  positive: 'text-green-600',
   neutral: 'text-on-surface-variant',
 };
 ---
 
-<Card variant="accent" accentColor={accentColor} padding="md">
-  <div class="flex items-start justify-between">
-    <div class="flex-1">
-      <p class="text-label-caps text-on-surface-variant uppercase tracking-wider">{title}</p>
-      <p class="text-headline-md font-bold text-on-surface mt-2 financial-figure">{value}</p>
-      {change && (
-        <p class:list={['text-sm mt-2', changeClasses[changeType]]}>
-          {change}
-        </p>
-      )}
-    </div>
-    <div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
-      <Fragment set:html={icon} />
-    </div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm relative overflow-hidden group">
+  <div class:list={['absolute top-0 left-0 w-1.5 h-full', accentColors[accentColor]]}></div>
+  <div class="flex justify-between items-start mb-4">
+    <span class="text-label-caps font-label-caps text-on-surface-variant uppercase">{title}</span>
+    <span class:list={['material-symbols-outlined transition-colors', iconColors[accentColor]]}>{icon}</span>
   </div>
-</Card>
+  <div class="text-headline-md font-headline-md text-primary">{value}</div>
+  {subtitle && (
+    <div class:list={['mt-2 flex items-center gap-1 text-[11px] font-bold', subtitleColors[subtitleType]]}>
+      {subtitleType === 'positive' && (
+        <span class="material-symbols-outlined text-xs">trending_up</span>
+      )}
+      {subtitle}
+    </div>
+  )}
+</div>
