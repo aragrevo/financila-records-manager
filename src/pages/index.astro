@@ -1,133 +1,493 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import SummaryCard from '../components/dashboard/SummaryCard.astro';
-import CategoryChart from '../components/dashboard/CategoryChart.astro';
-import ProgressBars from '../components/dashboard/ProgressBars.astro';
-import TransactionTable from '../components/transactions/TransactionTable.astro';
-import { IconCurrencyDollar, IconArrowUp, IconArrowDown, IconCheckCircle } from '../components/icons';
-import { summaryData } from '../data/summary';
-import { formatCurrency, formatPercentage } from '../utils/format';
-import { transactionsData } from '../data/transactions';
+import Layout from "../layouts/Layout.astro";
+import SummaryCard from "../components/dashboard/SummaryCard.astro";
+import { formatCurrency } from "../utils/format";
 
-const recentTransactions = transactionsData.slice(0, 5);
+const recentMovements = [
+  {
+    account: "XTB",
+    date: "16/05/2026",
+    category: "Investment",
+    amount: 382100,
+  },
+  {
+    account: "Tyba",
+    date: "08/05/2026",
+    category: "Retirement",
+    amount: 200000,
+  },
+  {
+    account: "NU",
+    date: "08/05/2026",
+    category: "Contingency",
+    amount: 568611,
+  },
+  { account: "NU", date: "08/05/2026", category: "Emergency", amount: 1135858 },
+  {
+    account: "NU",
+    date: "08/05/2026",
+    category: "Retirement",
+    amount: 1135858,
+  },
+];
 
-const progressItems = summaryData.categories.map(cat => ({
-  label: cat.name,
-  value: cat.amount,
-  maxValue: summaryData.totalBalance,
-  color: cat.color,
-}));
+const fundStatus = [
+  {
+    name: "Emergencia",
+    term: "6 meses",
+    expected: 23946942,
+    current: 19836745,
+    institution: "Uala - Global66 - NU",
+    color: "emergency",
+    difference: -4110197,
+  },
+  {
+    name: "Inversión",
+    term: "10% Save",
+    expected: 798231,
+    current: 382100,
+    institution: "Tyba - Investwe - xtb-plenti",
+    color: "investment",
+    difference: -416131,
+  },
+  {
+    name: "Imprevistos",
+    term: "Vacaciones",
+    expected: 568611,
+    current: 568611,
+    institution: "Rappi - NU",
+    color: "contingency",
+    difference: 0,
+  },
+  {
+    name: "Retiro",
+    term: "Cesantias, Prima",
+    expected: 2471715,
+    current: 2471715,
+    institution: "NU Cajitas",
+    color: "retirement",
+    difference: 0,
+  },
+];
+
+const formatCurrencyCOP = (amount: number) => {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })
+    .format(amount)
+    .replace(/\s/g, "");
+};
 
 const iconDollar = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
-const iconArrowUp = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12" /></svg>`;
-const iconArrowDown = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" /></svg>`;
-const iconCheck = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
 ---
 
 <Layout title="Dashboard" activePage="dashboard">
-  <div class="space-y-6">
-    <!-- Page Header -->
+  <!-- Headline Row -->
+  <div class="mb-8 flex justify-between items-end">
     <div>
-      <h1 class="text-headline-lg font-bold text-on-surface">Dashboard</h1>
-      <p class="text-body-md text-on-surface-variant mt-1">Overview of your financial position</p>
+      <h2 class="text-headline-lg font-headline-lg text-primary">Dashboard</h2>
+      <p class="text-body-md text-on-surface-variant">
+        Overview of your financial position
+      </p>
     </div>
+    <button
+      class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-label-caps hover:opacity-90 transition-opacity"
+    >
+      <span class="material-symbols-outlined text-sm">add</span>
+      Agregar
+    </button>
+  </div>
 
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <SummaryCard
-        title="Total Balance"
-        value={formatCurrency(summaryData.totalBalance)}
-        change="+2.4% from last month"
-        changeType="positive"
-        icon={iconDollar}
-      />
-      
-      <SummaryCard
-        title="Monthly Income"
-        value={formatCurrency(summaryData.monthlyIncome)}
-        change="+5.2% from last month"
-        changeType="positive"
-        icon={iconArrowUp}
-      />
-      
-      <SummaryCard
-        title="Monthly Expenses"
-        value={formatCurrency(summaryData.monthlyExpenses)}
-        change="-3.1% from last month"
-        changeType="negative"
-        icon={iconArrowDown}
-      />
-      
-      <SummaryCard
-        title="Savings Rate"
-        value={formatPercentage(summaryData.savingsRate)}
-        change="Target: 30%"
-        changeType="neutral"
-        icon={iconCheck}
-      />
-    </div>
-
-    <!-- Charts Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Asset Allocation -->
-      <div class="bg-white rounded-lg shadow-card p-6">
-        <CategoryChart categories={summaryData.categories} />
+  <!-- Bento Metrics Grid -->
+  <div
+    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-gutter"
+  >
+    <!-- Total Balance -->
+    <div
+      class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm relative overflow-hidden group"
+    >
+      <div class="absolute top-0 left-0 w-1.5 h-full bg-primary"></div>
+      <div class="flex justify-between items-start mb-4">
+        <span
+          class="text-label-caps font-label-caps text-on-surface-variant uppercase"
+          >Total Balance</span
+        >
+        <span
+          class="material-symbols-outlined text-primary/40 group-hover:text-primary transition-colors"
+          >account_balance_wallet</span
+        >
       </div>
-
-      <!-- Category Progress -->
-      <div class="bg-white rounded-lg shadow-card p-6">
-        <h3 class="text-lg font-semibold text-on-surface mb-4">Fund Progress</h3>
-        <ProgressBars items={progressItems} />
+      <div class="text-headline-md font-headline-md text-primary">
+        {formatCurrencyCOP(74875506)}
+      </div>
+      <div
+        class="mt-2 flex items-center gap-1 text-[11px] font-bold text-green-600"
+      >
+        <span class="material-symbols-outlined text-xs">trending_up</span>
+        +2.4% vs last month
       </div>
     </div>
 
-    <!-- Monthly Trend Chart -->
-    <div class="bg-white rounded-lg shadow-card p-6">
-      <h3 class="text-lg font-semibold text-on-surface mb-4">Monthly Trend</h3>
-      <div class="h-64 flex items-end justify-between space-x-2">
-        {summaryData.monthlyTrend.map((month) => {
-          const maxAmount = Math.max(...summaryData.monthlyTrend.map(m => Math.max(m.income, m.expenses)));
-          const incomeHeight = (month.income / maxAmount) * 100;
-          const expenseHeight = (month.expenses / maxAmount) * 100;
-          
-          return (
-            <div class="flex-1 flex flex-col items-center space-y-1">
-              <div class="w-full flex space-x-1 items-end" style={`height: 200px`}>
-                <div
-                  class="flex-1 bg-retirement rounded-t"
-                  style={`height: ${incomeHeight}%`}
-                  title={`Income: ${formatCurrency(month.income)}`}
-                />
-                <div
-                  class="flex-1 bg-emergency rounded-t"
-                  style={`height: ${expenseHeight}%`}
-                  title={`Expenses: ${formatCurrency(month.expenses)}`}
-                />
+    <!-- Emergency Fund -->
+    <div
+      class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm relative overflow-hidden group"
+    >
+      <div class="absolute top-0 left-0 w-1.5 h-full bg-red-500"></div>
+      <div class="flex justify-between items-start mb-4">
+        <span
+          class="text-label-caps font-label-caps text-on-surface-variant uppercase"
+          >Emergency Fund</span
+        >
+        <span
+          class="material-symbols-outlined text-red-500/40 group-hover:text-red-500 transition-colors"
+          >emergency</span
+        >
+      </div>
+      <div class="text-headline-md font-headline-md text-primary">
+        {formatCurrencyCOP(19836745)}
+      </div>
+      <div
+        class="mt-2 flex items-center gap-1 text-[11px] font-bold text-on-surface-variant"
+      >
+        Target: {formatCurrencyCOP(24000000)} (82%)
+      </div>
+    </div>
+
+    <!-- Investment -->
+    <div
+      class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm relative overflow-hidden group"
+    >
+      <div class="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
+      <div class="flex justify-between items-start mb-4">
+        <span
+          class="text-label-caps font-label-caps text-on-surface-variant uppercase"
+          >Investment Portfolio</span
+        >
+        <span
+          class="material-symbols-outlined text-amber-500/40 group-hover:text-amber-500 transition-colors"
+          >show_chart</span
+        >
+      </div>
+      <div class="text-headline-md font-headline-md text-primary">
+        {formatCurrencyCOP(12047315)}
+      </div>
+      <div
+        class="mt-2 flex items-center gap-1 text-[11px] font-bold text-green-600"
+      >
+        <span class="material-symbols-outlined text-xs">arrow_upward</span>
+        High yield month
+      </div>
+    </div>
+
+    <!-- Retirement -->
+    <div
+      class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm relative overflow-hidden group"
+    >
+      <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-600"></div>
+      <div class="flex justify-between items-start mb-4">
+        <span
+          class="text-label-caps font-label-caps text-on-surface-variant uppercase"
+          >Retirement</span
+        >
+        <span
+          class="material-symbols-outlined text-emerald-600/40 group-hover:text-emerald-600 transition-colors"
+          >savings</span
+        >
+      </div>
+      <div class="text-headline-md font-headline-md text-primary">
+        {formatCurrencyCOP(42006005)}
+      </div>
+      <div
+        class="mt-2 flex items-center gap-1 text-[11px] font-bold text-on-surface-variant"
+      >
+        Long-term growth trajectory
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Data Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+    <!-- Allocation Chart (Bento Large) -->
+    <div
+      class="lg:col-span-2 bg-surface-container-lowest p-gutter rounded-xl border border-outline-variant shadow-sm"
+    >
+      <div class="flex justify-between items-center mb-10">
+        <h3 class="text-headline-md font-headline-md text-primary">
+          Asset Allocation by Entity
+        </h3>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 bg-blue-500 rounded-sm"></span>
+            <span
+              class="text-[10px] font-bold text-on-surface-variant uppercase"
+              >Contingency</span
+            >
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 bg-red-500 rounded-sm"></span>
+            <span
+              class="text-[10px] font-bold text-on-surface-variant uppercase"
+              >Emergency</span
+            >
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 bg-amber-500 rounded-sm"></span>
+            <span
+              class="text-[10px] font-bold text-on-surface-variant uppercase"
+              >Investment</span
+            >
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 bg-emerald-600 rounded-sm"></span>
+            <span
+              class="text-[10px] font-bold text-on-surface-variant uppercase"
+              >Retirement</span
+            >
+          </div>
+        </div>
+      </div>
+      <div
+        class="flex items-end justify-between h-[300px] border-b border-outline-variant pb-2 relative"
+      >
+        <!-- Y-Axis Grid Lines -->
+        <div
+          class="absolute left-0 bottom-0 w-full h-full flex flex-col justify-between pointer-events-none opacity-50"
+        >
+          <div class="border-t border-dashed border-outline-variant w-full h-0">
+          </div>
+          <div class="border-t border-dashed border-outline-variant w-full h-0">
+          </div>
+          <div class="border-t border-dashed border-outline-variant w-full h-0">
+          </div>
+          <div class="border-t border-dashed border-outline-variant w-full h-0">
+          </div>
+        </div>
+        <!-- Global66 -->
+        <div class="flex flex-col items-center flex-1 z-10">
+          <div class="chart-bar-container">
+            <div
+              class="bg-red-500 w-8 rounded-t-sm hover:brightness-90 transition-all cursor-pointer group relative"
+              style="height: 12.3%"
+            >
+              <div
+                class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-on-primary text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                {formatCurrencyCOP(12300000)}
               </div>
-              <span class="text-xs text-on-surface-variant">{month.month}</span>
             </div>
-          );
-        })}
-      </div>
-      <div class="flex items-center justify-center space-x-6 mt-4">
-        <div class="flex items-center space-x-2">
-          <div class="w-3 h-3 bg-retirement rounded" />
-          <span class="text-sm text-on-surface-variant">Income</span>
+          </div>
+          <span class="text-[11px] font-bold text-on-surface-variant mt-3"
+            >Global66</span
+          >
         </div>
-        <div class="flex items-center space-x-2">
-          <div class="w-3 h-3 bg-emergency rounded" />
-          <span class="text-sm text-on-surface-variant">Expenses</span>
+        <!-- MejorCDT -->
+        <div class="flex flex-col items-center flex-1 z-10">
+          <div class="chart-bar-container">
+            <div
+              class="bg-emerald-600 w-8 rounded-t-sm hover:brightness-90 transition-all cursor-pointer group relative"
+              style="height: 15.4%"
+            >
+              <div
+                class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-on-primary text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                {formatCurrencyCOP(15400000)}
+              </div>
+            </div>
+          </div>
+          <span class="text-[11px] font-bold text-on-surface-variant mt-3"
+            >MejorCDT</span
+          >
+        </div>
+        <!-- NU -->
+        <div class="flex flex-col items-center flex-1 z-10">
+          <div class="chart-bar-container">
+            <div class="bg-blue-500 w-4 rounded-t-sm" style="height: 0.7%">
+            </div>
+            <div class="bg-red-500 w-4 rounded-t-sm" style="height: 6.6%"></div>
+            <div class="bg-emerald-600 w-4 rounded-t-sm" style="height: 3.1%">
+            </div>
+          </div>
+          <span class="text-[11px] font-bold text-on-surface-variant mt-3"
+            >NU</span
+          >
+        </div>
+        <!-- Otro -->
+        <div class="flex flex-col items-center flex-1 z-10">
+          <div class="chart-bar-container">
+            <div class="bg-red-500 w-4 rounded-t-sm" style="height: 0.78%">
+            </div>
+            <div class="bg-amber-500 w-4 rounded-t-sm" style="height: 7.2%">
+            </div>
+            <div class="bg-emerald-600 w-4 rounded-t-sm" style="height: 0.5%">
+            </div>
+          </div>
+          <span class="text-[11px] font-bold text-on-surface-variant mt-3"
+            >Otro</span
+          >
+        </div>
+        <!-- Tyba -->
+        <div class="flex flex-col items-center flex-1 z-10">
+          <div class="chart-bar-container">
+            <div class="bg-amber-500 w-4 rounded-t-sm" style="height: 1.2%">
+            </div>
+            <div class="bg-emerald-600 w-4 rounded-t-sm" style="height: 23.0%">
+            </div>
+          </div>
+          <span class="text-[11px] font-bold text-on-surface-variant mt-3"
+            >Tyba</span
+          >
+        </div>
+        <!-- XTB -->
+        <div class="flex flex-col items-center flex-1 z-10">
+          <div class="chart-bar-container">
+            <div class="bg-amber-500 w-8 rounded-t-sm" style="height: 3.5%">
+            </div>
+          </div>
+          <span class="text-[11px] font-bold text-on-surface-variant mt-3"
+            >XTB</span
+          >
         </div>
       </div>
     </div>
 
-    <!-- Recent Transactions -->
-    <div class="bg-white rounded-lg shadow-card p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-on-surface">Recent Transactions</h3>
-        <a href="/history" class="text-sm text-contingency hover:underline">View all</a>
+    <!-- Recent Movements (Bento Sidebar) -->
+    <div
+      class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm flex flex-col overflow-hidden"
+    >
+      <div
+        class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/50"
+      >
+        <h3 class="text-headline-md font-headline-md text-primary">
+          Movimientos
+        </h3>
+        <a
+          class="text-primary font-bold text-label-caps hover:underline"
+          href="#">VER TODOS</a
+        >
       </div>
-      <TransactionTable transactions={recentTransactions} />
+      <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <table class="w-full text-left">
+          <thead
+            class="sticky top-0 bg-surface-container-low/80 backdrop-blur text-label-caps font-label-caps text-on-surface-variant border-b border-outline-variant"
+          >
+            <tr>
+              <th class="px-6 py-3 font-bold">FECHA / CUENTA</th>
+              <th class="px-6 py-3 font-bold text-right">VALOR</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant/30 font-table-data">
+            {
+              recentMovements.map((txn) => (
+                <tr class="hover:bg-surface-container-low/50 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex flex-col">
+                      <span class="text-primary font-bold">{txn.account}</span>
+                      <span class="text-[10px] text-on-surface-variant">
+                        {txn.date} • {txn.category}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <div class="text-primary font-mono-data">
+                      {formatCurrencyCOP(txn.amount)}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Funds Detail Table -->
+  <div
+    class="mt-gutter bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden"
+  >
+    <div
+      class="p-6 border-b border-outline-variant bg-surface-container-low/50"
+    >
+      <h3 class="text-headline-md font-headline-md text-primary">
+        Estado de Fondos
+      </h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left">
+        <thead
+          class="bg-surface-container-low text-label-caps font-label-caps text-on-surface-variant border-b border-outline-variant"
+        >
+          <tr>
+            <th class="px-6 py-4 font-bold">ACCOUNT</th>
+            <th class="px-6 py-4 font-bold">TERM / CONDITION</th>
+            <th class="px-6 py-4 font-bold text-right">EXPECTED</th>
+            <th class="px-6 py-4 font-bold">INSTITUTION</th>
+            <th class="px-6 py-4 font-bold text-right">CURRENT MONTH</th>
+            <th class="px-6 py-4 font-bold text-right">DIFFERENCE</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant font-table-data">
+          {
+            fundStatus.map((fund) => {
+              const colorClasses = {
+                emergency: "bg-red-500",
+                investment: "bg-amber-500",
+                contingency: "bg-blue-500",
+                retirement: "bg-emerald-600",
+              };
+              const diffColorClass = fund.difference < 0 ? "text-red-600" : "";
+              const currentBgClass =
+                fund.difference < 0 ? "bg-red-500 text-white" : "";
+
+              return (
+                <tr class="hover:bg-surface-container-low transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                      <span
+                        class:list={[
+                          "w-1 h-4 rounded-full",
+                          colorClasses[fund.color],
+                        ]}
+                      />
+                      <span class="font-bold text-primary">{fund.name}</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-on-surface-variant">{fund.term}</td>
+                  <td class="px-6 py-4 text-right font-mono-data">
+                    {formatCurrencyCOP(fund.expected)}
+                  </td>
+                  <td class="px-6 py-4 text-on-surface-variant text-[11px]">
+                    {fund.institution}
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <span
+                      class:list={[
+                        "font-bold px-2 py-1 rounded-sm font-mono-data",
+                        currentBgClass,
+                      ]}
+                    >
+                      {formatCurrencyCOP(fund.current)}
+                    </span>
+                  </td>
+                  <td
+                    class:list={[
+                      "px-6 py-4 text-right font-bold font-mono-data",
+                      diffColorClass,
+                    ]}
+                  >
+                    {fund.difference === 0
+                      ? formatCurrencyCOP(0)
+                      : formatCurrencyCOP(fund.difference)}
+                  </td>
+                </tr>
+              );
+            })
+          }
+        </tbody>
+      </table>
     </div>
   </div>
 </Layout>

@@ -1,24 +1,39 @@
 ---
-import '@fontsource/inter/400.css';
-import '@fontsource/inter/500.css';
-import '@fontsource/inter/600.css';
-import '@fontsource/inter/700.css';
-import '@fontsource-variable/jetbrains-mono';
-import '../styles/global.css';
-import { IconGrid, IconCreditCard, IconClock, IconTrendingUp } from '../components/icons';
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
+import "@fontsource-variable/jetbrains-mono";
+import "../styles/global.css";
+import {
+  IconGrid,
+  IconCreditCard,
+  IconClock,
+  IconTrendingUp,
+} from "../components/icons";
 
 interface Props {
   title: string;
   activePage?: string;
 }
 
-const { title, activePage = 'dashboard' } = Astro.props;
+const { title, activePage = "dashboard" } = Astro.props;
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: IconGrid, page: 'dashboard' },
-  { href: '/accounts', label: 'Accounts', icon: IconCreditCard, page: 'accounts' },
-  { href: '/history', label: 'History', icon: IconClock, page: 'history' },
-  { href: '/wealth', label: 'Wealth Management', icon: IconTrendingUp, page: 'wealth' },
+  { href: "/", label: "Dashboard", icon: IconGrid, page: "dashboard" },
+  {
+    href: "/accounts",
+    label: "Accounts",
+    icon: IconCreditCard,
+    page: "accounts",
+  },
+  { href: "/history", label: "History", icon: IconClock, page: "history" },
+  {
+    href: "/wealth",
+    label: "Wealth Management",
+    icon: IconTrendingUp,
+    page: "wealth",
+  },
 ];
 ---
 
@@ -26,59 +41,148 @@ const navItems = [
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="Financial Records Manager - Personal Finance Management" />
+    <meta
+      name="description"
+      content="Financial Records Manager - Personal Finance Management"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
     <title>{title} | Financial Records Manager</title>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #c6c6cd;
+        border-radius: 10px;
+      }
+    </style>
   </head>
-  <body class="min-h-screen bg-surface">
-    <div class="flex min-h-screen">
-      <!-- Sidebar -->
-      <aside class="w-64 bg-white border-r border-outline-variant flex flex-col">
-        <!-- Logo -->
-        <div class="p-6 border-b border-outline-variant">
-          <h1 class="text-headline-md font-bold text-primary">Financial Records</h1>
-          <p class="text-body-md text-on-surface-variant mt-1">Manager</p>
-        </div>
-        
-        <!-- Navigation -->
-        <nav class="flex-1 p-4 space-y-1">
-          {navItems.map((item) => (
+  <body
+    class="font-body-md text-body-md overflow-x-hidden bg-background text-on-background"
+  >
+    <!-- SideNavBar -->
+    <aside
+      class="fixed left-0 top-0 h-screen w-64 bg-surface border-r border-outline-variant flex flex-col py-6 z-50"
+    >
+      <div class="px-6 mb-10">
+        <h1 class="text-headline-md font-headline-md font-bold text-primary">
+          Financial Records
+        </h1>
+        <p
+          class="text-label-caps font-label-caps text-on-surface-variant opacity-70"
+        >
+          Manager
+        </p>
+      </div>
+      <nav class="flex-1 px-3 space-y-1">
+        {
+          navItems.map((item) => (
             <a
               href={item.href}
               class:list={[
-                'flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                "flex items-center gap-3 px-3 py-2 transition-all",
                 activePage === item.page
-                  ? 'bg-primary text-on-primary'
-                  : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface',
+                  ? "text-primary font-bold border-r-4 border-primary bg-surface-container-high scale-[0.99]"
+                  : "text-on-surface-variant hover:bg-surface-container-low",
               ]}
             >
               <item.icon class="w-5 h-5 mr-3" />
-              {item.label}
+              <span class="text-label-caps font-label-caps">{item.label}</span>
             </a>
-          ))}
-        </nav>
-        
-        <!-- User section -->
-        <div class="p-4 border-t border-outline-variant">
-          <div class="flex items-center">
-            <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-              <span class="text-on-primary text-sm font-medium">JD</span>
-            </div>
-            <div class="ml-3">
-              <p class="text-sm font-medium text-on-surface">John Doe</p>
-              <p class="text-xs text-on-surface-variant">Personal Account</p>
-            </div>
+          ))
+        }
+      </nav>
+      <div class="px-3 mt-auto">
+        <div
+          class="mt-6 px-3 flex items-center gap-3 border-t border-outline-variant pt-6"
+        >
+          <div
+            class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden"
+          >
+            <span class="text-on-secondary-container font-bold text-sm">SR</span
+            >
+          </div>
+          <div class="flex flex-col">
+            <span class="font-bold text-table-data">Santiago R.</span>
+            <span
+              class="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider"
+              >Premium User</span
+            >
           </div>
         </div>
-      </aside>
-      
-      <!-- Main content -->
-      <main class="flex-1 overflow-auto">
-        <div class="max-w-container mx-auto p-gutter">
-          <slot />
+      </div>
+    </aside>
+
+    <!-- Main Content Canvas -->
+    <main class="ml-64 min-h-screen bg-background">
+      <!-- TopNavBar -->
+      <header
+        class="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-surface-container-lowest border-b border-outline-variant shadow-sm flex justify-between items-center px-gutter h-16"
+      >
+        <div class="flex items-center flex-1 max-w-md">
+          <div class="relative w-full">
+            <span
+              class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
+              >search</span
+            >
+            <input
+              class="w-full pl-10 pr-4 py-1.5 bg-surface-container-low border-none rounded-full text-body-md focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+              placeholder="Search across accounts..."
+              type="text"
+            />
+          </div>
         </div>
-      </main>
-    </div>
+        <div class="flex items-center gap-4">
+          <button
+            class="p-2 hover:bg-surface-container-high rounded-full transition-all"
+          >
+            <span class="material-symbols-outlined text-primary"
+              >notifications</span
+            >
+          </button>
+          <button
+            class="p-2 hover:bg-surface-container-high rounded-full transition-all"
+          >
+            <span class="material-symbols-outlined text-primary">apps</span>
+          </button>
+          <div class="w-px h-6 bg-outline-variant mx-2"></div>
+          <div
+            class="flex items-center gap-2 cursor-pointer hover:bg-surface-container-high p-1 rounded-lg transition-all"
+          >
+            <div class="text-right hidden sm:block">
+              <p
+                class="text-label-caps font-label-caps text-on-surface leading-none"
+              >
+                Status
+              </p>
+              <p class="text-[10px] text-primary font-bold">Synchronized</p>
+            </div>
+            <span
+              class="material-symbols-outlined text-green-600"
+              style="font-variation-settings: 'FILL' 1;">check_circle</span
+            >
+          </div>
+        </div>
+      </header>
+
+      <div class="pt-24 px-gutter pb-12 max-w-container-max mx-auto">
+        <slot />
+      </div>
+    </main>
   </body>
 </html>

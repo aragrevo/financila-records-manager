@@ -4,38 +4,54 @@
 
 @layer base {
   :root {
-    /* Fiscal Precision Design System Tokens */
-    --color-surface: #f7f9fb;
-    --color-surface-dim: #d8dadc;
-    --color-surface-bright: #f7f9fb;
-    --color-surface-container-lowest: #ffffff;
-    --color-surface-container-low: #f2f4f6;
-    --color-surface-container: #eceef0;
-    --color-surface-container-high: #e6e8ea;
-    --color-surface-container-highest: #e0e3e5;
-    --color-on-surface: #191c1e;
-    --color-on-surface-variant: #45464d;
-    --color-inverse-surface: #2d3133;
-    --color-inverse-on-surface: #eff1f3;
-    --color-outline: #76777d;
-    --color-outline-variant: #c6c6cd;
-    --color-primary: #000000;
-    --color-on-primary: #ffffff;
-    --color-primary-container: #131b2e;
-    --color-on-primary-container: #7c839b;
-    --color-inverse-primary: #bec6e0;
-    --color-secondary: #515f74;
-    --color-on-secondary: #ffffff;
-    --color-secondary-container: #d5e3fd;
-    --color-on-secondary-container: #57657b;
-    --color-tertiary: #000000;
-    --color-on-tertiary: #ffffff;
-    --color-tertiary-container: #271901;
-    --color-on-tertiary-container: #98805d;
-    --color-error: #ba1a1a;
-    --color-on-error: #ffffff;
-    --color-error-container: #ffdad6;
+    /* Capital Intel Design System Tokens */
     --color-on-error-container: #93000a;
+    --color-on-error: #ffffff;
+    --color-primary-fixed: #dae2fd;
+    --color-on-tertiary-fixed-variant: #574425;
+    --color-inverse-on-surface: #eff1f3;
+    --color-surface-container: #eceef0;
+    --color-inverse-primary: #bec6e0;
+    --color-secondary-fixed: #d5e3fd;
+    --color-on-tertiary-container: #98805d;
+    --color-on-secondary-container: #57657b;
+    --color-tertiary-fixed: #fcdeb5;
+    --color-primary-container: #131b2e;
+    --color-on-secondary: #ffffff;
+    --color-on-secondary-fixed: #0d1c2f;
+    --color-on-tertiary: #ffffff;
+    --color-surface: #f7f9fb;
+    --color-on-surface-variant: #45464d;
+    --color-outline: #76777d;
+    --color-primary: #000000;
+    --color-on-primary-fixed: #131b2e;
+    --color-tertiary: #000000;
+    --color-outline-variant: #c6c6cd;
+    --color-surface-container-high: #e6e8ea;
+    --color-on-surface: #191c1e;
+    --color-on-background: #191c1e;
+    --color-secondary-fixed-dim: #b9c7e0;
+    --color-primary-fixed-dim: #bec6e0;
+    --color-surface-container-highest: #e0e3e5;
+    --color-surface-container-low: #f2f4f6;
+    --color-on-primary-container: #7c839b;
+    --color-inverse-surface: #2d3133;
+    --color-error-container: #ffdad6;
+    --color-surface-container-lowest: #ffffff;
+    --color-secondary: #515f74;
+    --color-on-tertiary-fixed: #271901;
+    --color-surface-dim: #d8dadc;
+    --color-error: #ba1a1a;
+    --color-tertiary-fixed-dim: #dec29a;
+    --color-on-primary: #ffffff;
+    --color-on-secondary-fixed-variant: #3a485c;
+    --color-surface-variant: #e0e3e5;
+    --color-surface-tint: #565e74;
+    --color-tertiary-container: #271901;
+    --color-on-primary-fixed-variant: #3f465c;
+    --color-surface-bright: #f7f9fb;
+    --color-background: #f7f9fb;
+    --color-secondary-container: #d5e3fd;
     
     /* Functional category colors */
     --color-emergency: #dc2626;
@@ -46,13 +62,6 @@
     /* Typography */
     --font-sans: 'Inter', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
-    
-    /* Spacing */
-    --container-max: 1280px;
-    --gutter: 1.5rem;
-    --stack-sm: 0.5rem;
-    --stack-md: 1rem;
-    --stack-lg: 2rem;
   }
 
   html {
@@ -78,6 +87,23 @@
 
   .positive-value {
     color: var(--color-retirement);
+  }
+
+  /* Chart bar container */
+  .chart-bar-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 200px;
+  }
+
+  /* Category chip */
+  .category-chip {
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
   }
 }
 
@@ -109,8 +135,7 @@
 
   /* Card with accent bar */
   .card-accent {
-    @apply bg-white rounded-lg shadow-card p-6;
-    border-left: 3px solid var(--color-primary);
+    @apply bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-6 relative overflow-hidden;
   }
   
   .card-accent-emergency {
@@ -131,23 +156,27 @@
 
   /* Table styling */
   .data-table {
-    @apply w-full text-sm;
+    @apply w-full text-left;
   }
   
   .data-table thead {
-    @apply sticky top-0 bg-surface-container-high;
+    @apply sticky top-0 bg-surface-container-low/80 backdrop-blur text-label-caps text-on-surface-variant border-b border-outline-variant;
   }
   
   .data-table th {
-    @apply px-4 py-3 text-left text-label-caps text-on-surface-variant uppercase tracking-wider;
+    @apply px-6 py-3 font-bold;
   }
   
   .data-table td {
-    @apply px-4 py-3 border-b border-outline-variant;
+    @apply px-6 py-4;
   }
   
-  .data-table tbody tr:hover {
-    @apply bg-surface-container-low;
+  .data-table tbody tr {
+    @apply hover:bg-surface-container-low/50 transition-colors;
+  }
+
+  .data-table tbody {
+    @apply divide-y divide-outline-variant/30 ;
   }
 
   /* Progress bar */
