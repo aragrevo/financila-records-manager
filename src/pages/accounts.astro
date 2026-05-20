@@ -57,7 +57,7 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
       <p class="text-body-md font-body-md text-on-surface-variant">Visión agregada de capital por entidad y tipo de fondo.</p>
     </div>
     <div class="flex gap-2">
-      <button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-body-md flex items-center shadow-sm hover:opacity-90 transition-opacity">
+      <button id="btn-new-account" class="bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-body-md flex items-center shadow-sm hover:opacity-90 transition-opacity">
         <span class="material-symbols-outlined mr-2">add</span>
         Nueva Cuenta
       </button>
@@ -105,7 +105,7 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
         />
       ))}
       <!-- Add New Card Placeholder -->
-      <div class="bg-surface-container-low border border-dashed border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center text-center hover:bg-surface-container-high transition-colors cursor-pointer group">
+      <div id="btn-new-account-card" class="bg-surface-container-low border border-dashed border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center text-center hover:bg-surface-container-high transition-colors cursor-pointer group">
         <div class="w-12 h-12 rounded-full border-2 border-dashed border-outline-variant flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
           <span class="material-symbols-outlined text-outline">add</span>
         </div>
@@ -128,6 +128,66 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
       <span class="material-symbols-outlined">add</span>
     </button>
   </div>
+
+  <!-- Create Account Modal -->
+  <div id="create-account-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-surface rounded-xl shadow-xl w-full max-w-md">
+      <div class="flex items-center justify-between p-6 border-b border-outline-variant">
+        <h3 class="text-headline-md font-headline-md text-on-surface">Nueva Cuenta</h3>
+        <button id="modal-close" class="text-on-surface-variant hover:text-on-surface">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form id="create-account-form" class="p-6 space-y-4">
+        <div>
+          <label for="account-name" class="block text-label-md text-on-surface-variant mb-1">Nombre</label>
+          <input type="text" id="account-name" name="name" required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+            placeholder="Ej: Cuenta de Ahorros" />
+        </div>
+        <div>
+          <label for="account-type" class="block text-label-md text-on-surface-variant mb-1">Tipo</label>
+          <select id="account-type" name="type" required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
+            <option value="checking">Corriente</option>
+            <option value="savings">Ahorros</option>
+            <option value="investment">Inversión</option>
+            <option value="credit">Crédito</option>
+          </select>
+        </div>
+        <div>
+          <label for="account-institution" class="block text-label-md text-on-surface-variant mb-1">Institución</label>
+          <input type="text" id="account-institution" name="institution" required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+            placeholder="Ej: Banco Nacional" />
+        </div>
+        <div>
+          <label for="account-balance" class="block text-label-md text-on-surface-variant mb-1">Balance Inicial</label>
+          <input type="number" id="account-balance" name="balance" step="0.01" required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+            placeholder="0.00" />
+        </div>
+        <div>
+          <label for="account-category" class="block text-label-md text-on-surface-variant mb-1">Categoría</label>
+          <select id="account-category" name="category" required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
+            <option value="contingency">Contingencia</option>
+            <option value="emergency">Emergencia</option>
+            <option value="investment">Inversión</option>
+            <option value="retirement">Retiro</option>
+          </select>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" id="modal-cancel" class="flex-1 px-4 py-2 border border-outline-variant rounded-lg font-bold text-body-md text-on-surface hover:bg-surface-container transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" class="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg font-bold text-body-md hover:opacity-90 transition-opacity">
+            Crear Cuenta
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </Layout>
 
 <style>
@@ -135,3 +195,61 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
     border-left: 3px solid black;
   }
 </style>
+
+<script>
+  const modal = document.getElementById('create-account-modal');
+  const btnNew = document.getElementById('btn-new-account');
+  const btnCard = document.getElementById('btn-new-account-card');
+  const btnClose = document.getElementById('modal-close');
+  const btnCancel = document.getElementById('modal-cancel');
+  const form = document.getElementById('create-account-form') as HTMLFormElement;
+
+  function openModal() {
+    modal?.classList.remove('hidden');
+    modal?.classList.add('flex');
+  }
+
+  function closeModal() {
+    modal?.classList.add('hidden');
+    modal?.classList.remove('flex');
+    form?.reset();
+  }
+
+  btnNew?.addEventListener('click', openModal);
+  btnCard?.addEventListener('click', openModal);
+  btnClose?.addEventListener('click', closeModal);
+  btnCancel?.addEventListener('click', closeModal);
+
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const data = {
+      name: formData.get('name'),
+      type: formData.get('type'),
+      institution: formData.get('institution'),
+      balance: parseFloat(formData.get('balance') as string),
+      category: formData.get('category'),
+    };
+
+    try {
+      const res = await fetch('/api/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        closeModal();
+        window.location.reload();
+      } else {
+        alert('Error al crear la cuenta');
+      }
+    } catch {
+      alert('Error de conexión');
+    }
+  });
+</script>
