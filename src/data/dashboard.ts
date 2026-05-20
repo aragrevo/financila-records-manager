@@ -23,6 +23,7 @@ export interface Movement {
   account: string;
   date: string;
   category: string;
+  type: string;
   amount: number;
 }
 

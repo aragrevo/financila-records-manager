@@ -1,11 +1,11 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import MovementsFilter from '../components/transactions/MovementsFilter.astro';
-import MovementsTable from '../components/transactions/MovementsTable.astro';
-import Pagination from '../components/transactions/Pagination.astro';
-import { dashboardService } from '../services/dashboard.service';
-import { formatCurrencyCOP } from '../utils/format';
-import { TRANSACTION_TYPES, ACCOUNT_CATEGORIES } from '../lib/constants';
+import Layout from "../layouts/Layout.astro";
+import MovementsFilter from "../components/transactions/MovementsFilter.astro";
+import MovementsTable from "../components/transactions/MovementsTable.astro";
+import Pagination from "../components/transactions/Pagination.astro";
+import { dashboardService } from "../services/dashboard.service";
+import { formatCurrencyCOP } from "../utils/format";
+import { TRANSACTION_TYPES, ACCOUNT_CATEGORIES } from "../lib/constants";
 
 const [movements, accounts, types] = await Promise.all([
   dashboardService.getMovements(),
@@ -13,12 +13,15 @@ const [movements, accounts, types] = await Promise.all([
   dashboardService.getMovementTypes(),
 ]);
 
-const formattedMovements = movements.map(mov => ({
+const formattedMovements = movements.map((mov) => ({
   ...mov,
-  amount: mov.amount < 0
-    ? `- $ ${formatCurrencyCOP(Math.abs(mov.amount)).replace('$', '').trim()}`
-    : `$ ${formatCurrencyCOP(mov.amount).replace('$', '').trim()}`,
+  amount:
+    mov.amount < 0
+      ? `- $ ${formatCurrencyCOP(Math.abs(mov.amount)).replace("$", "").trim()}`
+      : `$ ${formatCurrencyCOP(mov.amount).replace("$", "").trim()}`,
   isNegative: mov.amount < 0,
+  type: mov.type,
+  category: mov.category,
 }));
 ---
 
@@ -26,15 +29,24 @@ const formattedMovements = movements.map(mov => ({
   <!-- Page Heading -->
   <div class="mb-8 flex justify-between items-end">
     <div>
-      <h2 class="text-headline-lg font-headline-lg text-primary">Movimientos</h2>
-      <p class="text-body-md font-body-md text-on-surface-variant">Registro detallado de transacciones y flujos de capital</p>
+      <h2 class="text-headline-lg font-headline-lg text-primary">
+        Movimientos
+      </h2>
+      <p class="text-body-md font-body-md text-on-surface-variant">
+        Registro detallado de transacciones y flujos de capital
+      </p>
     </div>
     <div class="flex gap-3">
-      <button class="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors text-label-caps font-label-caps">
+      <button
+        class="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors text-label-caps font-label-caps"
+      >
         <span class="material-symbols-outlined text-sm">download</span>
         Exportar CSV
       </button>
-      <button id="btn-new-transaction" class="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg hover:opacity-90 transition-opacity text-label-caps font-label-caps">
+      <button
+        id="btn-new-transaction"
+        class="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg hover:opacity-90 transition-opacity text-label-caps font-label-caps"
+      >
         <span class="material-symbols-outlined text-sm">add</span>
         Nuevo Registro
       </button>
@@ -42,79 +54,164 @@ const formattedMovements = movements.map(mov => ({
   </div>
 
   <!-- Filter Bar -->
-  <MovementsFilter accounts={accounts} types={types} totalRecords={formattedMovements.length} />
+  <MovementsFilter
+    accounts={accounts}
+    types={types}
+    totalRecords={formattedMovements.length}
+  />
 
   <!-- Data Table -->
-  <MovementsTable movements={formattedMovements} />
+  <MovementsTable movements={movements} />
 
   <!-- Pagination -->
   <Pagination currentPage={1} totalPages={45} />
 
   <!-- Create Transaction Modal -->
-  <div id="create-transaction-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+  <div
+    id="create-transaction-modal"
+    class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4"
+  >
     <div class="bg-surface rounded-xl shadow-xl w-full max-w-md">
-      <div class="flex items-center justify-between p-6 border-b border-outline-variant">
-        <h3 class="text-headline-md font-headline-md text-on-surface">Nueva Transacción</h3>
-        <button id="modal-close" class="text-on-surface-variant hover:text-on-surface">
+      <div
+        class="flex items-center justify-between p-6 border-b border-outline-variant"
+      >
+        <h3 class="text-headline-md font-headline-md text-on-surface">
+          Nueva Transacción
+        </h3>
+        <button
+          id="modal-close"
+          class="text-on-surface-variant hover:text-on-surface"
+        >
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
       <form id="create-transaction-form" class="p-6 space-y-4">
         <div>
-          <label for="txn-description" class="block text-label-md text-on-surface-variant mb-1">Descripción</label>
-          <input type="text" id="txn-description" name="description" required
+          <label
+            for="txn-description"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Descripción</label
+          >
+          <input
+            type="text"
+            id="txn-description"
+            name="description"
+            required
             class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
-            placeholder="Ej: Pago de alquiler" />
+            placeholder="Ej: Pago de alquiler"
+          />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label for="txn-amount" class="block text-label-md text-on-surface-variant mb-1">Monto</label>
-            <input type="number" id="txn-amount" name="amount" step="0.01" required
+            <label
+              for="txn-amount"
+              class="block text-label-md text-on-surface-variant mb-1"
+              >Monto</label
+            >
+            <input
+              type="number"
+              id="txn-amount"
+              name="amount"
+              step="0.01"
+              required
               class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
-              placeholder="0.00" />
+              placeholder="0.00"
+            />
           </div>
           <div>
-            <label for="txn-type" class="block text-label-md text-on-surface-variant mb-1">Tipo</label>
-            <select id="txn-type" name="type" required
-              class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
-              {Object.entries(TRANSACTION_TYPES).map(([value, label]) => (
-                <option value={value}>{label}</option>
-              ))}
+            <label
+              for="txn-type"
+              class="block text-label-md text-on-surface-variant mb-1"
+              >Tipo</label
+            >
+            <select
+              id="txn-type"
+              name="type"
+              required
+              class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+            >
+              {
+                Object.entries(TRANSACTION_TYPES).map(([value, label]) => (
+                  <option value={value}>{label}</option>
+                ))
+              }
             </select>
           </div>
         </div>
         <div>
-          <label for="txn-account" class="block text-label-md text-on-surface-variant mb-1">Cuenta</label>
-          <select id="txn-account" name="accountId" required
-            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
+          <label
+            for="txn-account"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Cuenta</label
+          >
+          <select
+            id="txn-account"
+            name="accountId"
+            required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+          >
             <option value="">Seleccionar cuenta</option>
           </select>
         </div>
         <div>
-          <label for="txn-category" class="block text-label-md text-on-surface-variant mb-1">Categoría</label>
-          <select id="txn-category" name="categoryId" required
-            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
-            {Object.entries(ACCOUNT_CATEGORIES).map(([value, label]) => (
-              <option value={value}>{label}</option>
-            ))}
+          <label
+            for="txn-category"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Categoría</label
+          >
+          <select
+            id="txn-category"
+            name="categoryId"
+            required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+          >
+            {
+              Object.entries(ACCOUNT_CATEGORIES).map(([value, label]) => (
+                <option value={value}>{label}</option>
+              ))
+            }
           </select>
         </div>
         <div>
-          <label for="txn-date" class="block text-label-md text-on-surface-variant mb-1">Fecha</label>
-          <input type="date" id="txn-date" name="date" required
-            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary" />
+          <label
+            for="txn-date"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Fecha</label
+          >
+          <input
+            type="date"
+            id="txn-date"
+            name="date"
+            required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+          />
         </div>
         <div>
-          <label for="txn-merchant" class="block text-label-md text-on-surface-variant mb-1">Comercio (opcional)</label>
-          <input type="text" id="txn-merchant" name="merchant"
+          <label
+            for="txn-merchant"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Comercio (opcional)</label
+          >
+          <input
+            type="text"
+            id="txn-merchant"
+            name="merchant"
             class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
-            placeholder="Ej: Supermercado XYZ" />
+            placeholder="Ej: Supermercado XYZ"
+          />
         </div>
         <div class="flex gap-3 pt-2">
-          <button type="button" id="modal-cancel" class="flex-1 px-4 py-2 border border-outline-variant rounded-lg font-bold text-body-md text-on-surface hover:bg-surface-container transition-colors">
+          <button
+            type="button"
+            id="modal-cancel"
+            class="flex-1 px-4 py-2 border border-outline-variant rounded-lg font-bold text-body-md text-on-surface hover:bg-surface-container transition-colors"
+          >
             Cancelar
           </button>
-          <button type="submit" class="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg font-bold text-body-md hover:opacity-90 transition-opacity">
+          <button
+            type="submit"
+            class="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg font-bold text-body-md hover:opacity-90 transition-opacity"
+          >
             Crear Transacción
           </button>
         </div>
@@ -130,15 +227,19 @@ const formattedMovements = movements.map(mov => ({
 </style>
 
 <script>
-  const modal = document.getElementById('create-transaction-modal');
-  const btnNew = document.getElementById('btn-new-transaction');
-  const btnClose = document.getElementById('modal-close');
-  const btnCancel = document.getElementById('modal-cancel');
-  const form = document.getElementById('create-transaction-form') as HTMLFormElement;
-  const accountSelect = document.getElementById('txn-account') as HTMLSelectElement;
-  const dateInput = document.getElementById('txn-date') as HTMLInputElement;
-  const typeSelect = document.getElementById('txn-type') as HTMLSelectElement;
-  const amountInput = document.getElementById('txn-amount') as HTMLInputElement;
+  const modal = document.getElementById("create-transaction-modal");
+  const btnNew = document.getElementById("btn-new-transaction");
+  const btnClose = document.getElementById("modal-close");
+  const btnCancel = document.getElementById("modal-cancel");
+  const form = document.getElementById(
+    "create-transaction-form",
+  ) as HTMLFormElement;
+  const accountSelect = document.getElementById(
+    "txn-account",
+  ) as HTMLSelectElement;
+  const dateInput = document.getElementById("txn-date") as HTMLInputElement;
+  const typeSelect = document.getElementById("txn-type") as HTMLSelectElement;
+  const amountInput = document.getElementById("txn-amount") as HTMLInputElement;
 
   // Set default date to today
   dateInput.valueAsDate = new Date();
@@ -146,78 +247,78 @@ const formattedMovements = movements.map(mov => ({
   // Load accounts for dropdown
   async function loadAccounts() {
     try {
-      const res = await fetch('/api/accounts');
+      const res = await fetch("/api/accounts");
       if (res.ok) {
         const accounts = await res.json();
         accounts.forEach((acc: { id: string; name: string }) => {
-          const option = document.createElement('option');
+          const option = document.createElement("option");
           option.value = acc.id;
           option.textContent = acc.name;
           accountSelect.appendChild(option);
         });
       }
     } catch (e) {
-      console.error('Failed to load accounts:', e);
+      console.error("Failed to load accounts:", e);
     }
   }
 
   loadAccounts();
 
   function openModal() {
-    modal?.classList.remove('hidden');
-    modal?.classList.add('flex');
+    modal?.classList.remove("hidden");
+    modal?.classList.add("flex");
   }
 
   function closeModal() {
-    modal?.classList.add('hidden');
-    modal?.classList.remove('flex');
+    modal?.classList.add("hidden");
+    modal?.classList.remove("flex");
     form?.reset();
     dateInput.valueAsDate = new Date();
   }
 
-  btnNew?.addEventListener('click', openModal);
-  btnClose?.addEventListener('click', closeModal);
-  btnCancel?.addEventListener('click', closeModal);
+  btnNew?.addEventListener("click", openModal);
+  btnClose?.addEventListener("click", closeModal);
+  btnCancel?.addEventListener("click", closeModal);
 
-  modal?.addEventListener('click', (e) => {
+  modal?.addEventListener("click", (e) => {
     if (e.target === modal) closeModal();
   });
 
   // Adjust amount sign based on type
-  typeSelect?.addEventListener('change', () => {
+  typeSelect?.addEventListener("change", () => {
     const type = typeSelect.value;
-    if (type === 'expense') {
-      amountInput.placeholder = '-0.00';
+    if (type === "expense") {
+      amountInput.placeholder = "-0.00";
     } else {
-      amountInput.placeholder = '0.00';
+      amountInput.placeholder = "0.00";
     }
   });
 
-  form?.addEventListener('submit', async (e) => {
+  form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
-    let amount = parseFloat(formData.get('amount') as string);
-    const type = formData.get('type') as string;
+    let amount = parseFloat(formData.get("amount") as string);
+    const type = formData.get("type") as string;
 
     // Make amount negative for expenses
-    if (type === 'expense' && amount > 0) {
+    if (type === "expense" && amount > 0) {
       amount = -amount;
     }
 
     const data = {
-      description: formData.get('description'),
+      description: formData.get("description"),
       amount,
       type,
-      accountId: formData.get('accountId'),
-      categoryId: formData.get('categoryId'),
-      date: formData.get('date'),
-      merchant: formData.get('merchant') || undefined,
+      accountId: formData.get("accountId"),
+      categoryId: formData.get("categoryId"),
+      date: formData.get("date"),
+      merchant: formData.get("merchant") || undefined,
     };
 
     try {
-      const res = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
@@ -225,10 +326,10 @@ const formattedMovements = movements.map(mov => ({
         closeModal();
         window.location.reload();
       } else {
-        alert('Error al crear la transacción');
+        alert("Error al crear la transacción");
       }
     } catch {
-      alert('Error de conexión');
+      alert("Error de conexión");
     }
   });
 </script>

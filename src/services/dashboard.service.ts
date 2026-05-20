@@ -76,10 +76,14 @@ export class DashboardService {
 
   async getMovements(): Promise<Movement[]> {
     const txns = await this.getTransactions();
+    const accounts = await this.getAccounts();
+    const accountMap = new Map(accounts.map(a => [a.id, a.name]));
+
     return txns.map(t => ({
-      account: t.accountId,
+      account: accountMap.get(t.accountId) || t.accountId,
       date: t.date,
-      category: t.type,
+      category: t.categoryId,
+      type: t.type,
       amount: t.amount,
     }));
   }

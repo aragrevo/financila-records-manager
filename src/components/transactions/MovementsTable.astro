@@ -1,7 +1,11 @@
 ---
+import { TRANSACTION_TYPES, ACCOUNT_CATEGORIES } from "../../lib/constants";
+import { formatCurrencyCOP } from "../../utils/format";
+
 interface Movement {
   date: string;
   account: string;
+  category: string;
   type: string;
   amount: string;
   isNegative?: boolean;
@@ -14,51 +18,110 @@ interface Props {
 const { movements } = Astro.props;
 
 const typeStyles: Record<string, string> = {
-  Investment: 'bg-[#fcdeb5]/20 text-[#98805d] border border-[#fcdeb5]/30',
-  Retirement: 'bg-secondary-container/30 text-secondary border border-secondary-container/50',
-  Contingency: 'bg-primary-fixed/30 text-on-primary-fixed-variant border border-primary-fixed/50',
-  Emergency: 'bg-error-container/30 text-error border border-error-container/50',
+  income: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+  expense: "bg-red-100 text-red-800 border border-red-200",
+  transfer: "bg-blue-100 text-blue-800 border border-blue-200",
+  investment: "bg-amber-100 text-amber-800 border border-amber-200",
+};
+
+const categoryStyles: Record<string, string> = {
+  emergency:
+    "bg-error-container/30 text-error border border-error-container/50",
+  investment: "bg-[#fcdeb5]/20 text-[#98805d] border border-[#fcdeb5]/30",
+  retirement:
+    "bg-secondary-container/30 text-secondary border border-secondary-container/50",
+  contingency:
+    "bg-primary-fixed/30 text-on-primary-fixed-variant border border-primary-fixed/50",
 };
 ---
 
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div
+  class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm"
+>
   <div class="overflow-x-auto data-table-container">
     <table class="w-full text-left border-collapse">
-      <thead class="sticky top-0 bg-surface-container-low z-10 border-b border-outline-variant">
+      <thead
+        class="sticky top-0 bg-surface-container-low z-10 border-b border-outline-variant"
+      >
         <tr>
-          <th class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant">
-            Fecha <span class="material-symbols-outlined text-xs align-middle">arrow_downward</span>
+          <th
+            class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant"
+          >
+            Fecha <span class="material-symbols-outlined text-xs align-middle"
+              >arrow_downward</span
+            >
           </th>
-          <th class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant">Cuenta</th>
-          <th class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant">Tipo</th>
-          <th class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant text-right">Valor</th>
+          <th
+            class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant"
+            >Cuenta</th
+          >
+          <th
+            class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant"
+            >Tipo</th
+          >
+          <th
+            class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant"
+            >Categoría</th
+          >
+          <th
+            class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant text-right"
+            >Valor</th
+          >
           <th class="px-2 py-4"></th>
         </tr>
       </thead>
       <tbody class="divide-y divide-outline-variant">
-        {movements.map((mov) => (
-          <tr class="hover:bg-surface-container transition-colors group">
-            <td class="px-6 py-4 text-mono-data font-mono-data">{mov.date}</td>
-            <td class="px-6 py-4 text-table-data font-table-data">{mov.account}</td>
-            <td class="px-6 py-4">
-              <span class:list={[
-                'px-2 py-1 text-[10px] font-bold uppercase rounded-full',
-                typeStyles[mov.type] || 'bg-surface-container text-on-surface-variant',
-              ]}>
-                {mov.type}
-              </span>
-            </td>
-            <td class:list={[
-              'px-6 py-4 text-right font-mono-data text-table-data',
-              mov.isNegative ? 'text-error font-bold' : 'text-secondary',
-            ]}>
-              {mov.amount}
-            </td>
-            <td class="px-2 py-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button class="material-symbols-outlined text-on-surface-variant hover:text-primary">more_vert</button>
-            </td>
-          </tr>
-        ))}
+        {
+          movements.map((mov) => (
+            <tr class="hover:bg-surface-container transition-colors group">
+              <td class="px-6 py-4 text-mono-data font-table-data">
+                {mov.date}
+              </td>
+              <td class="px-6 py-4 text-table-data font-table-data">
+                {mov.account}
+              </td>
+              <td class="px-6 py-4">
+                <span
+                  class:list={[
+                    "px-2 py-1 text-[10px] font-bold uppercase rounded-full",
+                    typeStyles[mov.type] ||
+                      "bg-surface-container text-on-surface-variant",
+                  ]}
+                >
+                  {TRANSACTION_TYPES[
+                    mov.type as keyof typeof TRANSACTION_TYPES
+                  ] || mov.type}
+                </span>
+              </td>
+              <td class="px-6 py-4">
+                <span
+                  class:list={[
+                    "px-2 py-1 text-[10px] font-bold uppercase rounded-full",
+                    categoryStyles[mov.category] ||
+                      "bg-surface-container text-on-surface-variant",
+                  ]}
+                >
+                  {ACCOUNT_CATEGORIES[
+                    mov.category as keyof typeof ACCOUNT_CATEGORIES
+                  ] || mov.category}
+                </span>
+              </td>
+              <td
+                class:list={[
+                  "px-6 py-4 text-right font-table-data text-table-data",
+                  mov.isNegative ? "text-error font-bold" : "text-secondary",
+                ]}
+              >
+                {formatCurrencyCOP(+mov.amount)}
+              </td>
+              <td class="px-2 py-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button class="material-symbols-outlined text-on-surface-variant hover:text-primary">
+                  more_vert
+                </button>
+              </td>
+            </tr>
+          ))
+        }
       </tbody>
     </table>
   </div>
