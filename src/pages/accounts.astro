@@ -6,6 +6,7 @@ import AccountCard from '../components/accounts/AccountCard.astro';
 import RecentTransactions from '../components/accounts/RecentTransactions.astro';
 import { dashboardService } from '../services/dashboard.service';
 import { formatCurrencyCOP } from '../utils/format';
+import { ACCOUNT_TYPES, ACCOUNT_CATEGORIES } from '../lib/constants';
 
 const [entitySummary, entitySummaryFooter, distributionFunds, accountCards, recentTransactions] = await Promise.all([
   dashboardService.getEntitySummary(),
@@ -149,10 +150,9 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
           <label for="account-type" class="block text-label-md text-on-surface-variant mb-1">Tipo</label>
           <select id="account-type" name="type" required
             class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
-            <option value="checking">Corriente</option>
-            <option value="savings">Ahorros</option>
-            <option value="investment">Inversión</option>
-            <option value="credit">Crédito</option>
+            {Object.entries(ACCOUNT_TYPES).map(([value, label]) => (
+              <option value={value}>{label}</option>
+            ))}
           </select>
         </div>
         <div>
@@ -171,10 +171,9 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
           <label for="account-category" class="block text-label-md text-on-surface-variant mb-1">Categoría</label>
           <select id="account-category" name="category" required
             class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
-            <option value="contingency">Contingencia</option>
-            <option value="emergency">Emergencia</option>
-            <option value="investment">Inversión</option>
-            <option value="retirement">Retiro</option>
+            {Object.entries(ACCOUNT_CATEGORIES).map(([value, label]) => (
+              <option value={value}>{label}</option>
+            ))}
           </select>
         </div>
         <div class="flex gap-3 pt-2">

@@ -1,14 +1,16 @@
+import type { AccountType, AccountCategory, TransactionType } from './constants';
+
 export interface Account {
   id: string;
   userId: string;
   name: string;
-  type: 'checking' | 'savings' | 'investment' | 'credit';
+  type: AccountType;
   balance: number;
   currency: string;
   institution: string;
   lastUpdated: string;
   status: 'active' | 'inactive' | 'pending';
-  category: 'emergency' | 'investment' | 'retirement' | 'contingency';
+  category: AccountCategory;
   createdAt: string;
 }
 
@@ -18,7 +20,7 @@ export interface Transaction {
   date: string;
   description: string;
   amount: number;
-  type: 'income' | 'expense' | 'transfer' | 'investment';
+  type: TransactionType;
   categoryId: string;
   accountId: string;
   status: 'completed' | 'pending' | 'cancelled';
