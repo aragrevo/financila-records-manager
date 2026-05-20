@@ -66,6 +66,9 @@ export const summaryData: SummaryData = {
   ],
 };
 
+/**
+ * @deprecated Import from '../utils/format' instead
+ */
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -74,6 +77,9 @@ export const formatCurrency = (amount: number): string => {
   }).format(amount);
 };
 
+/**
+ * @deprecated Import from '../utils/format' instead
+ */
 export const formatPercentage = (value: number): string => {
   return `${value.toFixed(1)}%`;
 };
