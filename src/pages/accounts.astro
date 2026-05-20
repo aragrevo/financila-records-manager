@@ -4,99 +4,41 @@ import AccountSummaryTable from '../components/accounts/AccountSummaryTable.astr
 import DistributionChart from '../components/accounts/DistributionChart.astro';
 import AccountCard from '../components/accounts/AccountCard.astro';
 import RecentTransactions from '../components/accounts/RecentTransactions.astro';
+import { dashboardData } from '../data/dashboard';
 import { formatCurrencyCOP } from '../utils/format';
 
-const summaryEntities = [
-  { name: 'Global66', contingency: null, emergency: formatCurrencyCOP(12373439), investment: null, retirement: null, total: formatCurrencyCOP(12373439) },
-  { name: 'MejorCDT', contingency: null, emergency: null, investment: null, retirement: formatCurrencyCOP(15400000), total: formatCurrencyCOP(15400000) },
-  { name: 'NU', contingency: formatCurrencyCOP(723441), emergency: formatCurrencyCOP(6682672), investment: null, retirement: formatCurrencyCOP(3069046), total: formatCurrencyCOP(10475159) },
-  { name: 'Tyba', contingency: null, emergency: null, investment: formatCurrencyCOP(1207282), retirement: formatCurrencyCOP(23011959), total: formatCurrencyCOP(24219241) },
-  { name: 'XTB', contingency: null, emergency: null, investment: formatCurrencyCOP(3582865), retirement: null, total: formatCurrencyCOP(3582865) },
-];
+const summaryEntities = dashboardData.entitySummary.map(entity => ({
+  ...entity,
+  contingency: entity.contingency ? formatCurrencyCOP(entity.contingency) : null,
+  emergency: entity.emergency ? formatCurrencyCOP(entity.emergency) : null,
+  investment: entity.investment ? formatCurrencyCOP(entity.investment) : null,
+  retirement: entity.retirement ? formatCurrencyCOP(entity.retirement) : null,
+  total: formatCurrencyCOP(entity.total),
+}));
 
 const summaryFooter = {
-  label: 'SUMA TOTAL',
-  contingency: formatCurrencyCOP(985441),
-  emergency: formatCurrencyCOP(19836745),
-  investment: formatCurrencyCOP(12047315),
-  retirement: formatCurrencyCOP(42006005),
-  total: formatCurrencyCOP(74875506),
+  ...dashboardData.entitySummaryFooter,
+  contingency: formatCurrencyCOP(dashboardData.entitySummaryFooter.contingency),
+  emergency: formatCurrencyCOP(dashboardData.entitySummaryFooter.emergency),
+  investment: formatCurrencyCOP(dashboardData.entitySummaryFooter.investment),
+  retirement: formatCurrencyCOP(dashboardData.entitySummaryFooter.retirement),
+  total: formatCurrencyCOP(dashboardData.entitySummaryFooter.total),
 };
 
-const distributionFunds = [
-  { label: 'Retirement', color: 'bg-retirement', amount: formatCurrencyCOP(42006005) },
-  { label: 'Emergency', color: 'bg-emergency', amount: formatCurrencyCOP(19836745) },
-  { label: 'Investment', color: 'bg-investment', amount: formatCurrencyCOP(12047315) },
-];
+const distributionFunds = dashboardData.distributionFunds.map(fund => ({
+  ...fund,
+  amount: formatCurrencyCOP(fund.amount),
+}));
 
-const accountCards = [
-  {
-    initial: 'G',
-    name: 'Global66',
-    description: 'Digital Wallet - High Liquidity',
-    balance: formatCurrencyCOP(12373439),
-    category: 'EMERGENCY',
-    categoryColor: 'background-color: rgba(239, 68, 68, 0.1); color: #991b1b;',
-    categoryId: '4829',
-    isActive: true,
-  },
-  {
-    initial: 'M',
-    name: 'MejorCDT',
-    description: 'Fixed Income Certificate',
-    balance: formatCurrencyCOP(15400000),
-    category: 'RETIREMENT',
-    categoryColor: 'background-color: rgba(16, 185, 129, 0.1); color: #065f46;',
-    categoryId: '1042',
-  },
-  {
-    initial: 'N',
-    name: 'Nubank (NU)',
-    description: 'Savings & Cajitas System',
-    balance: formatCurrencyCOP(10475159),
-    category: 'MULTI-FUND',
-    categoryColor: 'background-color: rgba(218, 226, 253, 1); color: #3f465c;',
-    fundDots: ['bg-contingency', 'bg-emergency', 'bg-retirement'],
-  },
-  {
-    initial: 'T',
-    name: 'Tyba',
-    description: 'FIC & Retirement Funds',
-    balance: formatCurrencyCOP(24219241),
-    category: 'INVESTMENT',
-    categoryColor: 'background-color: rgba(245, 158, 11, 0.1); color: #92400e;',
-    categoryId: '8821',
-  },
-  {
-    initial: 'X',
-    name: 'XTB Broker',
-    description: 'Stock Market & ETFs',
-    balance: formatCurrencyCOP(3582865),
-    category: 'INVESTMENT',
-    categoryColor: 'background-color: rgba(245, 158, 11, 0.1); color: #92400e;',
-    categoryId: '5540',
-  },
-];
+const accountCards = dashboardData.accountCards.map(card => ({
+  ...card,
+  balance: formatCurrencyCOP(card.balance),
+}));
 
-const recentTransactions = [
-  {
-    icon: 'payments',
-    title: 'Transferencia Recibida - XTB',
-    date: '16 MAY 2026',
-    category: 'INVERSIÓN',
-    amount: `+${formatCurrencyCOP(382100)}`,
-    amountColor: 'text-retirement',
-    status: 'Completado',
-  },
-  {
-    icon: 'savings',
-    title: 'Ahorro Programado - NU',
-    date: '08 MAY 2026',
-    category: 'CONTINGENCY',
-    amount: `+${formatCurrencyCOP(568611)}`,
-    status: 'Completado',
-  },
-];
+const recentTransactions = dashboardData.recentTransactions.map(txn => ({
+  ...txn,
+  amount: `+${formatCurrencyCOP(txn.amount)}`,
+}));
 ---
 
 <Layout title="Cuentas" activePage="accounts">
@@ -172,7 +114,7 @@ const recentTransactions = [
   <div class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-lowest border-t border-outline-variant p-4 z-50 flex justify-between items-center">
     <div>
       <p class="text-label-caps text-on-surface-variant">TOTAL PATRIMONIO</p>
-      <p class="text-data-display font-data-display">{formatCurrencyCOP(74875506)}</p>
+      <p class="text-data-display font-data-display">{formatCurrencyCOP(dashboardData.entitySummaryFooter.total)}</p>
     </div>
     <button class="bg-primary text-on-primary w-12 h-12 rounded-full shadow-lg flex items-center justify-center">
       <span class="material-symbols-outlined">add</span>

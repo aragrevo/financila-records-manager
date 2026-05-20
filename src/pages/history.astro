@@ -3,25 +3,16 @@ import Layout from '../layouts/Layout.astro';
 import MovementsFilter from '../components/transactions/MovementsFilter.astro';
 import MovementsTable from '../components/transactions/MovementsTable.astro';
 import Pagination from '../components/transactions/Pagination.astro';
+import { dashboardData } from '../data/dashboard';
 import { formatCurrencyCOP } from '../utils/format';
 
-const accounts = ['XTB', 'Tyba', 'NU', 'MejorCDT', 'Global66'];
-const types = ['Investment', 'Retirement', 'Contingency', 'Emergency'];
-
-const movements = [
-  { date: '16/05/2026', account: 'XTB', type: 'Investment', amount: `$ ${formatCurrencyCOP(382100).replace('$', '').trim()}` },
-  { date: '08/05/2026', account: 'Tyba', type: 'Retirement', amount: `$ ${formatCurrencyCOP(200000).replace('$', '').trim()}` },
-  { date: '08/05/2026', account: 'NU', type: 'Contingency', amount: `$ ${formatCurrencyCOP(568611).replace('$', '').trim()}` },
-  { date: '08/05/2026', account: 'NU', type: 'Emergency', amount: `$ ${formatCurrencyCOP(1135858).replace('$', '').trim()}` },
-  { date: '02/04/2026', account: 'Otro', type: 'Retirement', amount: `- $ ${formatCurrencyCOP(1000000).replace('$', '').trim()}`, isNegative: true },
-  { date: '11/03/2026', account: 'MejorCDT', type: 'Retirement', amount: `$ ${formatCurrencyCOP(5000000).replace('$', '').trim()}` },
-  { date: '11/03/2026', account: 'NU', type: 'Retirement', amount: `- $ ${formatCurrencyCOP(5000000).replace('$', '').trim()}`, isNegative: true },
-  { date: '23/12/2025', account: 'NU', type: 'Contingency', amount: `- $ ${formatCurrencyCOP(4256765).replace('$', '').trim()}`, isNegative: true },
-  { date: '05/12/2025', account: 'Global66', type: 'Emergency', amount: `$ ${formatCurrencyCOP(315000).replace('$', '').trim()}` },
-  { date: '10/04/2026', account: 'Tyba', type: 'Retirement', amount: `$ ${formatCurrencyCOP(200000).replace('$', '').trim()}` },
-  { date: '10/04/2026', account: 'NU', type: 'Contingency', amount: `$ ${formatCurrencyCOP(574096).replace('$', '').trim()}` },
-  { date: '10/04/2026', account: 'NU', type: 'Emergency', amount: `$ ${formatCurrencyCOP(1146814).replace('$', '').trim()}` },
-];
+const movements = dashboardData.movements.map(mov => ({
+  ...mov,
+  amount: mov.amount < 0
+    ? `- $ ${formatCurrencyCOP(Math.abs(mov.amount)).replace('$', '').trim()}`
+    : `$ ${formatCurrencyCOP(mov.amount).replace('$', '').trim()}`,
+  isNegative: mov.amount < 0,
+}));
 ---
 
 <Layout title="Movimientos" activePage="history">
@@ -44,7 +35,7 @@ const movements = [
   </div>
 
   <!-- Filter Bar -->
-  <MovementsFilter accounts={accounts} types={types} totalRecords={movements.length} />
+  <MovementsFilter accounts={dashboardData.movementAccounts} types={dashboardData.movementTypes} totalRecords={movements.length} />
 
   <!-- Data Table -->
   <MovementsTable movements={movements} />

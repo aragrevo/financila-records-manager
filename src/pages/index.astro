@@ -1,231 +1,73 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import SummaryCard from "../components/dashboard/SummaryCard.astro";
-import AssetAllocationChart from "../components/dashboard/AssetAllocationChart.astro";
-import MovementsTable from "../components/dashboard/MovementsTable.astro";
-import FundStatusTable from "../components/dashboard/FundStatusTable.astro";
-import { formatCurrencyCOP } from "../utils/format";
+import Layout from '../layouts/Layout.astro';
+import SummaryCard from '../components/dashboard/SummaryCard.astro';
+import AssetAllocationChart from '../components/dashboard/AssetAllocationChart.astro';
+import MovementsTable from '../components/dashboard/MovementsTable.astro';
+import FundStatusTable from '../components/dashboard/FundStatusTable.astro';
+import { dashboardData } from '../data/dashboard';
+import { formatCurrencyCOP } from '../utils/format';
 
-const summaryCards = [
-  {
-    title: "Total Balance",
-    value: formatCurrencyCOP(74875506),
-    subtitle: "+2.4% vs last month",
-    subtitleType: "positive" as const,
-    icon: "account_balance_wallet",
-    accentColor: "primary" as const,
-  },
-  {
-    title: "Emergency Fund",
-    value: formatCurrencyCOP(19836745),
-    subtitle: `Target: ${formatCurrencyCOP(24000000)} (82%)`,
-    subtitleType: "neutral" as const,
-    icon: "emergency",
-    accentColor: "emergency" as const,
-  },
-  {
-    title: "Investment Portfolio",
-    value: formatCurrencyCOP(12047315),
-    subtitle: "High yield month",
-    subtitleType: "positive" as const,
-    icon: "show_chart",
-    accentColor: "investment" as const,
-  },
-  {
-    title: "Retirement",
-    value: formatCurrencyCOP(42006005),
-    subtitle: "Long-term growth trajectory",
-    subtitleType: "neutral" as const,
-    icon: "savings",
-    accentColor: "retirement" as const,
-  },
-];
+const summaryCards = dashboardData.summaryCards.map(card => ({
+  ...card,
+  value: formatCurrencyCOP(card.value),
+  subtitle: card.accentColor === 'emergency'
+    ? `Target: ${formatCurrencyCOP(24000000)} (82%)`
+    : card.subtitle,
+}));
 
-const chartEntities = [
-  {
-    name: "Global66",
-    segments: [
-      {
-        color: "bg-red-500",
-        height: 12.3,
-        tooltip: formatCurrencyCOP(12300000),
-      },
-    ],
-    barWidth: "wide" as const,
-  },
-  {
-    name: "MejorCDT",
-    segments: [
-      {
-        color: "bg-emerald-600",
-        height: 15.4,
-        tooltip: formatCurrencyCOP(15400000),
-      },
-    ],
-    barWidth: "wide" as const,
-  },
-  {
-    name: "NU",
-    segments: [
-      { color: "bg-blue-500", height: 0.7 },
-      { color: "bg-red-500", height: 6.6 },
-      { color: "bg-emerald-600", height: 3.1 },
-    ],
-    barWidth: "thin" as const,
-  },
-  {
-    name: "Otro",
-    segments: [
-      { color: "bg-red-500", height: 0.78 },
-      { color: "bg-amber-500", height: 7.2 },
-      { color: "bg-emerald-600", height: 0.5 },
-    ],
-    barWidth: "thin" as const,
-  },
-  {
-    name: "Tyba",
-    segments: [
-      { color: "bg-amber-500", height: 1.2 },
-      { color: "bg-emerald-600", height: 23.0 },
-    ],
-    barWidth: "thin" as const,
-  },
-  {
-    name: "XTB",
-    segments: [
-      {
-        color: "bg-amber-500",
-        height: 3.5,
-        tooltip: formatCurrencyCOP(3500000),
-      },
-    ],
-    barWidth: "wide" as const,
-  },
-];
+const chartEntities = dashboardData.chartEntities.map(entity => ({
+  ...entity,
+  segments: entity.segments.map(seg => ({
+    ...seg,
+    tooltip: seg.tooltip ? formatCurrencyCOP(seg.tooltip) : undefined,
+  })),
+}));
 
-const recentMovements = [
-  {
-    account: "XTB",
-    date: "16/05/2026",
-    category: "Investment",
-    amount: 382100,
-    formattedAmount: formatCurrencyCOP(382100),
-  },
-  {
-    account: "Tyba",
-    date: "08/05/2026",
-    category: "Retirement",
-    amount: 200000,
-    formattedAmount: formatCurrencyCOP(200000),
-  },
-  {
-    account: "NU",
-    date: "08/05/2026",
-    category: "Contingency",
-    amount: 568611,
-    formattedAmount: formatCurrencyCOP(568611),
-  },
-  {
-    account: "NU",
-    date: "08/05/2026",
-    category: "Emergency",
-    amount: 1135858,
-    formattedAmount: formatCurrencyCOP(1135858),
-  },
-  {
-    account: "NU",
-    date: "08/05/2026",
-    category: "Retirement",
-    amount: 1135858,
-    formattedAmount: formatCurrencyCOP(1135858),
-  },
-];
+const recentMovements = dashboardData.recentMovements.map(mov => ({
+  ...mov,
+  formattedAmount: formatCurrencyCOP(mov.amount),
+}));
 
-const fundStatus = [
-  {
-    name: "Emergencia",
-    term: "6 meses",
-    expected: formatCurrencyCOP(23946942),
-    current: formatCurrencyCOP(19836745),
-    institution: "Uala - Global66 - NU",
-    color: "emergency" as const,
-    difference: formatCurrencyCOP(-4110197),
-    isNegative: true,
-  },
-  {
-    name: "Inversión",
-    term: "10% Save",
-    expected: formatCurrencyCOP(798231),
-    current: formatCurrencyCOP(382100),
-    institution: "Tyba - Investwe - xtb-plenti",
-    color: "investment" as const,
-    difference: formatCurrencyCOP(-416131),
-    isNegative: true,
-  },
-  {
-    name: "Imprevistos",
-    term: "Vacaciones",
-    expected: formatCurrencyCOP(568611),
-    current: formatCurrencyCOP(568611),
-    institution: "Rappi - NU",
-    color: "contingency" as const,
-    difference: formatCurrencyCOP(0),
-    isNegative: false,
-  },
-  {
-    name: "Retiro",
-    term: "Cesantias, Prima",
-    expected: formatCurrencyCOP(2471715),
-    current: formatCurrencyCOP(2471715),
-    institution: "NU Cajitas",
-    color: "retirement" as const,
-    difference: formatCurrencyCOP(0),
-    isNegative: false,
-  },
-];
+const fundStatus = dashboardData.fundStatus.map(fund => ({
+  ...fund,
+  expected: formatCurrencyCOP(fund.expected),
+  current: formatCurrencyCOP(fund.current),
+  difference: formatCurrencyCOP(fund.difference),
+  isNegative: fund.difference < 0,
+}));
 ---
 
 <Layout title="Dashboard" activePage="dashboard">
   <!-- Headline Row -->
   <div class="mb-8 flex justify-between items-end">
     <div>
-      <h2 class="text-headline-lg font-headline-lg text-primary">Dashboard</h2>
-      <p class="text-body-md text-on-surface-variant">
-        Consolidated wealth dashboard as of May 16, 2026
-      </p>
+      <h2 class="text-headline-lg font-headline-lg text-primary">Resumen General</h2>
+      <p class="text-body-md text-on-surface-variant">Consolidated wealth dashboard as of May 16, 2026</p>
     </div>
-    <button
-      class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-label-caps hover:opacity-90 transition-opacity"
-    >
-      <span class="material-symbols-outlined text-sm">add</span>
-      Agregar
+    <button class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-label-caps hover:opacity-90 transition-opacity">
+      <span class="material-symbols-outlined text-sm">download</span>
+      EXPORT REPORT
     </button>
   </div>
 
   <!-- Bento Metrics Grid -->
-  <div
-    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-gutter"
-  >
-    {
-      summaryCards.map((card) => (
-        <SummaryCard
-          title={card.title}
-          value={card.value}
-          subtitle={card.subtitle}
-          subtitleType={card.subtitleType}
-          icon={card.icon}
-          accentColor={card.accentColor}
-        />
-      ))
-    }
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-gutter">
+    {summaryCards.map((card) => (
+      <SummaryCard
+        title={card.title}
+        value={card.value}
+        subtitle={card.subtitle}
+        subtitleType={card.subtitleType}
+        icon={card.icon}
+        accentColor={card.accentColor}
+      />
+    ))}
   </div>
 
   <!-- Main Data Section -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
     <!-- Allocation Chart -->
-    <div
-      class="lg:col-span-2 bg-surface-container-lowest p-gutter rounded-xl border border-outline-variant shadow-sm"
-    >
+    <div class="lg:col-span-2 bg-surface-container-lowest p-gutter rounded-xl border border-outline-variant shadow-sm">
       <AssetAllocationChart entities={chartEntities} />
     </div>
 
