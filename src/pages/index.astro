@@ -1,0 +1,126 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SummaryCard from '../components/dashboard/SummaryCard.astro';
+import CategoryChart from '../components/dashboard/CategoryChart.astro';
+import ProgressBars from '../components/dashboard/ProgressBars.astro';
+import TransactionTable from '../components/transactions/TransactionTable.astro';
+import { summaryData, formatCurrency, formatPercentage } from '../data/summary';
+import { transactionsData } from '../data/transactions';
+
+const recentTransactions = transactionsData.slice(0, 5);
+
+const progressItems = summaryData.categories.map(cat => ({
+  label: cat.name,
+  value: cat.amount,
+  maxValue: summaryData.totalBalance,
+  color: cat.color,
+}));
+---
+
+<Layout title="Dashboard" activePage="dashboard">
+  <div class="space-y-6">
+    <!-- Page Header -->
+    <div>
+      <h1 class="text-headline-lg font-bold text-on-surface">Dashboard</h1>
+      <p class="text-body-md text-on-surface-variant mt-1">Overview of your financial position</p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <SummaryCard
+        title="Total Balance"
+        value={formatCurrency(summaryData.totalBalance)}
+        change="+2.4% from last month"
+        changeType="positive"
+        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`}
+      />
+      
+      <SummaryCard
+        title="Monthly Income"
+        value={formatCurrency(summaryData.monthlyIncome)}
+        change="+5.2% from last month"
+        changeType="positive"
+        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12" /></svg>`}
+      />
+      
+      <SummaryCard
+        title="Monthly Expenses"
+        value={formatCurrency(summaryData.monthlyExpenses)}
+        change="-3.1% from last month"
+        changeType="negative"
+        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" /></svg>`}
+      />
+      
+      <SummaryCard
+        title="Savings Rate"
+        value={formatPercentage(summaryData.savingsRate)}
+        change="Target: 30%"
+        changeType="neutral"
+        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`}
+      />
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Asset Allocation -->
+      <div class="bg-white rounded-lg shadow-card p-6">
+        <CategoryChart categories={summaryData.categories} />
+      </div>
+
+      <!-- Category Progress -->
+      <div class="bg-white rounded-lg shadow-card p-6">
+        <h3 class="text-lg font-semibold text-on-surface mb-4">Fund Progress</h3>
+        <ProgressBars items={progressItems} />
+      </div>
+    </div>
+
+    <!-- Monthly Trend Chart -->
+    <div class="bg-white rounded-lg shadow-card p-6">
+      <h3 class="text-lg font-semibold text-on-surface mb-4">Monthly Trend</h3>
+      <div class="h-64 flex items-end justify-between space-x-2">
+        {summaryData.monthlyTrend.map((month) => {
+          const maxAmount = Math.max(...summaryData.monthlyTrend.map(m => Math.max(m.income, m.expenses)));
+          const incomeHeight = (month.income / maxAmount) * 100;
+          const expenseHeight = (month.expenses / maxAmount) * 100;
+          
+          return (
+            <div class="flex-1 flex flex-col items-center space-y-1">
+              <div class="w-full flex space-x-1 items-end" style={`height: 200px`}>
+                <div
+                  class="flex-1 bg-retirement rounded-t"
+                  style={`height: ${incomeHeight}%`}
+                  title={`Income: ${formatCurrency(month.income)}`}
+                />
+                <div
+                  class="flex-1 bg-emergency rounded-t"
+                  style={`height: ${expenseHeight}%`}
+                  title={`Expenses: ${formatCurrency(month.expenses)}`}
+                />
+              </div>
+              <span class="text-xs text-on-surface-variant">{month.month}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div class="flex items-center justify-center space-x-6 mt-4">
+        <div class="flex items-center space-x-2">
+          <div class="w-3 h-3 bg-retirement rounded" />
+          <span class="text-sm text-on-surface-variant">Income</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div class="w-3 h-3 bg-emergency rounded" />
+          <span class="text-sm text-on-surface-variant">Expenses</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="bg-white rounded-lg shadow-card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-on-surface">Recent Transactions</h3>
+        <a href="/history" class="text-sm text-contingency hover:underline">View all</a>
+      </div>
+      <TransactionTable transactions={recentTransactions} />
+    </div>
+  </div>
+</Layout>

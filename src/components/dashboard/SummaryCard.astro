@@ -1,0 +1,44 @@
+---
+import Card from '../ui/Card.astro';
+
+interface Props {
+  title: string;
+  value: string;
+  change?: string;
+  changeType?: 'positive' | 'negative' | 'neutral';
+  icon: string;
+  accentColor?: 'emergency' | 'investment' | 'retirement' | 'contingency';
+}
+
+const {
+  title,
+  value,
+  change,
+  changeType = 'neutral',
+  icon,
+  accentColor,
+} = Astro.props;
+
+const changeClasses = {
+  positive: 'text-retirement',
+  negative: 'text-error',
+  neutral: 'text-on-surface-variant',
+};
+---
+
+<Card variant="accent" accentColor={accentColor} padding="md">
+  <div class="flex items-start justify-between">
+    <div class="flex-1">
+      <p class="text-label-caps text-on-surface-variant uppercase tracking-wider">{title}</p>
+      <p class="text-headline-md font-bold text-on-surface mt-2 financial-figure">{value}</p>
+      {change && (
+        <p class:list={['text-sm mt-2', changeClasses[changeType]]}>
+          {change}
+        </p>
+      )}
+    </div>
+    <div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
+      <Fragment set:html={icon} />
+    </div>
+  </div>
+</Card>

@@ -1,0 +1,31 @@
+---
+interface Props {
+  variant: 'emergency' | 'investment' | 'retirement' | 'contingency';
+  size?: 'sm' | 'md';
+  class?: string;
+}
+
+const {
+  variant,
+  size = 'md',
+  class: className = '',
+} = Astro.props;
+
+const baseClasses = 'inline-flex items-center font-medium rounded-full';
+
+const variantClasses = {
+  emergency: 'chip-emergency',
+  investment: 'chip-investment',
+  retirement: 'chip-retirement',
+  contingency: 'chip-contingency',
+};
+
+const sizeClasses = {
+  sm: 'px-2 py-0.5 text-xs',
+  md: 'px-2.5 py-0.5 text-xs',
+};
+---
+
+<span class:list={[baseClasses, variantClasses[variant], sizeClasses[size], className]}>
+  <slot />
+</span>

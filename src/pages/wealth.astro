@@ -1,0 +1,247 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CategoryChart from '../components/dashboard/CategoryChart.astro';
+import ProgressBars from '../components/dashboard/ProgressBars.astro';
+import { summaryData, formatCurrency, formatPercentage } from '../data/summary';
+
+const wealthCategories = [
+  {
+    name: 'Stocks & ETFs',
+    amount: 98750,
+    percentage: 34.7,
+    color: 'investment' as const,
+  },
+  {
+    name: 'Bonds & Fixed Income',
+    amount: 35000,
+    percentage: 12.3,
+    color: 'contingency' as const,
+  },
+  {
+    name: 'Real Estate',
+    amount: 45000,
+    percentage: 15.8,
+    color: 'retirement' as const,
+  },
+  {
+    name: 'Cash & Equivalents',
+    amount: 62500,
+    percentage: 22.0,
+    color: 'emergency' as const,
+  },
+  {
+    name: 'Alternative Investments',
+    amount: 43500,
+    percentage: 15.3,
+    color: 'investment' as const,
+  },
+];
+
+const goals = [
+  {
+    name: 'Retirement Fund',
+    target: 1000000,
+    current: 218750,
+    color: 'retirement' as const,
+    deadline: '2045',
+  },
+  {
+    name: 'Emergency Fund',
+    target: 50000,
+    current: 45000,
+    color: 'emergency' as const,
+    deadline: '2026',
+  },
+  {
+    name: 'House Down Payment',
+    target: 100000,
+    current: 35000,
+    color: 'contingency' as const,
+    deadline: '2028',
+  },
+  {
+    name: 'Investment Portfolio',
+    target: 500000,
+    current: 156250,
+    color: 'investment' as const,
+    deadline: '2035',
+  },
+];
+
+const performanceMetrics = [
+  { label: 'Total Return', value: '+12.4%', change: '+2.1%', positive: true },
+  { label: 'YTD Return', value: '+8.7%', change: '+1.3%', positive: true },
+  { label: '1-Year Return', value: '+15.2%', change: '+3.4%', positive: true },
+  { label: '3-Year Annualized', value: '+9.8%', change: '-0.5%', positive: false },
+];
+---
+
+<Layout title="Wealth Management" activePage="wealth">
+  <div class="space-y-6">
+    <!-- Page Header -->
+    <div>
+      <h1 class="text-headline-lg font-bold text-on-surface">Wealth Management</h1>
+      <p class="text-body-md text-on-surface-variant mt-1">Track and manage your investment portfolio</p>
+    </div>
+
+    <!-- Portfolio Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white rounded-lg shadow-card p-6">
+        <p class="text-label-caps text-on-surface-variant uppercase">Total Portfolio Value</p>
+        <p class="text-headline-lg font-bold text-on-surface mt-2 financial-figure">
+          {formatCurrency(summaryData.totalBalance)}
+        </p>
+        <p class="text-sm text-retirement mt-1">+12.4% all time</p>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-card p-6">
+        <p class="text-label-caps text-on-surface-variant uppercase">Today's Change</p>
+        <p class="text-headline-md font-bold text-retirement mt-2 financial-figure">
+          +{formatCurrency(1250)}
+        </p>
+        <p class="text-sm text-retirement mt-1">+0.44%</p>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-card p-6">
+        <p class="text-label-caps text-on-surface-variant uppercase">Unrealized Gains</p>
+        <p class="text-headline-md font-bold text-retirement mt-2 financial-figure">
+          +{formatCurrency(34750)}
+        </p>
+        <p class="text-sm text-on-surface-variant mt-1">Since inception</p>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-card p-6">
+        <p class="text-label-caps text-on-surface-variant uppercase">Dividend Income</p>
+        <p class="text-headline-md font-bold text-on-surface mt-2 financial-figure">
+          {formatCurrency(342.18)}
+        </p>
+        <p class="text-sm text-on-surface-variant mt-1">This month</p>
+      </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="bg-white rounded-lg shadow-card p-6">
+      <h3 class="text-lg font-semibold text-on-surface mb-4">Performance Metrics</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {performanceMetrics.map((metric) => (
+          <div class="p-4 bg-surface-container-low rounded-lg">
+            <p class="text-label-caps text-on-surface-variant uppercase">{metric.label}</p>
+            <p class="text-data-display font-bold text-on-surface mt-1">{metric.value}</p>
+            <p class:list={['text-sm mt-1', metric.positive ? 'text-retirement' : 'text-error']}>
+              {metric.change}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Asset Allocation & Goals -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Asset Allocation -->
+      <div class="bg-white rounded-lg shadow-card p-6">
+        <CategoryChart categories={wealthCategories} />
+      </div>
+
+      <!-- Investment Goals -->
+      <div class="bg-white rounded-lg shadow-card p-6">
+        <h3 class="text-lg font-semibold text-on-surface mb-4">Investment Goals</h3>
+        <ProgressBars
+          items={goals.map(goal => ({
+            label: `${goal.name} (${goal.deadline})`,
+            value: goal.current,
+            maxValue: goal.target,
+            color: goal.color,
+          }))}
+        />
+      </div>
+    </div>
+
+    <!-- Holdings Table -->
+    <div class="bg-white rounded-lg shadow-card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-on-surface">Top Holdings</h3>
+        <button class="text-sm text-contingency hover:underline">View all holdings</button>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th class="text-right">Shares</th>
+              <th class="text-right">Avg Cost</th>
+              <th class="text-right">Current Price</th>
+              <th class="text-right">Market Value</th>
+              <th class="text-right">Gain/Loss</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { symbol: 'AAPL', name: 'Apple Inc.', type: 'Stock', shares: 50, avgCost: 145.20, currentPrice: 178.50, gain: 1665 },
+              { symbol: 'MSFT', name: 'Microsoft Corp.', type: 'Stock', shares: 30, avgCost: 280.50, currentPrice: 315.20, gain: 1041 },
+              { symbol: 'VOO', name: 'Vanguard S&P 500 ETF', type: 'ETF', shares: 100, avgCost: 380.75, currentPrice: 412.30, gain: 3155 },
+              { symbol: 'BND', name: 'Vanguard Total Bond ETF', type: 'Bond ETF', shares: 200, avgCost: 72.50, currentPrice: 74.80, gain: 460 },
+              { symbol: 'VTI', name: 'Vanguard Total Stock ETF', type: 'ETF', shares: 75, avgCost: 205.30, currentPrice: 218.90, gain: 1020 },
+            ].map((holding) => (
+              <tr>
+                <td class="font-mono font-medium text-on-surface">{holding.symbol}</td>
+                <td class="text-on-surface-variant">{holding.name}</td>
+                <td class="text-on-surface-variant">{holding.type}</td>
+                <td class="text-right font-mono text-on-surface">{holding.shares}</td>
+                <td class="text-right font-mono text-on-surface">{formatCurrency(holding.avgCost)}</td>
+                <td class="text-right font-mono text-on-surface">{formatCurrency(holding.currentPrice)}</td>
+                <td class="text-right font-mono font-medium text-on-surface">
+                  {formatCurrency(holding.shares * holding.currentPrice)}
+                </td>
+                <td class="text-right font-mono font-medium text-retirement">
+                  +{formatCurrency(holding.gain)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Risk Analysis -->
+    <div class="bg-white rounded-lg shadow-card p-6">
+      <h3 class="text-lg font-semibold text-on-surface mb-4">Risk Analysis</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <p class="text-label-caps text-on-surface-variant uppercase mb-2">Risk Score</p>
+          <div class="flex items-center space-x-4">
+            <div class="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
+              <div class="h-full bg-investment rounded-full" style="width: 65%" />
+            </div>
+            <span class="text-lg font-bold text-on-surface">6.5/10</span>
+          </div>
+          <p class="text-sm text-on-surface-variant mt-2">Moderate Aggressive</p>
+        </div>
+        
+        <div>
+          <p class="text-label-caps text-on-surface-variant uppercase mb-2">Diversification Score</p>
+          <div class="flex items-center space-x-4">
+            <div class="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
+              <div class="h-full bg-retirement rounded-full" style="width: 82%" />
+            </div>
+            <span class="text-lg font-bold text-on-surface">8.2/10</span>
+          </div>
+          <p class="text-sm text-on-surface-variant mt-2">Well Diversified</p>
+        </div>
+        
+        <div>
+          <p class="text-label-caps text-on-surface-variant uppercase mb-2">Volatility (30-day)</p>
+          <div class="flex items-center space-x-4">
+            <div class="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
+              <div class="h-full bg-contingency rounded-full" style="width: 45%" />
+            </div>
+            <span class="text-lg font-bold text-on-surface">4.5%</span>
+          </div>
+          <p class="text-sm text-on-surface-variant mt-2">Low Volatility</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>

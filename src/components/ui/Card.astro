@@ -1,0 +1,43 @@
+---
+interface Props {
+  variant?: 'default' | 'accent' | 'elevated';
+  accentColor?: 'emergency' | 'investment' | 'retirement' | 'contingency';
+  padding?: 'sm' | 'md' | 'lg';
+  class?: string;
+}
+
+const {
+  variant = 'default',
+  accentColor,
+  padding = 'md',
+  class: className = '',
+} = Astro.props;
+
+const baseClasses = 'bg-white rounded-lg';
+
+const variantClasses = {
+  default: 'shadow-card',
+  accent: 'shadow-card',
+  elevated: 'shadow-modal',
+};
+
+const paddingClasses = {
+  sm: 'p-4',
+  md: 'p-6',
+  lg: 'p-8',
+};
+
+const accentClasses = accentColor ? `card-accent-${accentColor}` : '';
+---
+
+<div
+  class:list={[
+    baseClasses,
+    variantClasses[variant],
+    paddingClasses[padding],
+    accentClasses,
+    className,
+  ]}
+>
+  <slot />
+</div>

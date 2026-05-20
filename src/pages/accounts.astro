@@ -1,0 +1,122 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AccountTable from '../components/accounts/AccountTable.astro';
+import SummaryCard from '../components/dashboard/SummaryCard.astro';
+import { accountsData, getTotalBalance, getAccountsByCategory } from '../data/accounts';
+import { formatCurrency } from '../data/summary';
+
+const totalBalance = getTotalBalance();
+const emergencyAccounts = getAccountsByCategory('emergency');
+const investmentAccounts = getAccountsByCategory('investment');
+const retirementAccounts = getAccountsByCategory('retirement');
+const contingencyAccounts = getAccountsByCategory('contingency');
+
+const emergencyTotal = emergencyAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+const investmentTotal = investmentAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+const retirementTotal = retirementAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+const contingencyTotal = contingencyAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+---
+
+<Layout title="Accounts" activePage="accounts">
+  <div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-headline-lg font-bold text-on-surface">Accounts</h1>
+        <p class="text-body-md text-on-surface-variant mt-1">Manage your financial accounts</p>
+      </div>
+      <button class="px-4 py-2 bg-primary text-on-primary rounded hover:bg-primary/90 transition-colors">
+        Add Account
+      </button>
+    </div>
+
+    <!-- Category Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <SummaryCard
+        title="Emergency Fund"
+        value={formatCurrency(emergencyTotal)}
+        change={`${emergencyAccounts.length} accounts`}
+        changeType="neutral"
+        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>`}
+        accentColor="emergency"
+      />
+      
+      <SummaryCard
+        title="Investments"
+        value={formatCurrency(investmentTotal)}
+        change={`${investmentAccounts.length} accounts`}
+        changeType="neutral"
+        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>`}
+        accentColor="investment"
+      />
+      
+      <SummaryCard
+        title="Retirement"
+        value={formatCurrency(retirementTotal)}
+        change={`${retirementAccounts.length} accounts`}
+        changeType="neutral"
+        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>`}
+        accentColor="retirement"
+      />
+      
+      <SummaryCard
+        title="Contingency"
+        value={formatCurrency(contingencyTotal)}
+        change={`${contingencyAccounts.length} accounts`}
+        changeType="neutral"
+        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>`}
+        accentColor="contingency"
+      />
+    </div>
+
+    <!-- Accounts Table -->
+    <div class="bg-white rounded-lg shadow-card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-on-surface">All Accounts</h2>
+        <div class="flex items-center space-x-2">
+          <select class="px-3 py-1.5 border border-outline-variant rounded text-sm focus:outline-none focus:ring-2 focus:ring-contingency">
+            <option value="all">All Types</option>
+            <option value="checking">Checking</option>
+            <option value="savings">Savings</option>
+            <option value="investment">Investment</option>
+            <option value="credit">Credit</option>
+          </select>
+          <select class="px-3 py-1.5 border border-outline-variant rounded text-sm focus:outline-none focus:ring-2 focus:ring-contingency">
+            <option value="all">All Categories</option>
+            <option value="emergency">Emergency</option>
+            <option value="investment">Investment</option>
+            <option value="retirement">Retirement</option>
+            <option value="contingency">Contingency</option>
+          </select>
+        </div>
+      </div>
+      
+      <AccountTable accounts={accountsData} />
+    </div>
+
+    <!-- Account Summary -->
+    <div class="bg-white rounded-lg shadow-card p-6">
+      <h3 class="text-lg font-semibold text-on-surface mb-4">Account Summary</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-4 bg-surface-container-low rounded-lg">
+          <p class="text-label-caps text-on-surface-variant uppercase">Total Assets</p>
+          <p class="text-headline-md font-bold text-on-surface mt-1 financial-figure">
+            {formatCurrency(accountsData.filter(a => a.balance > 0).reduce((sum, a) => sum + a.balance, 0))}
+          </p>
+        </div>
+        <div class="p-4 bg-surface-container-low rounded-lg">
+          <p class="text-label-caps text-on-surface-variant uppercase">Total Liabilities</p>
+          <p class="text-headline-md font-bold text-error mt-1 financial-figure">
+            {formatCurrency(Math.abs(accountsData.filter(a => a.balance < 0).reduce((sum, a) => sum + a.balance, 0)))}
+          </p>
+        </div>
+        <div class="p-4 bg-surface-container-low rounded-lg">
+          <p class="text-label-caps text-on-surface-variant uppercase">Net Worth</p>
+          <p class:list={['text-headline-md font-bold mt-1 financial-figure', totalBalance >= 0 ? 'text-retirement' : 'text-error']}>
+            {formatCurrency(totalBalance)}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>

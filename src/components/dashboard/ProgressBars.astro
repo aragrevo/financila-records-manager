@@ -1,0 +1,41 @@
+---
+interface ProgressBarData {
+  label: string;
+  value: number;
+  maxValue: number;
+  color: 'emergency' | 'investment' | 'retirement' | 'contingency';
+}
+
+interface Props {
+  items: ProgressBarData[];
+  class?: string;
+}
+
+const { items, class: className = '' } = Astro.props;
+
+const colorClasses = {
+  emergency: 'bg-emergency',
+  investment: 'bg-investment',
+  retirement: 'bg-retirement',
+  contingency: 'bg-contingency',
+};
+---
+
+<div class:list={['space-y-4', className]}>
+  {items.map((item) => (
+    <div>
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-sm font-medium text-on-surface">{item.label}</span>
+        <span class="text-sm font-medium text-on-surface financial-figure">
+          {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.value)}
+        </span>
+      </div>
+      <div class="progress-bar">
+        <div
+          class:list={['progress-bar-fill', colorClasses[item.color]]}
+          style={`width: ${Math.min((item.value / item.maxValue) * 100, 100)}%`}
+        />
+      </div>
+    </div>
+  ))}
+</div>
