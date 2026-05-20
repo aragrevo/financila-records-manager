@@ -7,6 +7,7 @@ interface Props {
   category: string;
   categoryColor: string;
   categoryId?: string;
+  accountId?: string;
   fundDots?: string[];
   isActive?: boolean;
 }
@@ -19,6 +20,7 @@ const {
   category,
   categoryColor,
   categoryId,
+  accountId,
   fundDots,
   isActive = false,
 } = Astro.props;
@@ -58,7 +60,10 @@ const {
       <p class="text-label-caps text-on-surface-variant">BALANCE ACTUAL</p>
       <p class="text-headline-md font-headline-md">{balance}</p>
     </div>
-    <button class="p-2 bg-surface-container rounded-full hover:bg-primary hover:text-on-primary transition-all">
+    <button
+      class="p-2 bg-surface-container rounded-full hover:bg-primary hover:text-on-primary transition-all account-edit-btn"
+      data-account-id={accountId}
+    >
       <span class="material-symbols-outlined">arrow_forward</span>
     </button>
   </div>

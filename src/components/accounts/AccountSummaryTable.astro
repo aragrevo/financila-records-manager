@@ -25,70 +25,123 @@ interface Props {
 const { entities, footer } = Astro.props;
 ---
 
-<div class="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-  <div class="px-6 py-4 border-b border-outline-variant flex items-center justify-between">
+<div
+  class="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm"
+>
+  <div
+    class="px-6 py-4 border-b border-outline-variant flex items-center justify-between"
+  >
     <h3 class="text-headline-md font-headline-md flex items-center">
-      <span class="material-symbols-outlined mr-2 text-primary">account_balance</span>
+      <span class="material-symbols-outlined mr-2 text-primary"
+        >account_balance</span
+      >
       Resumen por Entidad
     </h3>
     <div class="flex gap-2">
-      <span class="px-2 py-1 bg-surface-container text-label-caps rounded">VISTA FISCAL</span>
+      <span class="px-2 py-1 bg-surface-container text-label-caps rounded"
+        >VISTA FISCAL</span
+      >
     </div>
   </div>
   <div class="overflow-x-auto custom-scrollbar">
     <table class="w-full border-collapse">
       <thead>
         <tr class="bg-surface-container-low text-left">
-          <th class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant">CUENTA / ENTIDAD</th>
-          <th class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right">CONTINGENCY</th>
-          <th class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right">EMERGENCY</th>
-          <th class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right">INVESTMENT</th>
-          <th class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right">RETIREMENT</th>
-          <th class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right bg-surface-container-high">SUMA TOTAL</th>
+          <th
+            class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant"
+            >CUENTA / ENTIDAD</th
+          >
+          <th
+            class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right"
+            >CONTINGENCY</th
+          >
+          <th
+            class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right"
+            >EMERGENCY</th
+          >
+          <th
+            class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right"
+            >INVESTMENT</th
+          >
+          <th
+            class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right"
+            >RETIREMENT</th
+          >
+          <th
+            class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right bg-surface-container-high"
+            >SUMA TOTAL</th
+          >
         </tr>
       </thead>
       <tbody class="text-table-data font-table-data">
-        {entities.map((entity) => (
-          <tr class="hover:bg-surface-container-low transition-colors group">
-            <td class="px-6 py-3 border-b border-outline-variant font-bold">{entity.name}</td>
-            <td class:list={[
-              'px-6 py-3 border-b border-outline-variant text-right',
-              entity.contingency ? 'font-mono-data text-contingency' : 'text-on-surface-variant',
-            ]}>
-              {entity.contingency || '-'}
-            </td>
-            <td class:list={[
-              'px-6 py-3 border-b border-outline-variant text-right',
-              entity.emergency ? 'font-mono-data text-emergency' : 'text-on-surface-variant',
-            ]}>
-              {entity.emergency || '-'}
-            </td>
-            <td class:list={[
-              'px-6 py-3 border-b border-outline-variant text-right',
-              entity.investment ? 'font-mono-data text-investment' : 'text-on-surface-variant',
-            ]}>
-              {entity.investment || '-'}
-            </td>
-            <td class:list={[
-              'px-6 py-3 border-b border-outline-variant text-right',
-              entity.retirement ? 'font-mono-data text-retirement' : 'text-on-surface-variant',
-            ]}>
-              {entity.retirement || '-'}
-            </td>
-            <td class="px-6 py-3 border-b border-outline-variant text-right font-bold group-hover:bg-surface-container">
-              {entity.total}
-            </td>
-          </tr>
-        ))}
+        {
+          entities.map((entity) => (
+            <tr class="hover:bg-surface-container-low transition-colors group">
+              <td class="px-6 py-3 border-b border-outline-variant font-bold">
+                {entity.name}
+              </td>
+              <td
+                class:list={[
+                  "px-6 py-3 border-b border-outline-variant text-right",
+                  entity.contingency
+                    ? " text-contingency"
+                    : "text-on-surface-variant",
+                ]}
+              >
+                {entity.contingency || "-"}
+              </td>
+              <td
+                class:list={[
+                  "px-6 py-3 border-b border-outline-variant text-right",
+                  entity.emergency
+                    ? " text-emergency"
+                    : "text-on-surface-variant",
+                ]}
+              >
+                {entity.emergency || "-"}
+              </td>
+              <td
+                class:list={[
+                  "px-6 py-3 border-b border-outline-variant text-right",
+                  entity.investment
+                    ? " text-investment"
+                    : "text-on-surface-variant",
+                ]}
+              >
+                {entity.investment || "-"}
+              </td>
+              <td
+                class:list={[
+                  "px-6 py-3 border-b border-outline-variant text-right",
+                  entity.retirement
+                    ? " text-retirement"
+                    : "text-on-surface-variant",
+                ]}
+              >
+                {entity.retirement || "-"}
+              </td>
+              <td class="px-6 py-3 border-b border-outline-variant text-right font-bold group-hover:bg-surface-container">
+                {entity.total}
+              </td>
+            </tr>
+          ))
+        }
       </tbody>
       <tfoot>
         <tr class="bg-surface-container-high font-bold">
           <td class="px-6 py-4 text-label-caps">{footer.label}</td>
-          <td class="px-6 py-4 text-right font-mono-data text-contingency">{footer.contingency}</td>
-          <td class="px-6 py-4 text-right font-mono-data text-emergency">{footer.emergency}</td>
-          <td class="px-6 py-4 text-right font-mono-data text-investment">{footer.investment}</td>
-          <td class="px-6 py-4 text-right font-mono-data text-retirement">{footer.retirement}</td>
-          <td class="px-6 py-4 text-right font-mono-data bg-primary text-on-primary">{footer.total}</td>
+          <td class="px-6 py-4 text-right text-contingency"
+            >{footer.contingency}</td
+          >
+          <td class="px-6 py-4 text-right text-emergency">{footer.emergency}</td
+          >
+          <td class="px-6 py-4 text-right text-investment"
+            >{footer.investment}</td
+          >
+          <td class="px-6 py-4 text-right text-retirement"
+            >{footer.retirement}</td
+          >
+          <td class="px-6 py-4 text-right">{footer.total}</td>
         </tr>
       </tfoot>
     </table>

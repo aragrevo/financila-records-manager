@@ -54,6 +54,7 @@ export interface AccountCard {
   category: string;
   categoryColor: string;
   categoryId?: string;
+  accountId?: string;
   fundDots?: string[];
   isActive?: boolean;
 }

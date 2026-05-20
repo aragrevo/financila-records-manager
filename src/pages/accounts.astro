@@ -101,6 +101,7 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
           category={card.category}
           categoryColor={card.categoryColor}
           categoryId={card.categoryId}
+          accountId={card.accountId}
           fundDots={card.fundDots}
           isActive={card.isActive}
         />
@@ -187,6 +188,71 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
       </form>
     </div>
   </div>
+
+  <!-- Edit Account Modal -->
+  <div id="edit-account-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-surface rounded-xl shadow-xl w-full max-w-md">
+      <div class="flex items-center justify-between p-6 border-b border-outline-variant">
+        <h3 class="text-headline-md font-headline-md text-on-surface">Editar Cuenta</h3>
+        <button id="edit-modal-close" class="text-on-surface-variant hover:text-on-surface">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form id="edit-account-form" class="p-6 space-y-4">
+        <input type="hidden" id="edit-account-id" name="id" />
+        <div>
+          <label for="edit-name" class="block text-label-md text-on-surface-variant mb-1">Nombre</label>
+          <input type="text" id="edit-name" name="name" required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary" />
+        </div>
+        <div>
+          <label for="edit-type" class="block text-label-md text-on-surface-variant mb-1">Tipo</label>
+          <select id="edit-type" name="type" required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
+            {Object.entries(ACCOUNT_TYPES).map(([value, label]) => (
+              <option value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label for="edit-institution" class="block text-label-md text-on-surface-variant mb-1">Institución</label>
+          <input type="text" id="edit-institution" name="institution" required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary" />
+        </div>
+        <div>
+          <label for="edit-balance" class="block text-label-md text-on-surface-variant mb-1">Balance</label>
+          <input type="number" id="edit-balance" name="balance" step="0.01" required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary" />
+        </div>
+        <div>
+          <label for="edit-category" class="block text-label-md text-on-surface-variant mb-1">Categoría</label>
+          <select id="edit-category" name="category" required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
+            {Object.entries(ACCOUNT_CATEGORIES).map(([value, label]) => (
+              <option value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label for="edit-status" class="block text-label-md text-on-surface-variant mb-1">Estado</label>
+          <select id="edit-status" name="status" required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
+            <option value="active">Activa</option>
+            <option value="inactive">Inactiva</option>
+            <option value="pending">Pendiente</option>
+          </select>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" id="edit-modal-cancel" class="flex-1 px-4 py-2 border border-outline-variant rounded-lg font-bold text-body-md text-on-surface hover:bg-surface-container transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" class="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg font-bold text-body-md hover:opacity-90 transition-opacity">
+            Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </Layout>
 
 <style>
@@ -203,6 +269,11 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
   const btnCancel = document.getElementById('modal-cancel');
   const form = document.getElementById('create-account-form') as HTMLFormElement;
 
+  const editModal = document.getElementById('edit-account-modal');
+  const editBtnClose = document.getElementById('edit-modal-close');
+  const editBtnCancel = document.getElementById('edit-modal-cancel');
+  const editForm = document.getElementById('edit-account-form') as HTMLFormElement;
+
   function openModal() {
     modal?.classList.remove('hidden');
     modal?.classList.add('flex');
@@ -214,6 +285,17 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
     form?.reset();
   }
 
+  function openEditModal() {
+    editModal?.classList.remove('hidden');
+    editModal?.classList.add('flex');
+  }
+
+  function closeEditModal() {
+    editModal?.classList.add('hidden');
+    editModal?.classList.remove('flex');
+    editForm?.reset();
+  }
+
   btnNew?.addEventListener('click', openModal);
   btnCard?.addEventListener('click', openModal);
   btnClose?.addEventListener('click', closeModal);
@@ -221,6 +303,38 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
 
   modal?.addEventListener('click', (e) => {
     if (e.target === modal) closeModal();
+  });
+
+  editBtnClose?.addEventListener('click', closeEditModal);
+  editBtnCancel?.addEventListener('click', closeEditModal);
+
+  editModal?.addEventListener('click', (e) => {
+    if (e.target === editModal) closeEditModal();
+  });
+
+  document.querySelectorAll('.account-edit-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const accountId = btn.getAttribute('data-account-id');
+      if (!accountId) return;
+
+      try {
+        const res = await fetch(`/api/accounts/${accountId}`);
+        if (!res.ok) return;
+        const account = await res.json();
+
+        (document.getElementById('edit-account-id') as HTMLInputElement).value = account.id;
+        (document.getElementById('edit-name') as HTMLInputElement).value = account.name;
+        (document.getElementById('edit-type') as HTMLSelectElement).value = account.type;
+        (document.getElementById('edit-institution') as HTMLInputElement).value = account.institution;
+        (document.getElementById('edit-balance') as HTMLInputElement).value = account.balance;
+        (document.getElementById('edit-category') as HTMLSelectElement).value = account.category;
+        (document.getElementById('edit-status') as HTMLSelectElement).value = account.status;
+
+        openEditModal();
+      } catch {
+        alert('Error al cargar la cuenta');
+      }
+    });
   });
 
   form?.addEventListener('submit', async (e) => {
@@ -246,6 +360,37 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
         window.location.reload();
       } else {
         alert('Error al crear la cuenta');
+      }
+    } catch {
+      alert('Error de conexión');
+    }
+  });
+
+  editForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(editForm);
+    const accountId = formData.get('id');
+    const data = {
+      name: formData.get('name'),
+      type: formData.get('type'),
+      institution: formData.get('institution'),
+      balance: parseFloat(formData.get('balance') as string),
+      category: formData.get('category'),
+      status: formData.get('status'),
+    };
+
+    try {
+      const res = await fetch(`/api/accounts/${accountId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        closeEditModal();
+        window.location.reload();
+      } else {
+        alert('Error al actualizar la cuenta');
       }
     } catch {
       alert('Error de conexión');
