@@ -1,9 +1,10 @@
-import { transactionsData, type Transaction } from '../data/transactions';
+import { redis, KEYS } from '../lib/db';
+import type { Transaction } from '../lib/types';
 
 export interface TransactionsFilter {
   type?: Transaction['type'];
-  category?: string;
-  account?: string;
+  categoryId?: string;
+  accountId?: string;
   status?: Transaction['status'];
   startDate?: string;
   endDate?: string;
@@ -13,16 +14,28 @@ export interface TransactionsFilter {
 
 export class TransactionsService {
   async getAll(filters?: TransactionsFilter): Promise<Transaction[]> {
-    let results = [...transactionsData];
+    let txnIds: string[] = [];
+
+    if (filters?.accountId) {
+      txnIds = await redis.zrange(`${KEYS.TRANSACTIONS_BY_ACCOUNT}:${filters.accountId}`, 0, -1, { rev: true });
+    } else if (filters?.categoryId) {
+      txnIds = await redis.zrange(`${KEYS.TRANSACTIONS_BY_CATEGORY}:${filters.categoryId}`, 0, -1, { rev: true });
+    } else {
+      txnIds = await redis.zrange(`${KEYS.TRANSACTIONS_BY_DATE}:user-001`, 0, -1, { rev: true });
+    }
+
+    const transactions: Transaction[] = [];
+    for (const id of txnIds) {
+      const txn = await redis.hgetall<Transaction>(`${KEYS.TRANSACTION}:${id}`);
+      if (txn && txn.id) {
+        transactions.push(txn);
+      }
+    }
+
+    let results = transactions;
 
     if (filters?.type) {
       results = results.filter(t => t.type === filters.type);
-    }
-    if (filters?.category) {
-      results = results.filter(t => t.category === filters.category);
-    }
-    if (filters?.account) {
-      results = results.filter(t => t.account === filters.account);
     }
     if (filters?.status) {
       results = results.filter(t => t.status === filters.status);
@@ -33,8 +46,6 @@ export class TransactionsService {
     if (filters?.endDate) {
       results = results.filter(t => t.date <= filters.endDate!);
     }
-
-    const total = results.length;
 
     if (filters?.offset) {
       results = results.slice(filters.offset);
@@ -47,31 +58,31 @@ export class TransactionsService {
   }
 
   async getById(id: string): Promise<Transaction | null> {
-    return transactionsData.find(t => t.id === id) ?? null;
+    const txn = await redis.hgetall<Transaction>(`${KEYS.TRANSACTION}:${id}`);
+    if (!txn || !txn.id) return null;
+    return txn;
   }
 
   async getTotalIncome(): Promise<number> {
-    return transactionsData
-      .filter(t => t.type === 'income')
-      .reduce((total, t) => total + t.amount, 0);
+    const txns = await this.getAll({ type: 'income' });
+    return txns.reduce((total, t) => total + t.amount, 0);
   }
 
   async getTotalExpenses(): Promise<number> {
-    return transactionsData
-      .filter(t => t.type === 'expense')
-      .reduce((total, t) => total + Math.abs(t.amount), 0);
+    const txns = await this.getAll({ type: 'expense' });
+    return txns.reduce((total, t) => total + Math.abs(t.amount), 0);
   }
 
   async getByType(type: Transaction['type']): Promise<Transaction[]> {
-    return transactionsData.filter(t => t.type === type);
+    return this.getAll({ type });
   }
 
-  async getByCategory(category: string): Promise<Transaction[]> {
-    return transactionsData.filter(t => t.category === category);
+  async getByCategory(categoryId: string): Promise<Transaction[]> {
+    return this.getAll({ categoryId });
   }
 
   async getByDateRange(startDate: string, endDate: string): Promise<Transaction[]> {
-    return transactionsData.filter(t => t.date >= startDate && t.date <= endDate);
+    return this.getAll({ startDate, endDate });
   }
 }
 

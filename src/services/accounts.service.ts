@@ -1,4 +1,5 @@
-import { accountsData, type Account } from '../data/accounts';
+import { redis, KEYS } from '../lib/db';
+import type { Account } from '../lib/types';
 
 export interface AccountsFilter {
   type?: Account['type'];
@@ -8,7 +9,17 @@ export interface AccountsFilter {
 
 export class AccountsService {
   async getAll(filters?: AccountsFilter): Promise<Account[]> {
-    let results = [...accountsData];
+    const accountIds = await redis.smembers(KEYS.ACCOUNTS_INDEX);
+    const accounts: Account[] = [];
+
+    for (const id of accountIds) {
+      const account = await redis.hgetall<Account>(`${KEYS.ACCOUNT}:${id}`);
+      if (account && account.id) {
+        accounts.push(account);
+      }
+    }
+
+    let results = accounts;
 
     if (filters?.type) {
       results = results.filter(a => a.type === filters.type);
@@ -24,19 +35,22 @@ export class AccountsService {
   }
 
   async getById(id: string): Promise<Account | null> {
-    return accountsData.find(a => a.id === id) ?? null;
+    const account = await redis.hgetall<Account>(`${KEYS.ACCOUNT}:${id}`);
+    if (!account || !account.id) return null;
+    return account;
   }
 
   async getTotalBalance(): Promise<number> {
-    return accountsData.reduce((total, a) => total + a.balance, 0);
+    const accounts = await this.getAll();
+    return accounts.reduce((total, a) => total + a.balance, 0);
   }
 
   async getByCategory(category: Account['category']): Promise<Account[]> {
-    return accountsData.filter(a => a.category === category);
+    return this.getAll({ category });
   }
 
   async getByType(type: Account['type']): Promise<Account[]> {
-    return accountsData.filter(a => a.type === type);
+    return this.getAll({ type });
   }
 }
 
