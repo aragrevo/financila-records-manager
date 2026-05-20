@@ -1,0 +1,36 @@
+---
+interface Props {
+  currentPage: number;
+  totalPages: number;
+}
+
+const { currentPage, totalPages } = Astro.props;
+
+const pages = Array.from({ length: Math.min(totalPages, 3) }, (_, i) => i + 1);
+---
+
+<div class="border-t border-outline-variant px-6 py-4 bg-surface flex justify-between items-center">
+  <div class="flex gap-2">
+    <button class="p-2 border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors">
+      <span class="material-symbols-outlined">chevron_left</span>
+    </button>
+    {pages.map((page) => (
+      <button
+        class:list={[
+          'px-4 py-2 rounded-lg text-label-caps',
+          page === currentPage
+            ? 'bg-primary text-on-primary'
+            : 'border border-outline-variant hover:bg-surface-container-high transition-colors',
+        ]}
+      >
+        {page}
+      </button>
+    ))}
+    <button class="p-2 border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors">
+      <span class="material-symbols-outlined">chevron_right</span>
+    </button>
+  </div>
+  <div class="text-label-caps font-label-caps text-on-surface-variant">
+    Página {currentPage} de {totalPages}
+  </div>
+</div>
