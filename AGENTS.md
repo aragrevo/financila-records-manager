@@ -40,11 +40,6 @@ Upstash Redis is used for persistent storage. Data structure:
 - Accounts stored as hashes (`account:{id}`) with index in `accounts:index`
 - Transactions stored as hashes (`transaction:{id}`) with sorted sets for indexing by date, account, and category
 
-Seed the database:
-```bash
-pnpm db:seed
-```
-
 ## API Endpoints
 
 - `GET /api/accounts` — List all accounts
@@ -95,8 +90,7 @@ src/
 │   └── transactions/                 # TransactionTable
 ├── lib/
 │   ├── db.ts                         # Redis client and key helpers
-│   ├── types.ts                      # Shared TypeScript types
-│   └── seed.ts                       # Database seed script
+│   └── types.ts                      # Shared TypeScript types
 ├── services/
 │   ├── accounts.service.ts           # Account data access (Redis)
 │   ├── transactions.service.ts       # Transaction data access (Redis)

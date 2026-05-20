@@ -15,8 +15,3 @@ export const KEYS = {
   TRANSACTIONS_BY_CATEGORY: 'transactions:by-category',
   TRANSACTIONS_BY_DATE: 'transactions:by-date',
 } as const;
-
-// Helper to generate IDs
-export function generateId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-}
