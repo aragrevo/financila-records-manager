@@ -1,0 +1,47 @@
+---
+interface Movement {
+  account: string;
+  date: string;
+  category: string;
+  amount: number;
+  formattedAmount: string;
+}
+
+interface Props {
+  movements: Movement[];
+}
+
+const { movements } = Astro.props;
+---
+
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm flex flex-col overflow-hidden">
+  <div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/50">
+    <h3 class="text-headline-md font-headline-md text-primary">Movimientos</h3>
+    <a class="text-primary font-bold text-label-caps hover:underline" href="#">VER TODOS</a>
+  </div>
+  <div class="flex-1 overflow-y-auto custom-scrollbar">
+    <table class="w-full text-left">
+      <thead class="sticky top-0 bg-surface-container-low/80 backdrop-blur text-label-caps font-label-caps text-on-surface-variant border-b border-outline-variant">
+        <tr>
+          <th class="px-6 py-3 font-bold">FECHA / CUENTA</th>
+          <th class="px-6 py-3 font-bold text-right">VALOR</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant/30 font-table-data">
+        {movements.map((txn) => (
+          <tr class="hover:bg-surface-container-low/50 transition-colors">
+            <td class="px-6 py-4">
+              <div class="flex flex-col">
+                <span class="text-primary font-bold">{txn.account}</span>
+                <span class="text-[10px] text-on-surface-variant">{txn.date} • {txn.category}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 text-right">
+              <div class="text-primary font-mono-data">{txn.formattedAmount}</div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>

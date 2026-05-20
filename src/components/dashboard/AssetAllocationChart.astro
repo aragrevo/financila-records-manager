@@ -1,0 +1,72 @@
+---
+interface BarSegment {
+  color: string;
+  height: number;
+  tooltip?: string;
+}
+
+interface Entity {
+  name: string;
+  segments: BarSegment[];
+  barWidth?: 'thin' | 'wide';
+}
+
+interface Props {
+  entities: Entity[];
+}
+
+const { entities } = Astro.props;
+---
+
+<div class="flex justify-between items-center mb-10">
+  <h3 class="text-headline-md font-headline-md text-primary">Asset Allocation by Entity</h3>
+  <div class="flex items-center gap-4">
+    <div class="flex items-center gap-1.5">
+      <span class="w-3 h-3 bg-blue-500 rounded-sm"></span>
+      <span class="text-[10px] font-bold text-on-surface-variant uppercase">Contingency</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="w-3 h-3 bg-red-500 rounded-sm"></span>
+      <span class="text-[10px] font-bold text-on-surface-variant uppercase">Emergency</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="w-3 h-3 bg-amber-500 rounded-sm"></span>
+      <span class="text-[10px] font-bold text-on-surface-variant uppercase">Investment</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="w-3 h-3 bg-emerald-600 rounded-sm"></span>
+      <span class="text-[10px] font-bold text-on-surface-variant uppercase">Retirement</span>
+    </div>
+  </div>
+</div>
+<div class="flex items-end justify-between h-[300px] border-b border-outline-variant pb-2 relative">
+  <div class="absolute left-0 bottom-0 w-full h-full flex flex-col justify-between pointer-events-none opacity-50">
+    <div class="border-t border-dashed border-outline-variant w-full h-0"></div>
+    <div class="border-t border-dashed border-outline-variant w-full h-0"></div>
+    <div class="border-t border-dashed border-outline-variant w-full h-0"></div>
+    <div class="border-t border-dashed border-outline-variant w-full h-0"></div>
+  </div>
+  {entities.map((entity) => (
+    <div class="flex flex-col items-center flex-1 z-10">
+      <div class="chart-bar-container">
+        {entity.segments.map((segment) => (
+          <div
+            class:list={[
+              'rounded-t-sm hover:brightness-90 transition-all cursor-pointer group relative',
+              segment.color,
+              entity.barWidth === 'thin' ? 'w-4' : 'w-8',
+            ]}
+            style={`height: ${segment.height}%`}
+          >
+            {segment.tooltip && (
+              <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-on-primary text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                {segment.tooltip}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <span class="text-[11px] font-bold text-on-surface-variant mt-3">{entity.name}</span>
+    </div>
+  ))}
+</div>
