@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { accountsService } from '../../../services/accounts.service';
 
+export const prerender = false;
+
 export const GET: APIRoute = async ({ params }) => {
   try {
     const { id } = params;

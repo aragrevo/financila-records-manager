@@ -4,10 +4,18 @@ import AccountSummaryTable from '../components/accounts/AccountSummaryTable.astr
 import DistributionChart from '../components/accounts/DistributionChart.astro';
 import AccountCard from '../components/accounts/AccountCard.astro';
 import RecentTransactions from '../components/accounts/RecentTransactions.astro';
-import { dashboardData } from '../data/dashboard';
+import { dashboardService } from '../services/dashboard.service';
 import { formatCurrencyCOP } from '../utils/format';
 
-const summaryEntities = dashboardData.entitySummary.map(entity => ({
+const [entitySummary, entitySummaryFooter, distributionFunds, accountCards, recentTransactions] = await Promise.all([
+  dashboardService.getEntitySummary(),
+  dashboardService.getEntitySummaryFooter(),
+  dashboardService.getDistributionFunds(),
+  dashboardService.getAccountCards(),
+  dashboardService.getRecentTransactions(),
+]);
+
+const summaryEntities = entitySummary.map(entity => ({
   ...entity,
   contingency: entity.contingency ? formatCurrencyCOP(entity.contingency) : null,
   emergency: entity.emergency ? formatCurrencyCOP(entity.emergency) : null,
@@ -16,26 +24,26 @@ const summaryEntities = dashboardData.entitySummary.map(entity => ({
   total: formatCurrencyCOP(entity.total),
 }));
 
-const summaryFooter = {
-  ...dashboardData.entitySummaryFooter,
-  contingency: formatCurrencyCOP(dashboardData.entitySummaryFooter.contingency),
-  emergency: formatCurrencyCOP(dashboardData.entitySummaryFooter.emergency),
-  investment: formatCurrencyCOP(dashboardData.entitySummaryFooter.investment),
-  retirement: formatCurrencyCOP(dashboardData.entitySummaryFooter.retirement),
-  total: formatCurrencyCOP(dashboardData.entitySummaryFooter.total),
+const formattedFooter = {
+  ...entitySummaryFooter,
+  contingency: formatCurrencyCOP(entitySummaryFooter.contingency),
+  emergency: formatCurrencyCOP(entitySummaryFooter.emergency),
+  investment: formatCurrencyCOP(entitySummaryFooter.investment),
+  retirement: formatCurrencyCOP(entitySummaryFooter.retirement),
+  total: formatCurrencyCOP(entitySummaryFooter.total),
 };
 
-const distributionFunds = dashboardData.distributionFunds.map(fund => ({
+const formattedDistributionFunds = distributionFunds.map(fund => ({
   ...fund,
   amount: formatCurrencyCOP(fund.amount),
 }));
 
-const accountCards = dashboardData.accountCards.map(card => ({
+const formattedAccountCards = accountCards.map(card => ({
   ...card,
   balance: formatCurrencyCOP(card.balance),
 }));
 
-const recentTransactions = dashboardData.recentTransactions.map(txn => ({
+const formattedRecentTransactions = recentTransactions.map(txn => ({
   ...txn,
   amount: `+${formatCurrencyCOP(txn.amount)}`,
 }));
@@ -62,8 +70,8 @@ const recentTransactions = dashboardData.recentTransactions.map(txn => ({
 
   <!-- Bento Grid - Section 1: Distribution Table -->
   <section class="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-stack-lg">
-    <AccountSummaryTable entities={summaryEntities} footer={summaryFooter} />
-    <DistributionChart title="Fondo de Retiro" percentage={56} funds={distributionFunds} />
+    <AccountSummaryTable entities={summaryEntities} footer={formattedFooter} />
+    <DistributionChart title="Fondo de Retiro" percentage={56} funds={formattedDistributionFunds} />
   </section>
 
   <!-- Section 2: Account Cards -->
@@ -83,7 +91,7 @@ const recentTransactions = dashboardData.recentTransactions.map(txn => ({
       </div>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {accountCards.map((card) => (
+      {formattedAccountCards.map((card) => (
         <AccountCard
           initial={card.initial}
           name={card.name}
@@ -108,13 +116,13 @@ const recentTransactions = dashboardData.recentTransactions.map(txn => ({
   </section>
 
   <!-- Bottom Section: Transactions History Snapshot -->
-  <RecentTransactions transactions={recentTransactions} />
+  <RecentTransactions transactions={formattedRecentTransactions} />
 
   <!-- Sticky Footer Summary for Mobile View -->
   <div class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-lowest border-t border-outline-variant p-4 z-50 flex justify-between items-center">
     <div>
       <p class="text-label-caps text-on-surface-variant">TOTAL PATRIMONIO</p>
-      <p class="text-data-display font-data-display">{formatCurrencyCOP(dashboardData.entitySummaryFooter.total)}</p>
+      <p class="text-data-display font-data-display">{formatCurrencyCOP(entitySummaryFooter.total)}</p>
     </div>
     <button class="bg-primary text-on-primary w-12 h-12 rounded-full shadow-lg flex items-center justify-center">
       <span class="material-symbols-outlined">add</span>

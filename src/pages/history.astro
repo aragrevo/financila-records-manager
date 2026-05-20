@@ -3,10 +3,16 @@ import Layout from '../layouts/Layout.astro';
 import MovementsFilter from '../components/transactions/MovementsFilter.astro';
 import MovementsTable from '../components/transactions/MovementsTable.astro';
 import Pagination from '../components/transactions/Pagination.astro';
-import { dashboardData } from '../data/dashboard';
+import { dashboardService } from '../services/dashboard.service';
 import { formatCurrencyCOP } from '../utils/format';
 
-const movements = dashboardData.movements.map(mov => ({
+const [movements, accounts, types] = await Promise.all([
+  dashboardService.getMovements(),
+  dashboardService.getMovementAccounts(),
+  dashboardService.getMovementTypes(),
+]);
+
+const formattedMovements = movements.map(mov => ({
   ...mov,
   amount: mov.amount < 0
     ? `- $ ${formatCurrencyCOP(Math.abs(mov.amount)).replace('$', '').trim()}`
@@ -35,10 +41,10 @@ const movements = dashboardData.movements.map(mov => ({
   </div>
 
   <!-- Filter Bar -->
-  <MovementsFilter accounts={dashboardData.movementAccounts} types={dashboardData.movementTypes} totalRecords={movements.length} />
+  <MovementsFilter accounts={accounts} types={types} totalRecords={formattedMovements.length} />
 
   <!-- Data Table -->
-  <MovementsTable movements={movements} />
+  <MovementsTable movements={formattedMovements} />
 
   <!-- Pagination -->
   <Pagination currentPage={1} totalPages={45} />

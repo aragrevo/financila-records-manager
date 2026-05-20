@@ -2,8 +2,10 @@
 import Layout from '../layouts/Layout.astro';
 import CategoryChart from '../components/dashboard/CategoryChart.astro';
 import ProgressBars from '../components/dashboard/ProgressBars.astro';
-import { summaryData } from '../data/summary';
+import { summaryService } from '../services/summary.service';
 import { formatCurrency } from '../utils/format';
+
+const summaryData = await summaryService.getSummary();
 
 const wealthCategories = [
   {

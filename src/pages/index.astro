@@ -4,10 +4,17 @@ import SummaryCard from '../components/dashboard/SummaryCard.astro';
 import AssetAllocationChart from '../components/dashboard/AssetAllocationChart.astro';
 import MovementsTable from '../components/dashboard/MovementsTable.astro';
 import FundStatusTable from '../components/dashboard/FundStatusTable.astro';
-import { dashboardData } from '../data/dashboard';
+import { dashboardService } from '../services/dashboard.service';
 import { formatCurrencyCOP } from '../utils/format';
 
-const summaryCards = dashboardData.summaryCards.map(card => ({
+const [summaryCards, chartEntities, recentMovements, fundStatus] = await Promise.all([
+  dashboardService.getSummaryCards(),
+  dashboardService.getChartEntities(),
+  dashboardService.getRecentMovements(),
+  dashboardService.getFundStatus(),
+]);
+
+const formattedSummaryCards = summaryCards.map(card => ({
   ...card,
   value: formatCurrencyCOP(card.value),
   subtitle: card.accentColor === 'emergency'
@@ -15,7 +22,7 @@ const summaryCards = dashboardData.summaryCards.map(card => ({
     : card.subtitle,
 }));
 
-const chartEntities = dashboardData.chartEntities.map(entity => ({
+const formattedChartEntities = chartEntities.map(entity => ({
   ...entity,
   segments: entity.segments.map(seg => ({
     ...seg,
@@ -23,12 +30,12 @@ const chartEntities = dashboardData.chartEntities.map(entity => ({
   })),
 }));
 
-const recentMovements = dashboardData.recentMovements.map(mov => ({
+const formattedRecentMovements = recentMovements.map(mov => ({
   ...mov,
   formattedAmount: formatCurrencyCOP(mov.amount),
 }));
 
-const fundStatus = dashboardData.fundStatus.map(fund => ({
+const formattedFundStatus = fundStatus.map(fund => ({
   ...fund,
   expected: formatCurrencyCOP(fund.expected),
   current: formatCurrencyCOP(fund.current),
@@ -52,7 +59,7 @@ const fundStatus = dashboardData.fundStatus.map(fund => ({
 
   <!-- Bento Metrics Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-gutter">
-    {summaryCards.map((card) => (
+    {formattedSummaryCards.map((card) => (
       <SummaryCard
         title={card.title}
         value={card.value}
@@ -68,13 +75,13 @@ const fundStatus = dashboardData.fundStatus.map(fund => ({
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
     <!-- Allocation Chart -->
     <div class="lg:col-span-2 bg-surface-container-lowest p-gutter rounded-xl border border-outline-variant shadow-sm">
-      <AssetAllocationChart entities={chartEntities} />
+      <AssetAllocationChart entities={formattedChartEntities} />
     </div>
 
     <!-- Recent Movements -->
-    <MovementsTable movements={recentMovements} />
+    <MovementsTable movements={formattedRecentMovements} />
   </div>
 
   <!-- Funds Detail Table -->
-  <FundStatusTable funds={fundStatus} />
+  <FundStatusTable funds={formattedFundStatus} />
 </Layout>
