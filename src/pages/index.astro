@@ -4,7 +4,9 @@ import SummaryCard from '../components/dashboard/SummaryCard.astro';
 import CategoryChart from '../components/dashboard/CategoryChart.astro';
 import ProgressBars from '../components/dashboard/ProgressBars.astro';
 import TransactionTable from '../components/transactions/TransactionTable.astro';
-import { summaryData, formatCurrency, formatPercentage } from '../data/summary';
+import { IconCurrencyDollar, IconArrowUp, IconArrowDown, IconCheckCircle } from '../components/icons';
+import { summaryData } from '../data/summary';
+import { formatCurrency, formatPercentage } from '../utils/format';
 import { transactionsData } from '../data/transactions';
 
 const recentTransactions = transactionsData.slice(0, 5);
@@ -15,6 +17,11 @@ const progressItems = summaryData.categories.map(cat => ({
   maxValue: summaryData.totalBalance,
   color: cat.color,
 }));
+
+const iconDollar = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+const iconArrowUp = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12" /></svg>`;
+const iconArrowDown = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" /></svg>`;
+const iconCheck = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
 ---
 
 <Layout title="Dashboard" activePage="dashboard">
@@ -32,7 +39,7 @@ const progressItems = summaryData.categories.map(cat => ({
         value={formatCurrency(summaryData.totalBalance)}
         change="+2.4% from last month"
         changeType="positive"
-        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`}
+        icon={iconDollar}
       />
       
       <SummaryCard
@@ -40,7 +47,7 @@ const progressItems = summaryData.categories.map(cat => ({
         value={formatCurrency(summaryData.monthlyIncome)}
         change="+5.2% from last month"
         changeType="positive"
-        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12" /></svg>`}
+        icon={iconArrowUp}
       />
       
       <SummaryCard
@@ -48,7 +55,7 @@ const progressItems = summaryData.categories.map(cat => ({
         value={formatCurrency(summaryData.monthlyExpenses)}
         change="-3.1% from last month"
         changeType="negative"
-        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" /></svg>`}
+        icon={iconArrowDown}
       />
       
       <SummaryCard
@@ -56,7 +63,7 @@ const progressItems = summaryData.categories.map(cat => ({
         value={formatPercentage(summaryData.savingsRate)}
         change="Target: 30%"
         changeType="neutral"
-        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`}
+        icon={iconCheck}
       />
     </div>
 

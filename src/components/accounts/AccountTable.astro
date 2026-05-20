@@ -1,6 +1,8 @@
 ---
 import Chip from '../ui/Chip.astro';
+import { IconCreditCard, IconBanknotes, IconTrendingUp } from '../icons';
 import type { Account } from '../../data/accounts';
+import { formatCurrency, formatDate } from '../../utils/format';
 
 interface Props {
   accounts: Account[];
@@ -9,23 +11,11 @@ interface Props {
 
 const { accounts, class: className = '' } = Astro.props;
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-};
-
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-};
-
 const typeIcons = {
-  checking: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>`,
-  savings: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>`,
-  investment: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>`,
-  credit: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>`,
+  checking: IconCreditCard,
+  savings: IconBanknotes,
+  investment: IconTrendingUp,
+  credit: IconCreditCard,
 };
 
 const statusClasses = {
@@ -53,39 +43,42 @@ const getBalanceClass = (balance: number) => {
       </tr>
     </thead>
     <tbody>
-      {accounts.map((account) => (
-        <tr>
-          <td>
-            <div class="flex items-center">
-              <div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-on-surface-variant">
-                <Fragment set:html={typeIcons[account.type]} />
+      {accounts.map((account) => {
+        const IconComponent = typeIcons[account.type];
+        return (
+          <tr>
+            <td>
+              <div class="flex items-center">
+                <div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-on-surface-variant">
+                  <IconComponent class="w-5 h-5" />
+                </div>
+                <div class="ml-3">
+                  <div class="font-medium text-on-surface">{account.name}</div>
+                  <div class="text-xs text-on-surface-variant">{account.currency}</div>
+                </div>
               </div>
-              <div class="ml-3">
-                <div class="font-medium text-on-surface">{account.name}</div>
-                <div class="text-xs text-on-surface-variant">{account.currency}</div>
-              </div>
-            </div>
-          </td>
-          <td class="text-on-surface-variant capitalize">{account.type}</td>
-          <td class="text-on-surface-variant">{account.institution}</td>
-          <td>
-            <Chip variant={account.category} size="sm">
-              {account.category}
-            </Chip>
-          </td>
-          <td>
-            <span class:list={['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', statusClasses[account.status]]}>
-              {account.status}
-            </span>
-          </td>
-          <td class="text-on-surface-variant whitespace-nowrap">
-            {formatDate(account.lastUpdated)}
-          </td>
-          <td class:list={['text-right font-mono text-sm font-medium whitespace-nowrap', getBalanceClass(account.balance)]}>
-            {formatCurrency(account.balance)}
-          </td>
-        </tr>
-      ))}
+            </td>
+            <td class="text-on-surface-variant capitalize">{account.type}</td>
+            <td class="text-on-surface-variant">{account.institution}</td>
+            <td>
+              <Chip variant={account.category} size="sm">
+                {account.category}
+              </Chip>
+            </td>
+            <td>
+              <span class:list={['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', statusClasses[account.status]]}>
+                {account.status}
+              </span>
+            </td>
+            <td class="text-on-surface-variant whitespace-nowrap">
+              {formatDate(account.lastUpdated)}
+            </td>
+            <td class:list={['text-right font-mono text-sm font-medium whitespace-nowrap', getBalanceClass(account.balance)]}>
+              {formatCurrency(account.balance)}
+            </td>
+          </tr>
+        );
+      })}
     </tbody>
   </table>
 </div>

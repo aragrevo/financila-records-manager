@@ -2,8 +2,9 @@
 import Layout from '../layouts/Layout.astro';
 import AccountTable from '../components/accounts/AccountTable.astro';
 import SummaryCard from '../components/dashboard/SummaryCard.astro';
+import { IconShield, IconTrendingUp, IconCalendar, IconArchive } from '../components/icons';
 import { accountsData, getTotalBalance, getAccountsByCategory } from '../data/accounts';
-import { formatCurrency } from '../data/summary';
+import { formatCurrency } from '../utils/format';
 
 const totalBalance = getTotalBalance();
 const emergencyAccounts = getAccountsByCategory('emergency');
@@ -15,6 +16,11 @@ const emergencyTotal = emergencyAccounts.reduce((sum, acc) => sum + acc.balance,
 const investmentTotal = investmentAccounts.reduce((sum, acc) => sum + acc.balance, 0);
 const retirementTotal = retirementAccounts.reduce((sum, acc) => sum + acc.balance, 0);
 const contingencyTotal = contingencyAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+
+const iconShield = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>`;
+const iconTrending = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>`;
+const iconCalendar = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>`;
+const iconArchive = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>`;
 ---
 
 <Layout title="Accounts" activePage="accounts">
@@ -37,7 +43,7 @@ const contingencyTotal = contingencyAccounts.reduce((sum, acc) => sum + acc.bala
         value={formatCurrency(emergencyTotal)}
         change={`${emergencyAccounts.length} accounts`}
         changeType="neutral"
-        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>`}
+        icon={iconShield}
         accentColor="emergency"
       />
       
@@ -46,7 +52,7 @@ const contingencyTotal = contingencyAccounts.reduce((sum, acc) => sum + acc.bala
         value={formatCurrency(investmentTotal)}
         change={`${investmentAccounts.length} accounts`}
         changeType="neutral"
-        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>`}
+        icon={iconTrending}
         accentColor="investment"
       />
       
@@ -55,7 +61,7 @@ const contingencyTotal = contingencyAccounts.reduce((sum, acc) => sum + acc.bala
         value={formatCurrency(retirementTotal)}
         change={`${retirementAccounts.length} accounts`}
         changeType="neutral"
-        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>`}
+        icon={iconCalendar}
         accentColor="retirement"
       />
       
@@ -64,7 +70,7 @@ const contingencyTotal = contingencyAccounts.reduce((sum, acc) => sum + acc.bala
         value={formatCurrency(contingencyTotal)}
         change={`${contingencyAccounts.length} accounts`}
         changeType="neutral"
-        icon={`<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>`}
+        icon={iconArchive}
         accentColor="contingency"
       />
     </div>

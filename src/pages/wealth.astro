@@ -2,7 +2,8 @@
 import Layout from '../layouts/Layout.astro';
 import CategoryChart from '../components/dashboard/CategoryChart.astro';
 import ProgressBars from '../components/dashboard/ProgressBars.astro';
-import { summaryData, formatCurrency, formatPercentage } from '../data/summary';
+import { summaryData } from '../data/summary';
+import { formatCurrency } from '../utils/format';
 
 const wealthCategories = [
   {

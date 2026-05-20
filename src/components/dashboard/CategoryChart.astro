@@ -1,5 +1,6 @@
 ---
 import Chip from '../ui/Chip.astro';
+import { formatCurrency } from '../../utils/format';
 
 interface CategoryData {
   name: string;
@@ -20,10 +21,6 @@ const colorClasses = {
   investment: 'bg-investment',
   retirement: 'bg-retirement',
   contingency: 'bg-contingency',
-};
-
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 };
 ---
 

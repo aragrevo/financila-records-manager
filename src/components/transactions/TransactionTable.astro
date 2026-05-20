@@ -1,6 +1,7 @@
 ---
 import Chip from '../ui/Chip.astro';
 import type { Transaction } from '../../data/transactions';
+import { formatCurrency, formatDate } from '../../utils/format';
 
 interface Props {
   transactions: Transaction[];
@@ -8,18 +9,6 @@ interface Props {
 }
 
 const { transactions, class: className = '' } = Astro.props;
-
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-};
-
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-};
 
 const getAmountClass = (type: Transaction['type']) => {
   switch (type) {

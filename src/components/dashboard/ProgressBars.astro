@@ -1,4 +1,6 @@
 ---
+import { formatCurrency } from '../../utils/format';
+
 interface ProgressBarData {
   label: string;
   value: number;
@@ -27,7 +29,7 @@ const colorClasses = {
       <div class="flex items-center justify-between mb-1">
         <span class="text-sm font-medium text-on-surface">{item.label}</span>
         <span class="text-sm font-medium text-on-surface financial-figure">
-          {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.value)}
+          {formatCurrency(item.value)}
         </span>
       </div>
       <div class="progress-bar">

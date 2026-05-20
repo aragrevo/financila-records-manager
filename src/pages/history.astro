@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import TransactionTable from '../components/transactions/TransactionTable.astro';
 import { transactionsData, getTotalIncome, getTotalExpenses } from '../data/transactions';
-import { formatCurrency } from '../data/summary';
+import { formatCurrency } from '../utils/format';
 
 const totalIncome = getTotalIncome();
 const totalExpenses = getTotalExpenses();
