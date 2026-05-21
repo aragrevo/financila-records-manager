@@ -275,7 +275,36 @@ export class DashboardService {
   }
 
   async getDistributionFunds() {
-    return [];
+    const accounts = await this.getAccounts();
+    const byCategory: Record<string, number> = {};
+
+    for (const a of accounts) {
+      byCategory[a.category] = (byCategory[a.category] || 0) + a.balance;
+    }
+
+    const totalBalance = Object.values(byCategory).reduce((s, v) => s + v, 0);
+    const categoryColors: Record<string, string> = {
+      retirement: "bg-retirement",
+      emergency: "bg-emergency",
+      investment: "bg-investment",
+      contingency: "bg-contingency",
+    };
+
+    const categoryLabels: Record<string, string> = {
+      retirement: "Retirement",
+      emergency: "Emergency",
+      investment: "Investment",
+      contingency: "Contingency",
+    };
+
+    return Object.entries(byCategory)
+      .filter(([_, amount]) => amount > 0)
+      .map(([category, amount]) => ({
+        label: categoryLabels[category] || category,
+        color: categoryColors[category] || "bg-gray-400",
+        amount,
+      }))
+      .sort((a, b) => b.amount - a.amount);
   }
 
   async getAccountCards(): Promise<AccountCard[]> {

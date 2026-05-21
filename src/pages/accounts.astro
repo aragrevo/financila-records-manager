@@ -46,6 +46,13 @@ const formattedDistributionFunds = distributionFunds.map((fund) => ({
   ...fund,
   amount: formatCurrencyCOP(fund.amount),
 }));
+
+const totalForDistribution = distributionFunds.reduce((sum, fund) => sum + fund.amount, 0);
+const topFund = distributionFunds[0];
+const topFundPercentage = totalForDistribution > 0 && topFund
+  ? Math.round((topFund.amount / totalForDistribution) * 100)
+  : 0;
+const topFundTitle = topFund ? `Fondo de ${topFund.label}` : "Fondo de Retiro";
 ---
 
 <Layout title="Cuentas" activePage="accounts">
@@ -82,8 +89,8 @@ const formattedDistributionFunds = distributionFunds.map((fund) => ({
   <section class="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-stack-lg">
     <AccountSummaryTable entities={summaryEntities} footer={formattedFooter} />
     <DistributionChart
-      title="Fondo de Retiro"
-      percentage={56}
+      title={topFundTitle}
+      percentage={topFundPercentage}
       funds={formattedDistributionFunds}
     />
   </section>
