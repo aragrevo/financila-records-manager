@@ -1,7 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import SummaryCard from "../components/dashboard/SummaryCard.astro";
-import AssetAllocationChart from "../components/dashboard/AssetAllocationChart.astro";
+import TreemapChart from "../components/dashboard/TreemapChart.astro";
 import MovementsTable from "../components/dashboard/MovementsTable.astro";
 import FundStatusTable from "../components/dashboard/FundStatusTable.astro";
 import { dashboardService } from "../services/dashboard.service";
@@ -67,7 +67,7 @@ const formattedFundStatus = fundStatus.map((fund) => ({
     <div
       class="lg:col-span-2 bg-surface-container-lowest p-gutter rounded-xl border border-outline-variant shadow-sm"
     >
-      <AssetAllocationChart entities={chartEntities} />
+      <TreemapChart entities={chartEntities} />
     </div>
 
     <!-- Recent Movements -->

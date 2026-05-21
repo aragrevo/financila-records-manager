@@ -70,45 +70,47 @@ export class DashboardService {
     const accounts = await this.getAccounts();
     const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
 
-    const byInstitution = new Map<string, Record<string, number>>();
+    const byCategory = new Map<string, Map<string, number>>();
     for (const a of accounts) {
-      if (!byInstitution.has(a.name)) {
-        byInstitution.set(a.name, {});
+      if (!byCategory.has(a.category)) {
+        byCategory.set(a.category, new Map());
       }
-      const cats = byInstitution.get(a.name)!;
-      cats[a.category] = (cats[a.category] || 0) + a.balance;
+      const insts = byCategory.get(a.category)!;
+      insts.set(a.name, (insts.get(a.name) || 0) + a.balance);
     }
 
-    const categoryColors: Record<string, string> = {
-      contingency: "bg-blue-500",
-      emergency: "bg-red-500",
-      investment: "bg-amber-500",
-      retirement: "bg-emerald-600",
+    const categoryMeta: Record<string, { label: string; color: string }> = {
+      retirement: { label: "Retirement", color: "#16a34a" },
+      emergency: { label: "Emergency", color: "#dc2626" },
+      investment: { label: "Investment", color: "#eab308" },
+      contingency: { label: "Contingency", color: "#2563eb" },
     };
 
     const result: ChartEntity[] = [];
-    for (const [name, cats] of byInstitution) {
-      const total = Object.values(cats).reduce((s, v) => s + v, 0);
-      const hasMultiple = Object.keys(cats).length > 1;
+    for (const [key, insts] of byCategory) {
+      const total = [...insts.values()].reduce((s, v) => s + v, 0);
+      const meta = categoryMeta[key] || { label: key, color: "#9ca3af" };
 
-      const segments = Object.entries(cats).map(([cat, amount]) => ({
-        color: categoryColors[cat] || "bg-gray-400",
-        height: (amount / total) * 100,
-        tooltip: formatCurrencyCOP(amount),
-      }));
+      const institutions = [...insts.entries()]
+        .map(([name, amount]) => ({
+          name,
+          amount,
+          formattedAmount: formatCurrencyCOP(amount),
+        }))
+        .sort((a, b) => b.amount - a.amount);
 
       result.push({
-        name,
-        segments,
-        barWidth: "thin",
+        key,
+        label: meta.label,
+        total,
+        formattedTotal: formatCurrencyCOP(total),
+        pct: (total / totalBalance) * 100,
+        color: meta.color,
+        institutions,
       });
     }
 
-    return result.sort((a, b) => {
-      const totalA = a.segments.reduce((s, seg) => s + seg.height, 0);
-      const totalB = b.segments.reduce((s, seg) => s + seg.height, 0);
-      return totalB - totalA;
-    });
+    return result.sort((a, b) => b.total - a.total);
   }
 
   async getRecentMovements(): Promise<Movement[]> {

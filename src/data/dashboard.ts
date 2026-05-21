@@ -7,17 +7,23 @@ export interface SummaryCard {
   accentColor: "primary" | "emergency" | "investment" | "retirement";
 }
 
-export interface ChartSegment {
-  color: string;
-  height: number;
-  tooltip?: string;
+export interface CategoryInstitution {
+  name: string;
+  amount: number;
+  formattedAmount: string;
 }
 
-export interface ChartEntity {
-  name: string;
-  segments: ChartSegment[];
-  barWidth: "thin" | "wide";
+export interface CategoryGroup {
+  key: string;
+  label: string;
+  total: number;
+  formattedTotal: string;
+  pct: number;
+  color: string;
+  institutions: CategoryInstitution[];
 }
+
+export type ChartEntity = CategoryGroup;
 
 export interface Movement {
   account: string;
@@ -104,50 +110,6 @@ export const dashboardData = {
       accentColor: "retirement" as const,
     },
   ] as SummaryCard[],
-
-  chartEntities: [
-    {
-      name: "Global66",
-      segments: [{ color: "bg-red-500", height: 12.3, tooltip: 12300000 }],
-      barWidth: "wide" as const,
-    },
-    {
-      name: "MejorCDT",
-      segments: [{ color: "bg-emerald-600", height: 15.4, tooltip: 15400000 }],
-      barWidth: "wide" as const,
-    },
-    {
-      name: "NU",
-      segments: [
-        { color: "bg-blue-500", height: 0.7 },
-        { color: "bg-red-500", height: 6.6 },
-        { color: "bg-emerald-600", height: 3.1 },
-      ],
-      barWidth: "thin" as const,
-    },
-    {
-      name: "Otro",
-      segments: [
-        { color: "bg-red-500", height: 0.78 },
-        { color: "bg-amber-500", height: 7.2 },
-        { color: "bg-emerald-600", height: 0.5 },
-      ],
-      barWidth: "thin" as const,
-    },
-    {
-      name: "Tyba",
-      segments: [
-        { color: "bg-amber-500", height: 1.2 },
-        { color: "bg-emerald-600", height: 23.0 },
-      ],
-      barWidth: "thin" as const,
-    },
-    {
-      name: "XTB",
-      segments: [{ color: "bg-amber-500", height: 3.5, tooltip: 3500000 }],
-      barWidth: "wide" as const,
-    },
-  ] as ChartEntity[],
 
   recentMovements: [
     {

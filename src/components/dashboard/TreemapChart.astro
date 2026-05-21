@@ -1,0 +1,258 @@
+---
+import type { CategoryGroup } from "../../data/dashboard";
+
+interface Props {
+  entities: CategoryGroup[];
+}
+
+const { entities } = Astro.props;
+
+const totalBalance = entities.reduce((s, e) => s + e.total, 0);
+
+const biggerColumnSpan = Math.max(
+  ...entities.map((cat) => Math.floor((cat.pct * 12) / 100)),
+);
+const otherColumnSpan = 12 - biggerColumnSpan;
+const entitiesSize = entities.map((cat, idx) => {
+  switch (idx) {
+    case 0:
+      return {
+        width: biggerColumnSpan,
+        height: 6,
+      };
+
+    case 1:
+      return {
+        width: otherColumnSpan,
+        height: 3,
+      };
+
+    case 2:
+      return {
+        width: otherColumnSpan - Math.ceil(otherColumnSpan / 2) + 1,
+        height: 3,
+      };
+
+    case 3:
+      return {
+        width: otherColumnSpan - Math.ceil(otherColumnSpan / 2) - 1,
+        height: 3,
+      };
+
+    default:
+      return {
+        width: 12,
+        height: 6,
+      };
+  }
+});
+---
+
+<div class="flex justify-between items-center mb-6">
+  <h3 class="text-headline-md font-headline-md text-primary">
+    Asset Allocation Treemap
+  </h3>
+  <div class="flex flex-wrap items-center gap-4">
+    {
+      entities.map((cat) => (
+        <div class="flex items-center gap-1.5">
+          <span
+            class="w-3 h-3 rounded-sm"
+            style={`background-color: ${cat.color}`}
+          />
+          <span class="text-[10px] font-bold text-on-surface-variant uppercase">
+            {cat.label}
+          </span>
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<div class="h-[350px] w-full grid grid-cols-12 grid-rows-6 gap-1 mt-8">
+  {
+    entities.map((cat, idx) => (
+      <div
+        style={`--cat-color: ${cat.color}; `}
+        class:list={[
+          "  bg-emerald-600/10 border border-emerald-600/30 rounded p-2 flex flex-col gap-1 treemap-cat",
+          `col-span-${entitiesSize[idx].width}`,
+          `row-span-${entitiesSize[idx].height}`,
+        ]}
+      >
+        <div class="text-[10px] font-bold  uppercase mb-1 flex items-center treemap-cat-header overflow-hidden">
+          <span class="treemap-cat-label">{cat.label}</span>
+          <span class="treemap-cat-total">{cat.formattedTotal}</span>
+          <span class="treemap-cat-pct ms-auto">{cat.pct.toFixed(1)}%</span>
+        </div>
+        <div class="treemap-cat-body">
+          {cat.institutions.map((inst) => {
+            const instPct = (inst.amount / cat.total) * 100;
+            return (
+              <div
+                class="treemap-inst"
+                style={`flex-grow: ${Math.round(instPct * 100)};`}
+              >
+                <span class="treemap-inst-name">{inst.name}</span>
+                <span class="treemap-inst-val">{inst.formattedAmount}</span>
+                <div class="treemap-tip">
+                  <span class="treemap-tip-cat">{cat.label}</span>
+                  <span class="treemap-tip-name">{inst.name}</span>
+                  <span class="treemap-tip-val">{inst.formattedAmount}</span>
+                  <span class="treemap-tip-pct">
+                    {instPct.toFixed(1)}% of {cat.label}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .treemap-cat {
+    display: flex;
+    flex-direction: column;
+    border-radius: 6px;
+    overflow: visible;
+    border: 1px solid color-mix(in srgb, var(--cat-color) 30%, transparent);
+    background-color: color-mix(in srgb, var(--cat-color) 8%, transparent);
+    min-width: 0;
+  }
+
+  .treemap-cat-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background-color: color-mix(in srgb, var(--cat-color) 12%, transparent);
+    flex-shrink: 0;
+  }
+
+  .treemap-cat-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--cat-color);
+  }
+
+  .treemap-cat-total {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--cat-color);
+    font-family: "JetBrains Mono Variable", monospace;
+    opacity: 0.8;
+  }
+
+  .treemap-cat-pct {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--cat-color);
+    font-family: "JetBrains Mono Variable", monospace;
+    opacity: 0.6;
+    margin-left: auto;
+  }
+
+  .treemap-cat-body {
+    display: flex;
+    flex: 1;
+    gap: 3px;
+    padding: 3px;
+    min-height: 0;
+  }
+
+  .treemap-inst {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border-radius: 4px;
+    background-color: var(--cat-color);
+    min-width: 0;
+    padding: 6px 4px;
+    cursor: default;
+    position: relative;
+    transition: filter 0.12s ease;
+  }
+
+  .treemap-inst:hover {
+    filter: brightness(1.1);
+  }
+
+  .treemap-inst-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffffff;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .treemap-inst-val {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: "JetBrains Mono Variable", monospace;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .treemap-tip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    background-color: #191c1e;
+    color: #ffffff;
+    padding: 6px 8px;
+    border-radius: 5px;
+    flex-direction: column;
+    gap: 1px;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    border-left: 3px solid var(--cat-color);
+  }
+
+  .treemap-inst:hover .treemap-tip {
+    display: flex;
+  }
+
+  .treemap-tip-cat {
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    opacity: 0.6;
+  }
+
+  .treemap-tip-name {
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .treemap-tip-val {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: "JetBrains Mono Variable", monospace;
+    margin-top: 1px;
+  }
+
+  .treemap-tip-pct {
+    font-size: 9px;
+    opacity: 0.55;
+    font-family: "JetBrains Mono Variable", monospace;
+  }
+</style>
