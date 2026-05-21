@@ -93,14 +93,14 @@ export class DashboardService {
 
       const segments = Object.entries(cats).map(([cat, amount]) => ({
         color: categoryColors[cat] || "bg-gray-400",
-        height: (amount / totalBalance) * 100,
-        tooltip: hasMultiple ? undefined : amount,
+        height: (amount / total) * 100,
+        tooltip: formatCurrencyCOP(amount),
       }));
 
       result.push({
         name,
         segments,
-        barWidth: hasMultiple ? "thin" : "wide",
+        barWidth: "thin",
       });
     }
 

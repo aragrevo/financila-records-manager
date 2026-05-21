@@ -15,14 +15,6 @@ const [summaryCards, chartEntities, recentMovements, fundStatus] =
     dashboardService.getFundStatus(),
   ]);
 
-const formattedChartEntities = chartEntities.map((entity) => ({
-  ...entity,
-  segments: entity.segments.map((seg) => ({
-    ...seg,
-    tooltip: seg.tooltip ? formatCurrencyCOP(seg.tooltip) : undefined,
-  })),
-}));
-
 const formattedFundStatus = fundStatus.map((fund) => ({
   ...fund,
   expected: formatCurrencyCOP(fund.expected),
@@ -75,7 +67,7 @@ const formattedFundStatus = fundStatus.map((fund) => ({
     <div
       class="lg:col-span-2 bg-surface-container-lowest p-gutter rounded-xl border border-outline-variant shadow-sm"
     >
-      <AssetAllocationChart entities={formattedChartEntities} />
+      <AssetAllocationChart entities={chartEntities} />
     </div>
 
     <!-- Recent Movements -->
