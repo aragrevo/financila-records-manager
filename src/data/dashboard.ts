@@ -7,23 +7,23 @@ export interface SummaryCard {
   accentColor: "primary" | "emergency" | "investment" | "retirement";
 }
 
-export interface CategoryInstitution {
-  name: string;
-  amount: number;
-  formattedAmount: string;
-}
-
-export interface CategoryGroup {
+export interface AccountCategory {
   key: string;
   label: string;
+  amount: number;
+  formattedAmount: string;
+  color: string;
+}
+
+export interface AccountGroup {
+  name: string;
   total: number;
   formattedTotal: string;
   pct: number;
-  color: string;
-  institutions: CategoryInstitution[];
+  categories: AccountCategory[];
 }
 
-export type ChartEntity = CategoryGroup;
+export type ChartEntity = AccountGroup;
 
 export interface Movement {
   account: string;

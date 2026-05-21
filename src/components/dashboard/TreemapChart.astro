@@ -1,51 +1,124 @@
 ---
-import type { CategoryGroup } from "../../data/dashboard";
+import type { AccountGroup } from "../../data/dashboard";
 
 interface Props {
-  entities: CategoryGroup[];
+  entities: AccountGroup[];
 }
 
 const { entities } = Astro.props;
 
-const totalBalance = entities.reduce((s, e) => s + e.total, 0);
+const COLS = 12;
+const ROWS = 6;
 
-const biggerColumnSpan = Math.max(
-  ...entities.map((cat) => Math.floor((cat.pct * 12) / 100)),
-);
-const otherColumnSpan = 12 - biggerColumnSpan;
-const entitiesSize = entities.map((cat, idx) => {
-  switch (idx) {
-    case 0:
-      return {
-        width: biggerColumnSpan,
-        height: 6,
-      };
+interface Rect {
+  col: number;
+  row: number;
+  colSpan: number;
+  rowSpan: number;
+}
 
-    case 1:
-      return {
-        width: otherColumnSpan,
-        height: 3,
-      };
+function computeGridSpans(items: { pct: number }[]): Rect[] {
+  const totalCells = COLS * ROWS;
+  const raw = items.map((it, idx) => ({
+    idx,
+    area: Math.max(1, Math.round((it.pct / 100) * totalCells)),
+  }));
 
-    case 2:
-      return {
-        width: otherColumnSpan - Math.ceil(otherColumnSpan / 2) + 1,
-        height: 3,
-      };
+  const sorted = [...raw].sort((a, b) => b.area - a.area);
+  const result: (Rect & { idx: number })[] = [];
 
-    case 3:
-      return {
-        width: otherColumnSpan - Math.ceil(otherColumnSpan / 2) - 1,
-        height: 3,
-      };
+  result.push({
+    idx: sorted[0].idx,
+    col: 0,
+    row: 0,
+    colSpan: Math.max(1, Math.round((sorted[0].area / totalCells) * COLS)),
+    rowSpan: ROWS,
+  });
 
-    default:
-      return {
-        width: 12,
-        height: 6,
-      };
+  let remCol = result[0].colSpan;
+  let remRow = 0;
+  let remW = COLS - remCol;
+  let remH = ROWS;
+
+  const remaining = sorted.slice(1);
+
+  while (remaining.length > 0 && remW > 0 && remH > 0) {
+    if (remaining.length === 1) {
+      result.push({
+        idx: remaining[0].idx,
+        col: remCol,
+        row: remRow,
+        colSpan: remW,
+        rowSpan: remH,
+      });
+      break;
+    }
+
+    const remTotal = remaining.reduce((s, it) => s + it.area, 0);
+
+    let bestRatio = Infinity;
+    let bestRowH = 1;
+    let bestCount = 1;
+
+    for (let rh = 1; rh <= remH; rh++) {
+      const rowArea = remW * rh;
+      let sum = 0;
+      let count = 0;
+      for (const item of remaining) {
+        if (sum + item.area > rowArea * 1.2 && count > 0) break;
+        sum += item.area;
+        count++;
+      }
+      if (count === 0) continue;
+
+      const rowItems = remaining.slice(0, count);
+      let col = 0;
+      let worst = 0;
+      for (let j = 0; j < rowItems.length; j++) {
+        const cs =
+          j === rowItems.length - 1
+            ? remW - col
+            : Math.max(1, Math.round((rowItems[j].area / sum) * remW));
+        const ratio = Math.max(cs / rh, rh / cs);
+        if (ratio > worst) worst = ratio;
+        col += cs;
+      }
+
+      if (worst < bestRatio) {
+        bestRatio = worst;
+        bestRowH = rh;
+        bestCount = count;
+      }
+    }
+
+    const rowItems = remaining.splice(0, bestCount);
+    const rowSum = rowItems.reduce((s, it) => s + it.area, 0);
+    let col = remCol;
+
+    for (let j = 0; j < rowItems.length; j++) {
+      const isLast = j === rowItems.length - 1;
+      const cs = isLast
+        ? remCol + remW - col
+        : Math.max(1, Math.round((rowItems[j].area / rowSum) * remW));
+      result.push({
+        idx: rowItems[j].idx,
+        col,
+        row: remRow,
+        colSpan: cs,
+        rowSpan: bestRowH,
+      });
+      col += cs;
+    }
+
+    remRow += bestRowH;
+    remH -= bestRowH;
   }
-});
+
+  result.sort((a, b) => a.idx - b.idx);
+  return result.map(({ idx, ...rest }) => rest);
+}
+
+const gridSpans = computeGridSpans(entities);
 ---
 
 <div class="flex justify-between items-center mb-6">
@@ -53,111 +126,132 @@ const entitiesSize = entities.map((cat, idx) => {
     Asset Allocation Treemap
   </h3>
   <div class="flex flex-wrap items-center gap-4">
-    {
-      entities.map((cat) => (
-        <div class="flex items-center gap-1.5">
-          <span
-            class="w-3 h-3 rounded-sm"
-            style={`background-color: ${cat.color}`}
-          />
-          <span class="text-[10px] font-bold text-on-surface-variant uppercase">
-            {cat.label}
-          </span>
-        </div>
-      ))
-    }
+    <div class="flex items-center gap-1.5">
+      <span class="w-3 h-3 rounded-sm" style="background-color: #2563eb"></span>
+      <span class="text-[10px] font-bold text-on-surface-variant uppercase"
+        >Contingency</span
+      >
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="w-3 h-3 rounded-sm" style="background-color: #dc2626"></span>
+      <span class="text-[10px] font-bold text-on-surface-variant uppercase"
+        >Emergency</span
+      >
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="w-3 h-3 rounded-sm" style="background-color: #eab308"></span>
+      <span class="text-[10px] font-bold text-on-surface-variant uppercase"
+        >Investment</span
+      >
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="w-3 h-3 rounded-sm" style="background-color: #16a34a"></span>
+      <span class="text-[10px] font-bold text-on-surface-variant uppercase"
+        >Retirement</span
+      >
+    </div>
   </div>
 </div>
 
-<div class="h-[350px] w-full grid grid-cols-12 grid-rows-6 gap-1 mt-8">
+<div class="w-full aspect-[2/1] grid grid-cols-12 grid-rows-6 gap-1 mt-8">
   {
-    entities.map((cat, idx) => (
-      <div
-        style={`--cat-color: ${cat.color}; `}
-        class:list={[
-          "  bg-emerald-600/10 border border-emerald-600/30 rounded p-2 flex flex-col gap-1 treemap-cat",
-          `col-span-${entitiesSize[idx].width}`,
-          `row-span-${entitiesSize[idx].height}`,
-        ]}
-      >
-        <div class="text-[10px] font-bold  uppercase mb-1 flex items-center treemap-cat-header overflow-hidden">
-          <span class="treemap-cat-label">{cat.label}</span>
-          <span class="treemap-cat-total">{cat.formattedTotal}</span>
-          <span class="treemap-cat-pct ms-auto">{cat.pct.toFixed(1)}%</span>
-        </div>
-        <div class="treemap-cat-body">
-          {cat.institutions.map((inst) => {
-            const instPct = (inst.amount / cat.total) * 100;
-            return (
-              <div
-                class="treemap-inst"
-                style={`flex-grow: ${Math.round(instPct * 100)};`}
-              >
-                <span class="treemap-inst-name">{inst.name}</span>
-                <span class="treemap-inst-val">{inst.formattedAmount}</span>
-                <div class="treemap-tip">
-                  <span class="treemap-tip-cat">{cat.label}</span>
-                  <span class="treemap-tip-name">{inst.name}</span>
-                  <span class="treemap-tip-val">{inst.formattedAmount}</span>
-                  <span class="treemap-tip-pct">
-                    {instPct.toFixed(1)}% of {cat.label}
-                  </span>
+    entities.map((account, idx) => {
+      const span = gridSpans[idx];
+      const dominantColor = account.categories[0]?.color ?? "#9ca3af";
+
+      return (
+        <div
+          class="rounded p-2 flex flex-col gap-1 treemap-account"
+          style={`--acc-color: ${dominantColor}; grid-column: ${span.col + 1} / span ${span.colSpan}; grid-row: ${span.row + 1} / span ${span.rowSpan};`}
+        >
+          <div class="treemap-acc-header overflow-hidden">
+            <span class="treemap-acc-name">{account.name}</span>
+            <span class="treemap-acc-total">{account.formattedTotal}</span>
+            <span class="treemap-acc-pct ms-auto">
+              {account.pct.toFixed(1)}%
+            </span>
+          </div>
+
+          <div class="treemap-acc-body">
+            {account.categories.map((cat) => {
+              const catPct = (cat.amount / account.total) * 100;
+              return (
+                <div
+                  class="treemap-cat"
+                  style={`flex-grow: ${Math.round(catPct * 100)}; --cat-color: ${cat.color};`}
+                >
+                  {account.categories.length > 1 && (
+                    <div
+                      class="treemap-cat-bar"
+                      style={`background-color: ${cat.color};`}
+                    />
+                  )}
+                  <div class="treemap-cat-content">
+                    <span class="treemap-cat-name">{cat.label}</span>
+                    <span class="treemap-cat-val">{cat.formattedAmount}</span>
+                  </div>
+                  <div class="treemap-tip">
+                    <span class="treemap-tip-acc">{account.name}</span>
+                    <span class="treemap-tip-cat">{cat.label}</span>
+                    <span class="treemap-tip-val">{cat.formattedAmount}</span>
+                    <span class="treemap-tip-pct">
+                      {catPct.toFixed(1)}% of {account.name}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
-    ))
+      );
+    })
   }
 </div>
 
 <style>
-  .treemap-cat {
+  .treemap-account {
     display: flex;
     flex-direction: column;
     border-radius: 6px;
     overflow: visible;
-    border: 1px solid color-mix(in srgb, var(--cat-color) 30%, transparent);
-    background-color: color-mix(in srgb, var(--cat-color) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--acc-color) 30%, transparent);
+    background-color: color-mix(in srgb, var(--acc-color) 8%, transparent);
     min-width: 0;
   }
 
-  .treemap-cat-header {
+  .treemap-acc-header {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 8px;
-    background-color: color-mix(in srgb, var(--cat-color) 12%, transparent);
+    padding: 0px 8px;
     flex-shrink: 0;
   }
 
-  .treemap-cat-label {
+  .treemap-acc-name {
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--cat-color);
+    color: var(--acc-color);
   }
 
-  .treemap-cat-total {
+  .treemap-acc-total {
     font-size: 10px;
     font-weight: 600;
-    color: var(--cat-color);
+    color: var(--acc-color);
     font-family: "JetBrains Mono Variable", monospace;
     opacity: 0.8;
   }
 
-  .treemap-cat-pct {
+  .treemap-acc-pct {
     font-size: 9px;
     font-weight: 600;
-    color: var(--cat-color);
+    color: var(--acc-color);
     font-family: "JetBrains Mono Variable", monospace;
     opacity: 0.6;
-    margin-left: auto;
   }
 
-  .treemap-cat-body {
+  .treemap-acc-body {
     display: flex;
     flex: 1;
     gap: 3px;
@@ -165,14 +259,14 @@ const entitiesSize = entities.map((cat, idx) => {
     min-height: 0;
   }
 
-  .treemap-inst {
+  .treemap-cat {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 2px;
     border-radius: 4px;
-    background-color: var(--cat-color);
+    background-color: color-mix(in srgb, var(--cat-color) 18%, transparent);
     min-width: 0;
     padding: 6px 4px;
     cursor: default;
@@ -180,31 +274,52 @@ const entitiesSize = entities.map((cat, idx) => {
     transition: filter 0.12s ease;
   }
 
-  .treemap-inst:hover {
-    filter: brightness(1.1);
+  .treemap-cat:hover {
+    filter: brightness(0.92);
   }
 
-  .treemap-inst-name {
-    font-size: 11px;
-    font-weight: 700;
-    color: #ffffff;
+  .treemap-cat-bar {
+    height: 3px;
+    width: 100%;
+    flex-shrink: 0;
+    border-radius: 2px 2px 0 0;
+  }
+
+  .treemap-cat-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 1px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .treemap-cat-name {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--cat-color);
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    line-height: 1.2;
   }
 
-  .treemap-inst-val {
+  .treemap-cat-val {
     font-size: 10px;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--cat-color);
+    opacity: 0.8;
     font-family: "JetBrains Mono Variable", monospace;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    line-height: 1.2;
   }
 
   .treemap-tip {
@@ -226,11 +341,11 @@ const entitiesSize = entities.map((cat, idx) => {
     border-left: 3px solid var(--cat-color);
   }
 
-  .treemap-inst:hover .treemap-tip {
+  .treemap-cat:hover .treemap-tip {
     display: flex;
   }
 
-  .treemap-tip-cat {
+  .treemap-tip-acc {
     font-size: 9px;
     text-transform: uppercase;
     font-weight: 700;
@@ -238,7 +353,7 @@ const entitiesSize = entities.map((cat, idx) => {
     opacity: 0.6;
   }
 
-  .treemap-tip-name {
+  .treemap-tip-cat {
     font-size: 11px;
     font-weight: 700;
   }
