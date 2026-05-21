@@ -23,11 +23,6 @@ const formattedChartEntities = chartEntities.map((entity) => ({
   })),
 }));
 
-const formattedRecentMovements = recentMovements.map((mov) => ({
-  ...mov,
-  formattedAmount: formatCurrencyCOP(mov.amount),
-}));
-
 const formattedFundStatus = fundStatus.map((fund) => ({
   ...fund,
   expected: formatCurrencyCOP(fund.expected),
@@ -84,7 +79,7 @@ const formattedFundStatus = fundStatus.map((fund) => ({
     </div>
 
     <!-- Recent Movements -->
-    <MovementsTable movements={formattedRecentMovements} />
+    <MovementsTable movements={recentMovements} />
   </div>
 
   <!-- Funds Detail Table -->

@@ -24,7 +24,7 @@ export interface Movement {
   date: string;
   category: string;
   type: string;
-  amount: number;
+  amount: string | number;
 }
 
 export interface FundStatus {

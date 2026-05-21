@@ -113,15 +113,13 @@ export class DashboardService {
 
   async getRecentMovements(): Promise<Movement[]> {
     const txns = await this.getTransactions();
-    const accounts = await this.getAccounts();
-    const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
 
     return txns.slice(0, 5).map((t) => ({
-      account: accountMap.get(t.accountId) || t.accountId,
-      date: t.date,
-      category: t.categoryId,
+      account: t.accountName || t.accountId,
+      date: formatDate(t.date),
+      category: `${t.categoryId.charAt(0).toLocaleUpperCase()}${t.categoryId.slice(1)}`,
       type: t.type,
-      amount: t.amount,
+      amount: formatCurrencyCOP(t.amount),
     }));
   }
 
@@ -344,11 +342,9 @@ export class DashboardService {
 
   async getMovements(): Promise<Movement[]> {
     const txns = await this.getTransactions();
-    const accounts = await this.getAccounts();
-    const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
 
     return txns.map((t) => ({
-      account: accountMap.get(t.accountId) || t.accountId,
+      account: t.accountName || t.accountId,
       date: t.date,
       category: t.categoryId,
       type: t.type,
