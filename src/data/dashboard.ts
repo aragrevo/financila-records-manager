@@ -2,7 +2,7 @@ export interface SummaryCard {
   title: string;
   value: number;
   subtitle: string;
-  subtitleType: "positive" | "neutral";
+  subtitleType: "positive" | "neutral" | "negative";
   icon: string;
   accentColor: "primary" | "emergency" | "investment" | "retirement";
 }

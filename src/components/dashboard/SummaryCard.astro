@@ -3,7 +3,7 @@ interface Props {
   title: string;
   value: string;
   subtitle?: string;
-  subtitleType?: 'positive' | 'neutral';
+  subtitleType?: 'positive' | 'neutral' | 'negative';
   icon: string;
   accentColor: 'primary' | 'emergency' | 'investment' | 'retirement';
 }
@@ -27,6 +27,7 @@ const iconColors = {
 const subtitleColors = {
   positive: 'text-green-600',
   neutral: 'text-on-surface-variant',
+  negative: 'text-red-600',
 };
 ---
 
@@ -41,6 +42,9 @@ const subtitleColors = {
     <div class:list={['mt-2 flex items-center gap-1 text-[11px] font-bold', subtitleColors[subtitleType]]}>
       {subtitleType === 'positive' && (
         <span class="material-symbols-outlined text-xs">trending_up</span>
+      )}
+      {subtitleType === 'negative' && (
+        <span class="material-symbols-outlined text-xs">trending_down</span>
       )}
       {subtitle}
     </div>

@@ -14,6 +14,7 @@ import type {
   RecentTransaction,
 } from "../data/dashboard";
 import { formatCurrencyCOP, formatDate } from "../utils/format";
+import { transactionsService } from "./transactions.service";
 
 export class DashboardService {
   async getSummaryCards(): Promise<SummaryCard[]> {
@@ -29,12 +30,54 @@ export class DashboardService {
     const emergencyCurrent = byCategory["emergency"] || 0;
     const emergencyPct = Math.round((emergencyCurrent / emergencyTarget) * 100);
 
+    // Calculate real month-over-month change
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Get first and last day of current month
+    const firstDayCurrentMonth = new Date(currentYear, currentMonth, 1);
+    const lastDayCurrentMonth = new Date(currentYear, currentMonth + 1, 0);
+
+    const startDate = firstDayCurrentMonth.toISOString().split("T")[0];
+    const endDate = lastDayCurrentMonth.toISOString().split("T")[0];
+
+    // Get current month transactions
+    const currentMonthTxns = await transactionsService.getByDateRange(
+      startDate,
+      endDate,
+    );
+
+    // Calculate net flow (income - expenses)
+    let monthlyIncome = 0;
+    let monthlyExpenses = 0;
+
+    for (const t of currentMonthTxns) {
+      monthlyIncome += t.amount;
+    }
+
+    const netFlow = monthlyIncome - monthlyExpenses;
+    // Balance at start of month = current balance - net flow
+    const balanceStartOfMonth = totalBalance - netFlow;
+
+    // Calculate percentage change
+    let changePercent = 0;
+    if (balanceStartOfMonth > 0) {
+      changePercent =
+        ((totalBalance - balanceStartOfMonth) / balanceStartOfMonth) * 100;
+    }
+
+    // Format subtitle
+    const sign = changePercent >= 0 ? "+" : "";
+    const subtitle = `${sign}${changePercent.toFixed(1)}% vs last month`;
+    const subtitleType = changePercent >= 0 ? "positive" : "negative";
+
     return [
       {
         title: "Total Balance",
         value: totalBalance,
-        subtitle: "+2.4% vs last month",
-        subtitleType: "positive" as const,
+        subtitle,
+        subtitleType: subtitleType,
         icon: "account_balance_wallet",
         accentColor: "primary" as const,
       },
