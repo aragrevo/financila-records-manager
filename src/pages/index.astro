@@ -1,41 +1,34 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import SummaryCard from '../components/dashboard/SummaryCard.astro';
-import AssetAllocationChart from '../components/dashboard/AssetAllocationChart.astro';
-import MovementsTable from '../components/dashboard/MovementsTable.astro';
-import FundStatusTable from '../components/dashboard/FundStatusTable.astro';
-import { dashboardService } from '../services/dashboard.service';
-import { formatCurrencyCOP } from '../utils/format';
+import Layout from "../layouts/Layout.astro";
+import SummaryCard from "../components/dashboard/SummaryCard.astro";
+import AssetAllocationChart from "../components/dashboard/AssetAllocationChart.astro";
+import MovementsTable from "../components/dashboard/MovementsTable.astro";
+import FundStatusTable from "../components/dashboard/FundStatusTable.astro";
+import { dashboardService } from "../services/dashboard.service";
+import { formatCurrencyCOP } from "../utils/format";
 
-const [summaryCards, chartEntities, recentMovements, fundStatus] = await Promise.all([
-  dashboardService.getSummaryCards(),
-  dashboardService.getChartEntities(),
-  dashboardService.getRecentMovements(),
-  dashboardService.getFundStatus(),
-]);
+const [summaryCards, chartEntities, recentMovements, fundStatus] =
+  await Promise.all([
+    dashboardService.getSummaryCards(),
+    dashboardService.getChartEntities(),
+    dashboardService.getRecentMovements(),
+    dashboardService.getFundStatus(),
+  ]);
 
-const formattedSummaryCards = summaryCards.map(card => ({
-  ...card,
-  value: formatCurrencyCOP(card.value),
-  subtitle: card.accentColor === 'emergency'
-    ? `Target: ${formatCurrencyCOP(24000000)} (82%)`
-    : card.subtitle,
-}));
-
-const formattedChartEntities = chartEntities.map(entity => ({
+const formattedChartEntities = chartEntities.map((entity) => ({
   ...entity,
-  segments: entity.segments.map(seg => ({
+  segments: entity.segments.map((seg) => ({
     ...seg,
     tooltip: seg.tooltip ? formatCurrencyCOP(seg.tooltip) : undefined,
   })),
 }));
 
-const formattedRecentMovements = recentMovements.map(mov => ({
+const formattedRecentMovements = recentMovements.map((mov) => ({
   ...mov,
   formattedAmount: formatCurrencyCOP(mov.amount),
 }));
 
-const formattedFundStatus = fundStatus.map(fund => ({
+const formattedFundStatus = fundStatus.map((fund) => ({
   ...fund,
   expected: formatCurrencyCOP(fund.expected),
   current: formatCurrencyCOP(fund.current),
@@ -48,33 +41,45 @@ const formattedFundStatus = fundStatus.map(fund => ({
   <!-- Headline Row -->
   <div class="mb-8 flex justify-between items-end">
     <div>
-      <h2 class="text-headline-lg font-headline-lg text-primary">Resumen General</h2>
-      <p class="text-body-md text-on-surface-variant">Consolidated wealth dashboard as of May 16, 2026</p>
+      <h2 class="text-headline-lg font-headline-lg text-primary">
+        Resumen General
+      </h2>
+      <p class="text-body-md text-on-surface-variant">
+        Consolidated wealth dashboard as of May 16, 2026
+      </p>
     </div>
-    <button class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-label-caps hover:opacity-90 transition-opacity">
+    <button
+      class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-label-caps hover:opacity-90 transition-opacity"
+    >
       <span class="material-symbols-outlined text-sm">download</span>
       EXPORT REPORT
     </button>
   </div>
 
   <!-- Bento Metrics Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-gutter">
-    {formattedSummaryCards.map((card) => (
-      <SummaryCard
-        title={card.title}
-        value={card.value}
-        subtitle={card.subtitle}
-        subtitleType={card.subtitleType}
-        icon={card.icon}
-        accentColor={card.accentColor}
-      />
-    ))}
+  <div
+    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-gutter"
+  >
+    {
+      summaryCards.map((card) => (
+        <SummaryCard
+          title={card.title}
+          value={formatCurrencyCOP(card.value)}
+          subtitle={card.subtitle}
+          subtitleType={card.subtitleType}
+          icon={card.icon}
+          accentColor={card.accentColor}
+        />
+      ))
+    }
   </div>
 
   <!-- Main Data Section -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
     <!-- Allocation Chart -->
-    <div class="lg:col-span-2 bg-surface-container-lowest p-gutter rounded-xl border border-outline-variant shadow-sm">
+    <div
+      class="lg:col-span-2 bg-surface-container-lowest p-gutter rounded-xl border border-outline-variant shadow-sm"
+    >
       <AssetAllocationChart entities={formattedChartEntities} />
     </div>
 

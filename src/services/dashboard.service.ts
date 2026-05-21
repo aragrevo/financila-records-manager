@@ -9,33 +9,205 @@ import type {
   AccountCard,
   RecentTransaction,
 } from "../data/dashboard";
+import { formatCurrencyCOP } from "../utils/format";
 
 export class DashboardService {
   async getSummaryCards(): Promise<SummaryCard[]> {
     const accounts = await this.getAccounts();
     const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+
+    const byCategory: Record<string, number> = {};
+    for (const a of accounts) {
+      byCategory[a.category] = (byCategory[a.category] || 0) + a.balance;
+    }
+
+    const emergencyTarget = 24000000;
+    const emergencyCurrent = byCategory["emergency"] || 0;
+    const emergencyPct = Math.round((emergencyCurrent / emergencyTarget) * 100);
+    console.log(emergencyPct);
+
     return [
       {
         title: "Total Balance",
         value: totalBalance,
-        subtitle: "",
-        subtitleType: "neutral",
+        subtitle: "+2.4% vs last month",
+        subtitleType: "positive" as const,
         icon: "account_balance_wallet",
-        accentColor: "primary",
+        accentColor: "primary" as const,
+      },
+      {
+        title: "Emergency Fund",
+        value: emergencyCurrent,
+        subtitle: `Target: ${formatCurrencyCOP(emergencyTarget)} (${emergencyPct}%)`,
+        subtitleType: "neutral" as const,
+        icon: "emergency",
+        accentColor: "emergency" as const,
+      },
+      {
+        title: "Investment Portfolio",
+        value: byCategory["investment"] || 0,
+        subtitle: "High yield month",
+        subtitleType: "positive" as const,
+        icon: "show_chart",
+        accentColor: "investment" as const,
+      },
+      {
+        title: "Retirement",
+        value: byCategory["retirement"] || 0,
+        subtitle: "Long-term growth trajectory",
+        subtitleType: "neutral" as const,
+        icon: "savings",
+        accentColor: "retirement" as const,
       },
     ];
   }
 
   async getChartEntities(): Promise<ChartEntity[]> {
-    return [];
+    const accounts = await this.getAccounts();
+    const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+
+    const byInstitution = new Map<string, Record<string, number>>();
+    for (const a of accounts) {
+      if (!byInstitution.has(a.name)) {
+        byInstitution.set(a.name, {});
+      }
+      const cats = byInstitution.get(a.name)!;
+      cats[a.category] = (cats[a.category] || 0) + a.balance;
+    }
+
+    const categoryColors: Record<string, string> = {
+      contingency: "bg-blue-500",
+      emergency: "bg-red-500",
+      investment: "bg-amber-500",
+      retirement: "bg-emerald-600",
+    };
+
+    const result: ChartEntity[] = [];
+    for (const [name, cats] of byInstitution) {
+      const total = Object.values(cats).reduce((s, v) => s + v, 0);
+      const hasMultiple = Object.keys(cats).length > 1;
+
+      const segments = Object.entries(cats).map(([cat, amount]) => ({
+        color: categoryColors[cat] || "bg-gray-400",
+        height: (amount / totalBalance) * 100,
+        tooltip: hasMultiple ? undefined : amount,
+      }));
+
+      result.push({
+        name,
+        segments,
+        barWidth: hasMultiple ? "thin" : "wide",
+      });
+    }
+
+    return result.sort((a, b) => {
+      const totalA = a.segments.reduce((s, seg) => s + seg.height, 0);
+      const totalB = b.segments.reduce((s, seg) => s + seg.height, 0);
+      return totalB - totalA;
+    });
   }
 
   async getRecentMovements(): Promise<Movement[]> {
-    return [];
+    const txns = await this.getTransactions();
+    const accounts = await this.getAccounts();
+    const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
+
+    return txns.slice(0, 5).map((t) => ({
+      account: accountMap.get(t.accountId) || t.accountId,
+      date: t.date,
+      category: t.categoryId,
+      type: t.type,
+      amount: t.amount,
+    }));
   }
 
   async getFundStatus(): Promise<FundStatus[]> {
-    return [];
+    const accounts = await this.getAccounts();
+    const txns = await this.getTransactions();
+
+    const byCategory: Record<
+      string,
+      { current: number; institutions: Set<string> }
+    > = {
+      emergency: { current: 0, institutions: new Set() },
+      investment: { current: 0, institutions: new Set() },
+      contingency: { current: 0, institutions: new Set() },
+      retirement: { current: 0, institutions: new Set() },
+    };
+
+    for (const a of accounts) {
+      if (byCategory[a.category]) {
+        byCategory[a.category].current += a.balance;
+        byCategory[a.category].institutions.add(a.institution);
+      }
+    }
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    let monthlyIncome = 0;
+    for (const t of txns) {
+      const d = new Date(t.date);
+      if (
+        t.type === "income" &&
+        d.getMonth() === currentMonth &&
+        d.getFullYear() === currentYear
+      ) {
+        monthlyIncome += t.amount;
+      }
+    }
+
+    const emergencyTarget = 24000000;
+    const investmentExpected = Math.round(monthlyIncome * 0.1);
+    const contingencyExpected = 568611;
+    const retirementExpected = byCategory["retirement"].current;
+
+    return [
+      {
+        name: "Emergencia",
+        term: "6 meses",
+        expected: emergencyTarget,
+        current: byCategory["emergency"].current,
+        institution:
+          Array.from(byCategory["emergency"].institutions).join(" - ") || "N/A",
+        color: "emergency",
+        difference: byCategory["emergency"].current - emergencyTarget,
+      },
+      {
+        name: "Inversión",
+        term: "10% Save",
+        expected: investmentExpected || 798231,
+        current: byCategory["investment"].current,
+        institution:
+          Array.from(byCategory["investment"].institutions).join(" - ") ||
+          "N/A",
+        color: "investment",
+        difference:
+          byCategory["investment"].current - (investmentExpected || 798231),
+      },
+      {
+        name: "Imprevistos",
+        term: "Vacaciones",
+        expected: contingencyExpected,
+        current: byCategory["contingency"].current,
+        institution:
+          Array.from(byCategory["contingency"].institutions).join(" - ") ||
+          "N/A",
+        color: "contingency",
+        difference: byCategory["contingency"].current - contingencyExpected,
+      },
+      {
+        name: "Retiro",
+        term: "Cesantias, Prima",
+        expected: retirementExpected,
+        current: byCategory["retirement"].current,
+        institution:
+          Array.from(byCategory["retirement"].institutions).join(" - ") ||
+          "N/A",
+        color: "retirement",
+        difference: 0,
+      },
+    ];
   }
 
   async getEntitySummary(): Promise<EntitySummary[]> {
