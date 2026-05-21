@@ -65,7 +65,7 @@ export default {
         'headline-md': ['Inter'],
         'headline-lg': ['Inter'],
         'body-md': ['Inter'],
-        'mono-data': ['JetBrains Mono'],
+        'mono-data': ['JetBrains Mono Variable'],
       },
       fontSize: {
         'label-caps': ['11px', { lineHeight: '16px', letterSpacing: '0.05em', fontWeight: '700' }],
