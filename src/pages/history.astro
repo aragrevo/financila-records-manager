@@ -253,12 +253,14 @@ const formattedMovements = movements.map((mov) => ({
       const res = await fetch("/api/accounts");
       if (res.ok) {
         const accounts = await res.json();
-        accounts.forEach((acc: { id: string; name: string }) => {
-          const option = document.createElement("option");
-          option.value = acc.id;
-          option.textContent = acc.name;
-          accountSelect.appendChild(option);
-        });
+        accounts.forEach(
+          (acc: { id: string; name: string; category: string }) => {
+            const option = document.createElement("option");
+            option.value = acc.id;
+            option.textContent = `${acc.name} (${acc.category})`;
+            accountSelect.appendChild(option);
+          },
+        );
       }
     } catch (e) {
       console.error("Failed to load accounts:", e);

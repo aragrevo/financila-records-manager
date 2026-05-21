@@ -1,14 +1,20 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import AccountSummaryTable from '../components/accounts/AccountSummaryTable.astro';
-import DistributionChart from '../components/accounts/DistributionChart.astro';
-import AccountCard from '../components/accounts/AccountCard.astro';
-import RecentTransactions from '../components/accounts/RecentTransactions.astro';
-import { dashboardService } from '../services/dashboard.service';
-import { formatCurrencyCOP } from '../utils/format';
-import { ACCOUNT_TYPES, ACCOUNT_CATEGORIES } from '../lib/constants';
+import Layout from "../layouts/Layout.astro";
+import AccountSummaryTable from "../components/accounts/AccountSummaryTable.astro";
+import DistributionChart from "../components/accounts/DistributionChart.astro";
+import AccountCard from "../components/accounts/AccountCard.astro";
+import RecentTransactions from "../components/accounts/RecentTransactions.astro";
+import { dashboardService } from "../services/dashboard.service";
+import { formatCurrencyCOP } from "../utils/format";
+import { ACCOUNT_TYPES, ACCOUNT_CATEGORIES } from "../lib/constants";
 
-const [entitySummary, entitySummaryFooter, distributionFunds, accountCards, recentTransactions] = await Promise.all([
+const [
+  entitySummary,
+  entitySummaryFooter,
+  distributionFunds,
+  accountCards,
+  recentTransactions,
+] = await Promise.all([
   dashboardService.getEntitySummary(),
   dashboardService.getEntitySummaryFooter(),
   dashboardService.getDistributionFunds(),
@@ -16,9 +22,11 @@ const [entitySummary, entitySummaryFooter, distributionFunds, accountCards, rece
   dashboardService.getRecentTransactions(),
 ]);
 
-const summaryEntities = entitySummary.map(entity => ({
+const summaryEntities = entitySummary.map((entity) => ({
   ...entity,
-  contingency: entity.contingency ? formatCurrencyCOP(entity.contingency) : null,
+  contingency: entity.contingency
+    ? formatCurrencyCOP(entity.contingency)
+    : null,
   emergency: entity.emergency ? formatCurrencyCOP(entity.emergency) : null,
   investment: entity.investment ? formatCurrencyCOP(entity.investment) : null,
   retirement: entity.retirement ? formatCurrencyCOP(entity.retirement) : null,
@@ -34,35 +42,36 @@ const formattedFooter = {
   total: formatCurrencyCOP(entitySummaryFooter.total),
 };
 
-const formattedDistributionFunds = distributionFunds.map(fund => ({
+const formattedDistributionFunds = distributionFunds.map((fund) => ({
   ...fund,
   amount: formatCurrencyCOP(fund.amount),
-}));
-
-const formattedAccountCards = accountCards.map(card => ({
-  ...card,
-  balance: formatCurrencyCOP(card.balance),
-}));
-
-const formattedRecentTransactions = recentTransactions.map(txn => ({
-  ...txn,
-  amount: `+${formatCurrencyCOP(txn.amount)}`,
 }));
 ---
 
 <Layout title="Cuentas" activePage="accounts">
   <!-- Page Heading -->
-  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+  <div
+    class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8"
+  >
     <div>
-      <h2 class="text-headline-lg font-headline-lg text-on-surface">Gestión de Cuentas</h2>
-      <p class="text-body-md font-body-md text-on-surface-variant">Visión agregada de capital por entidad y tipo de fondo.</p>
+      <h2 class="text-headline-lg font-headline-lg text-on-surface">
+        Gestión de Cuentas
+      </h2>
+      <p class="text-body-md font-body-md text-on-surface-variant">
+        Visión agregada de capital por entidad y tipo de fondo.
+      </p>
     </div>
     <div class="flex gap-2">
-      <button id="btn-new-account" class="bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-body-md flex items-center shadow-sm hover:opacity-90 transition-opacity">
+      <button
+        id="btn-new-account"
+        class="bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-body-md flex items-center shadow-sm hover:opacity-90 transition-opacity"
+      >
         <span class="material-symbols-outlined mr-2">add</span>
         Nueva Cuenta
       </button>
-      <button class="border border-outline px-4 py-2 rounded-lg font-bold text-body-md flex items-center bg-surface hover:bg-surface-container transition-colors">
+      <button
+        class="border border-outline px-4 py-2 rounded-lg font-bold text-body-md flex items-center bg-surface hover:bg-surface-container transition-colors"
+      >
         <span class="material-symbols-outlined mr-2">download</span>
         Exportar
       </button>
@@ -72,7 +81,11 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
   <!-- Bento Grid - Section 1: Distribution Table -->
   <section class="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-stack-lg">
     <AccountSummaryTable entities={summaryEntities} footer={formattedFooter} />
-    <DistributionChart title="Fondo de Retiro" percentage={56} funds={formattedDistributionFunds} />
+    <DistributionChart
+      title="Fondo de Retiro"
+      percentage={56}
+      funds={formattedDistributionFunds}
+    />
   </section>
 
   <!-- Section 2: Account Cards -->
@@ -85,103 +98,186 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
           <button class="p-1 bg-surface-container-highest rounded">
             <span class="material-symbols-outlined">grid_view</span>
           </button>
-          <button class="p-1 hover:bg-surface-container-high transition-colors rounded">
+          <button
+            class="p-1 hover:bg-surface-container-high transition-colors rounded"
+          >
             <span class="material-symbols-outlined">view_list</span>
           </button>
         </div>
       </div>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {formattedAccountCards.map((card) => (
-        <AccountCard
-          initial={card.initial}
-          name={card.name}
-          description={card.description}
-          balance={card.balance}
-          category={card.category}
-          categoryColor={card.categoryColor}
-          categoryId={card.categoryId}
-          accountId={card.accountId}
-          fundDots={card.fundDots}
-          isActive={card.isActive}
-        />
-      ))}
+      {
+        accountCards.map((card) => (
+          <AccountCard
+            initial={card.initial}
+            name={card.name}
+            description={card.description}
+            balance={`${card.balance}`}
+            category={card.category}
+            categoryColor={card.categoryColor}
+            categoryId={card.categoryId}
+            accountId={card.accountId}
+            fundDots={card.fundDots}
+            isActive={card.isActive}
+          />
+        ))
+      }
       <!-- Add New Card Placeholder -->
-      <div id="btn-new-account-card" class="bg-surface-container-low border border-dashed border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center text-center hover:bg-surface-container-high transition-colors cursor-pointer group">
-        <div class="w-12 h-12 rounded-full border-2 border-dashed border-outline-variant flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+      <div
+        id="btn-new-account-card"
+        class="bg-surface-container-low border border-dashed border-outline-variant rounded-xl p-5 flex flex-col items-center justify-center text-center hover:bg-surface-container-high transition-colors cursor-pointer group"
+      >
+        <div
+          class="w-12 h-12 rounded-full border-2 border-dashed border-outline-variant flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"
+        >
           <span class="material-symbols-outlined text-outline">add</span>
         </div>
-        <p class="text-body-md font-bold text-on-surface-variant">Vincular Nueva Cuenta</p>
-        <p class="text-label-caps text-on-surface-variant opacity-70">Soporta API & Manual</p>
+        <p class="text-body-md font-bold text-on-surface-variant">
+          Vincular Nueva Cuenta
+        </p>
+        <p class="text-label-caps text-on-surface-variant opacity-70">
+          Soporta API & Manual
+        </p>
       </div>
     </div>
   </section>
 
   <!-- Bottom Section: Transactions History Snapshot -->
-  <RecentTransactions transactions={formattedRecentTransactions} />
+  <RecentTransactions transactions={recentTransactions} />
 
   <!-- Sticky Footer Summary for Mobile View -->
-  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-lowest border-t border-outline-variant p-4 z-50 flex justify-between items-center">
+  <div
+    class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-lowest border-t border-outline-variant p-4 z-50 flex justify-between items-center"
+  >
     <div>
       <p class="text-label-caps text-on-surface-variant">TOTAL PATRIMONIO</p>
-      <p class="text-data-display font-data-display">{formatCurrencyCOP(entitySummaryFooter.total)}</p>
+      <p class="text-data-display font-data-display">
+        {formatCurrencyCOP(entitySummaryFooter.total)}
+      </p>
     </div>
-    <button class="bg-primary text-on-primary w-12 h-12 rounded-full shadow-lg flex items-center justify-center">
+    <button
+      class="bg-primary text-on-primary w-12 h-12 rounded-full shadow-lg flex items-center justify-center"
+    >
       <span class="material-symbols-outlined">add</span>
     </button>
   </div>
 
   <!-- Create Account Modal -->
-  <div id="create-account-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+  <div
+    id="create-account-modal"
+    class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4"
+  >
     <div class="bg-surface rounded-xl shadow-xl w-full max-w-md">
-      <div class="flex items-center justify-between p-6 border-b border-outline-variant">
-        <h3 class="text-headline-md font-headline-md text-on-surface">Nueva Cuenta</h3>
-        <button id="modal-close" class="text-on-surface-variant hover:text-on-surface">
+      <div
+        class="flex items-center justify-between p-6 border-b border-outline-variant"
+      >
+        <h3 class="text-headline-md font-headline-md text-on-surface">
+          Nueva Cuenta
+        </h3>
+        <button
+          id="modal-close"
+          class="text-on-surface-variant hover:text-on-surface"
+        >
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
       <form id="create-account-form" class="p-6 space-y-4">
         <div>
-          <label for="account-name" class="block text-label-md text-on-surface-variant mb-1">Nombre</label>
-          <input type="text" id="account-name" name="name" required
+          <label
+            for="account-name"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Nombre</label
+          >
+          <input
+            type="text"
+            id="account-name"
+            name="name"
+            required
             class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
-            placeholder="Ej: Cuenta de Ahorros" />
+            placeholder="Ej: Cuenta de Ahorros"
+          />
         </div>
         <div>
-          <label for="account-type" class="block text-label-md text-on-surface-variant mb-1">Tipo</label>
-          <select id="account-type" name="type" required
-            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
-            {Object.entries(ACCOUNT_TYPES).map(([value, label]) => (
-              <option value={value}>{label}</option>
-            ))}
+          <label
+            for="account-type"
+            class="block text-label-md text-on-surface-variant mb-1">Tipo</label
+          >
+          <select
+            id="account-type"
+            name="type"
+            required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+          >
+            {
+              Object.entries(ACCOUNT_TYPES).map(([value, label]) => (
+                <option value={value}>{label}</option>
+              ))
+            }
           </select>
         </div>
         <div>
-          <label for="account-institution" class="block text-label-md text-on-surface-variant mb-1">Institución</label>
-          <input type="text" id="account-institution" name="institution" required
+          <label
+            for="account-institution"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Institución</label
+          >
+          <input
+            type="text"
+            id="account-institution"
+            name="institution"
+            required
             class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
-            placeholder="Ej: Banco Nacional" />
+            placeholder="Ej: Banco Nacional"
+          />
         </div>
         <div>
-          <label for="account-balance" class="block text-label-md text-on-surface-variant mb-1">Balance Inicial</label>
-          <input type="number" id="account-balance" name="balance" step="0.01" required
+          <label
+            for="account-balance"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Balance Inicial</label
+          >
+          <input
+            type="number"
+            id="account-balance"
+            name="balance"
+            step="0.01"
+            required
             class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
-            placeholder="0.00" />
+            placeholder="0.00"
+          />
         </div>
         <div>
-          <label for="account-category" class="block text-label-md text-on-surface-variant mb-1">Categoría</label>
-          <select id="account-category" name="category" required
-            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
-            {Object.entries(ACCOUNT_CATEGORIES).map(([value, label]) => (
-              <option value={value}>{label}</option>
-            ))}
+          <label
+            for="account-category"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Categoría</label
+          >
+          <select
+            id="account-category"
+            name="category"
+            required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+          >
+            {
+              Object.entries(ACCOUNT_CATEGORIES).map(([value, label]) => (
+                <option value={value}>{label}</option>
+              ))
+            }
           </select>
         </div>
         <div class="flex gap-3 pt-2">
-          <button type="button" id="modal-cancel" class="flex-1 px-4 py-2 border border-outline-variant rounded-lg font-bold text-body-md text-on-surface hover:bg-surface-container transition-colors">
+          <button
+            type="button"
+            id="modal-cancel"
+            class="flex-1 px-4 py-2 border border-outline-variant rounded-lg font-bold text-body-md text-on-surface hover:bg-surface-container transition-colors"
+          >
             Cancelar
           </button>
-          <button type="submit" class="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg font-bold text-body-md hover:opacity-90 transition-opacity">
+          <button
+            type="submit"
+            class="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg font-bold text-body-md hover:opacity-90 transition-opacity"
+          >
             Crear Cuenta
           </button>
         </div>
@@ -190,63 +286,135 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
   </div>
 
   <!-- Edit Account Modal -->
-  <div id="edit-account-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+  <div
+    id="edit-account-modal"
+    class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4"
+  >
     <div class="bg-surface rounded-xl shadow-xl w-full max-w-md">
-      <div class="flex items-center justify-between p-6 border-b border-outline-variant">
-        <h3 class="text-headline-md font-headline-md text-on-surface">Editar Cuenta</h3>
-        <button id="edit-modal-close" class="text-on-surface-variant hover:text-on-surface">
+      <div
+        class="flex items-center justify-between p-6 border-b border-outline-variant"
+      >
+        <h3 class="text-headline-md font-headline-md text-on-surface">
+          Editar Cuenta
+        </h3>
+        <button
+          id="edit-modal-close"
+          class="text-on-surface-variant hover:text-on-surface"
+        >
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
       <form id="edit-account-form" class="p-6 space-y-4">
         <input type="hidden" id="edit-account-id" name="id" />
         <div>
-          <label for="edit-name" class="block text-label-md text-on-surface-variant mb-1">Nombre</label>
-          <input type="text" id="edit-name" name="name" required
-            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary" />
+          <label
+            for="edit-name"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Nombre</label
+          >
+          <input
+            type="text"
+            id="edit-name"
+            name="name"
+            required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+          />
         </div>
         <div>
-          <label for="edit-type" class="block text-label-md text-on-surface-variant mb-1">Tipo</label>
-          <select id="edit-type" name="type" required
-            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
-            {Object.entries(ACCOUNT_TYPES).map(([value, label]) => (
-              <option value={value}>{label}</option>
-            ))}
+          <label
+            for="edit-type"
+            class="block text-label-md text-on-surface-variant mb-1">Tipo</label
+          >
+          <select
+            id="edit-type"
+            name="type"
+            required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+          >
+            {
+              Object.entries(ACCOUNT_TYPES).map(([value, label]) => (
+                <option value={value}>{label}</option>
+              ))
+            }
           </select>
         </div>
         <div>
-          <label for="edit-institution" class="block text-label-md text-on-surface-variant mb-1">Institución</label>
-          <input type="text" id="edit-institution" name="institution" required
-            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary" />
+          <label
+            for="edit-institution"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Institución</label
+          >
+          <input
+            type="text"
+            id="edit-institution"
+            name="institution"
+            required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+          />
         </div>
         <div>
-          <label for="edit-balance" class="block text-label-md text-on-surface-variant mb-1">Balance</label>
-          <input type="number" id="edit-balance" name="balance" step="0.01" required
-            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary" />
+          <label
+            for="edit-balance"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Balance</label
+          >
+          <input
+            type="number"
+            id="edit-balance"
+            name="balance"
+            step="0.01"
+            required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+          />
         </div>
         <div>
-          <label for="edit-category" class="block text-label-md text-on-surface-variant mb-1">Categoría</label>
-          <select id="edit-category" name="category" required
-            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
-            {Object.entries(ACCOUNT_CATEGORIES).map(([value, label]) => (
-              <option value={value}>{label}</option>
-            ))}
+          <label
+            for="edit-category"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Categoría</label
+          >
+          <select
+            id="edit-category"
+            name="category"
+            required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+          >
+            {
+              Object.entries(ACCOUNT_CATEGORIES).map(([value, label]) => (
+                <option value={value}>{label}</option>
+              ))
+            }
           </select>
         </div>
         <div>
-          <label for="edit-status" class="block text-label-md text-on-surface-variant mb-1">Estado</label>
-          <select id="edit-status" name="status" required
-            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary">
+          <label
+            for="edit-status"
+            class="block text-label-md text-on-surface-variant mb-1"
+            >Estado</label
+          >
+          <select
+            id="edit-status"
+            name="status"
+            required
+            class="w-full px-3 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-md text-on-surface focus:outline-none focus:border-primary"
+          >
             <option value="active">Activa</option>
             <option value="inactive">Inactiva</option>
             <option value="pending">Pendiente</option>
           </select>
         </div>
         <div class="flex gap-3 pt-2">
-          <button type="button" id="edit-modal-cancel" class="flex-1 px-4 py-2 border border-outline-variant rounded-lg font-bold text-body-md text-on-surface hover:bg-surface-container transition-colors">
+          <button
+            type="button"
+            id="edit-modal-cancel"
+            class="flex-1 px-4 py-2 border border-outline-variant rounded-lg font-bold text-body-md text-on-surface hover:bg-surface-container transition-colors"
+          >
             Cancelar
           </button>
-          <button type="submit" class="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg font-bold text-body-md hover:opacity-90 transition-opacity">
+          <button
+            type="submit"
+            class="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg font-bold text-body-md hover:opacity-90 transition-opacity"
+          >
             Guardar Cambios
           </button>
         </div>
@@ -262,59 +430,63 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
 </style>
 
 <script>
-  const modal = document.getElementById('create-account-modal');
-  const btnNew = document.getElementById('btn-new-account');
-  const btnCard = document.getElementById('btn-new-account-card');
-  const btnClose = document.getElementById('modal-close');
-  const btnCancel = document.getElementById('modal-cancel');
-  const form = document.getElementById('create-account-form') as HTMLFormElement;
+  const modal = document.getElementById("create-account-modal");
+  const btnNew = document.getElementById("btn-new-account");
+  const btnCard = document.getElementById("btn-new-account-card");
+  const btnClose = document.getElementById("modal-close");
+  const btnCancel = document.getElementById("modal-cancel");
+  const form = document.getElementById(
+    "create-account-form",
+  ) as HTMLFormElement;
 
-  const editModal = document.getElementById('edit-account-modal');
-  const editBtnClose = document.getElementById('edit-modal-close');
-  const editBtnCancel = document.getElementById('edit-modal-cancel');
-  const editForm = document.getElementById('edit-account-form') as HTMLFormElement;
+  const editModal = document.getElementById("edit-account-modal");
+  const editBtnClose = document.getElementById("edit-modal-close");
+  const editBtnCancel = document.getElementById("edit-modal-cancel");
+  const editForm = document.getElementById(
+    "edit-account-form",
+  ) as HTMLFormElement;
 
   function openModal() {
-    modal?.classList.remove('hidden');
-    modal?.classList.add('flex');
+    modal?.classList.remove("hidden");
+    modal?.classList.add("flex");
   }
 
   function closeModal() {
-    modal?.classList.add('hidden');
-    modal?.classList.remove('flex');
+    modal?.classList.add("hidden");
+    modal?.classList.remove("flex");
     form?.reset();
   }
 
   function openEditModal() {
-    editModal?.classList.remove('hidden');
-    editModal?.classList.add('flex');
+    editModal?.classList.remove("hidden");
+    editModal?.classList.add("flex");
   }
 
   function closeEditModal() {
-    editModal?.classList.add('hidden');
-    editModal?.classList.remove('flex');
+    editModal?.classList.add("hidden");
+    editModal?.classList.remove("flex");
     editForm?.reset();
   }
 
-  btnNew?.addEventListener('click', openModal);
-  btnCard?.addEventListener('click', openModal);
-  btnClose?.addEventListener('click', closeModal);
-  btnCancel?.addEventListener('click', closeModal);
+  btnNew?.addEventListener("click", openModal);
+  btnCard?.addEventListener("click", openModal);
+  btnClose?.addEventListener("click", closeModal);
+  btnCancel?.addEventListener("click", closeModal);
 
-  modal?.addEventListener('click', (e) => {
+  modal?.addEventListener("click", (e) => {
     if (e.target === modal) closeModal();
   });
 
-  editBtnClose?.addEventListener('click', closeEditModal);
-  editBtnCancel?.addEventListener('click', closeEditModal);
+  editBtnClose?.addEventListener("click", closeEditModal);
+  editBtnCancel?.addEventListener("click", closeEditModal);
 
-  editModal?.addEventListener('click', (e) => {
+  editModal?.addEventListener("click", (e) => {
     if (e.target === editModal) closeEditModal();
   });
 
-  document.querySelectorAll('.account-edit-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const accountId = btn.getAttribute('data-account-id');
+  document.querySelectorAll(".account-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const accountId = btn.getAttribute("data-account-id");
       if (!accountId) return;
 
       try {
@@ -322,36 +494,44 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
         if (!res.ok) return;
         const account = await res.json();
 
-        (document.getElementById('edit-account-id') as HTMLInputElement).value = account.id;
-        (document.getElementById('edit-name') as HTMLInputElement).value = account.name;
-        (document.getElementById('edit-type') as HTMLSelectElement).value = account.type;
-        (document.getElementById('edit-institution') as HTMLInputElement).value = account.institution;
-        (document.getElementById('edit-balance') as HTMLInputElement).value = account.balance;
-        (document.getElementById('edit-category') as HTMLSelectElement).value = account.category;
-        (document.getElementById('edit-status') as HTMLSelectElement).value = account.status;
+        (document.getElementById("edit-account-id") as HTMLInputElement).value =
+          account.id;
+        (document.getElementById("edit-name") as HTMLInputElement).value =
+          account.name;
+        (document.getElementById("edit-type") as HTMLSelectElement).value =
+          account.type;
+        (
+          document.getElementById("edit-institution") as HTMLInputElement
+        ).value = account.institution;
+        (document.getElementById("edit-balance") as HTMLInputElement).value =
+          account.balance;
+        (document.getElementById("edit-category") as HTMLSelectElement).value =
+          account.category;
+        (document.getElementById("edit-status") as HTMLSelectElement).value =
+          account.status;
 
         openEditModal();
       } catch {
-        alert('Error al cargar la cuenta');
+        alert("Error al cargar la cuenta");
       }
     });
   });
 
-  form?.addEventListener('submit', async (e) => {
+  form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
     const data = {
-      name: formData.get('name'),
-      type: formData.get('type'),
-      institution: formData.get('institution'),
-      balance: parseFloat(formData.get('balance') as string),
-      category: formData.get('category'),
+      name: formData.get("name"),
+      type: formData.get("type"),
+      institution: formData.get("institution"),
+      balance: parseFloat(formData.get("balance") as string),
+      category: formData.get("category"),
     };
 
     try {
-      const res = await fetch('/api/accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
@@ -359,30 +539,30 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
         closeModal();
         window.location.reload();
       } else {
-        alert('Error al crear la cuenta');
+        alert("Error al crear la cuenta");
       }
     } catch {
-      alert('Error de conexión');
+      alert("Error de conexión");
     }
   });
 
-  editForm?.addEventListener('submit', async (e) => {
+  editForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData(editForm);
-    const accountId = formData.get('id');
+    const accountId = formData.get("id");
     const data = {
-      name: formData.get('name'),
-      type: formData.get('type'),
-      institution: formData.get('institution'),
-      balance: parseFloat(formData.get('balance') as string),
-      category: formData.get('category'),
-      status: formData.get('status'),
+      name: formData.get("name"),
+      type: formData.get("type"),
+      institution: formData.get("institution"),
+      balance: parseFloat(formData.get("balance") as string),
+      category: formData.get("category"),
+      status: formData.get("status"),
     };
 
     try {
       const res = await fetch(`/api/accounts/${accountId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
@@ -390,10 +570,10 @@ const formattedRecentTransactions = recentTransactions.map(txn => ({
         closeEditModal();
         window.location.reload();
       } else {
-        alert('Error al actualizar la cuenta');
+        alert("Error al actualizar la cuenta");
       }
     } catch {
-      alert('Error de conexión');
+      alert("Error de conexión");
     }
   });
 </script>

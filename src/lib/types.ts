@@ -1,4 +1,8 @@
-import type { AccountType, AccountCategory, TransactionType } from './constants';
+import type {
+  AccountType,
+  AccountCategory,
+  TransactionType,
+} from "./constants";
 
 export interface Account {
   id: string;
@@ -9,7 +13,7 @@ export interface Account {
   currency: string;
   institution: string;
   lastUpdated: string;
-  status: 'active' | 'inactive' | 'pending';
+  status: "active" | "inactive" | "pending";
   category: AccountCategory;
   createdAt: string;
 }
@@ -23,7 +27,11 @@ export interface Transaction {
   type: TransactionType;
   categoryId: string;
   accountId: string;
-  status: 'completed' | 'pending' | 'cancelled';
+  status: "completed" | "pending" | "cancelled";
   merchant?: string;
   createdAt: string;
+}
+
+export interface TransactionWithAccount extends Transaction {
+  accountName: string;
 }

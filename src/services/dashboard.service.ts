@@ -1,5 +1,9 @@
 import { redis, KEYS } from "../lib/db";
-import type { Account, Transaction } from "../lib/types";
+import type {
+  Account,
+  Transaction,
+  TransactionWithAccount,
+} from "../lib/types";
 import type {
   SummaryCard,
   ChartEntity,
@@ -9,7 +13,7 @@ import type {
   AccountCard,
   RecentTransaction,
 } from "../data/dashboard";
-import { formatCurrencyCOP } from "../utils/format";
+import { formatCurrencyCOP, formatDate } from "../utils/format";
 
 export class DashboardService {
   async getSummaryCards(): Promise<SummaryCard[]> {
@@ -286,8 +290,8 @@ export class DashboardService {
     return accounts.map((a) => ({
       initial: a.name.charAt(0),
       name: a.name,
-      description: `${a.type} - ${a.institution}`,
-      balance: a.balance,
+      description: `${a.institution} - ${a.type}`,
+      balance: formatCurrencyCOP(a.balance),
       category: a.category.toUpperCase(),
       categoryColor:
         categoryColors[a.category] ||
@@ -302,10 +306,10 @@ export class DashboardService {
     return txns.slice(0, 5).map((t) => ({
       icon: t.type === "income" ? "payments" : "shopping_cart",
       title: t.description,
-      date: t.date,
-      category: t.type.toUpperCase(),
-      amount: t.amount,
-      status: t.status === "completed" ? "Completado" : "Pendiente",
+      date: formatDate(t.date),
+      category: t.accountName.toLocaleUpperCase(),
+      amount: formatCurrencyCOP(t.amount),
+      status: `${t.categoryId.charAt(0).toLocaleUpperCase()}${t.categoryId.slice(1)}`,
     }));
   }
 
@@ -339,27 +343,47 @@ export class DashboardService {
 
   private async getAccounts(): Promise<Account[]> {
     const accountIds = await redis.smembers(KEYS.ACCOUNTS_INDEX);
-    const accounts: Account[] = [];
+    const pipeline = redis.pipeline();
     for (const id of accountIds) {
-      const account = await redis.hgetall<Account>(`${KEYS.ACCOUNT}:${id}`);
-      if (account && account.id) accounts.push(account);
+      pipeline.hgetall(`${KEYS.ACCOUNT}:${id}`);
     }
-    return accounts;
+    const results = (await pipeline.exec()) as Array<Account | null>;
+    return results.filter((acc): acc is Account => acc !== null && "id" in acc);
   }
 
-  private async getTransactions(): Promise<Transaction[]> {
+  private async getTransactions(): Promise<TransactionWithAccount[]> {
     const txnIds = await redis.zrange(
       `${KEYS.TRANSACTIONS_BY_DATE}:user-001`,
       0,
       -1,
       { rev: true },
     );
-    const transactions: Transaction[] = [];
+
+    const pipeline = redis.pipeline();
     for (const id of txnIds) {
-      const txn = await redis.hgetall<Transaction>(`${KEYS.TRANSACTION}:${id}`);
-      if (txn && txn.id) transactions.push(txn);
+      pipeline.hgetall(`${KEYS.TRANSACTION}:${id}`);
     }
-    return transactions;
+    const txnResults: Array<Transaction | null> = await pipeline.exec();
+    const transactions = txnResults.filter(
+      (txn): txn is Transaction => txn !== null && "id" in txn,
+    );
+
+    const accountIds = [...new Set(transactions.map((t) => t.accountId))];
+    const accountPipeline = redis.pipeline();
+    for (const id of accountIds) {
+      accountPipeline.hgetall(`${KEYS.ACCOUNT}:${id}`);
+    }
+    const accountResults: Array<Account | null> = await accountPipeline.exec();
+    const accounts = accountResults.filter(
+      (acc): acc is Account => acc !== null && "id" in acc,
+    );
+
+    const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
+
+    return transactions.map((txn) => ({
+      ...txn,
+      accountName: accountMap.get(txn.accountId) || txn.accountId,
+    }));
   }
 }
 
