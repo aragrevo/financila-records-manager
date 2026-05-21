@@ -48,27 +48,27 @@ const { entities, footer } = Astro.props;
       <thead>
         <tr class="bg-surface-container-low text-left">
           <th
-            class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant"
-            >CUENTA / ENTIDAD</th
-          >
+            class="px-4 py-3 text-label-caps font-label-caps border-b border-outline-variant"
+            >CUENTA
+          </th>
           <th
-            class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right"
+            class="px-4 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right"
             >CONTINGENCY</th
           >
           <th
-            class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right"
+            class="px-4 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right"
             >EMERGENCY</th
           >
           <th
-            class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right"
+            class="px-4 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right"
             >INVESTMENT</th
           >
           <th
-            class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right"
+            class="px-4 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right"
             >RETIREMENT</th
           >
           <th
-            class="px-6 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right bg-surface-container-high"
+            class="px-4 py-3 text-label-caps font-label-caps border-b border-outline-variant text-right bg-surface-container-high"
             >SUMA TOTAL</th
           >
         </tr>
@@ -77,12 +77,12 @@ const { entities, footer } = Astro.props;
         {
           entities.map((entity) => (
             <tr class="hover:bg-surface-container-low transition-colors group">
-              <td class="px-6 py-3 border-b border-outline-variant font-bold">
+              <td class="px-4 py-3 border-b border-outline-variant font-bold text-nowrap">
                 {entity.name}
               </td>
               <td
                 class:list={[
-                  "px-6 py-3 border-b border-outline-variant text-right",
+                  "px-4 py-3 border-b border-outline-variant text-right",
                   entity.contingency
                     ? " text-contingency"
                     : "text-on-surface-variant",
@@ -92,7 +92,7 @@ const { entities, footer } = Astro.props;
               </td>
               <td
                 class:list={[
-                  "px-6 py-3 border-b border-outline-variant text-right",
+                  "px-4 py-3 border-b border-outline-variant text-right",
                   entity.emergency
                     ? " text-emergency"
                     : "text-on-surface-variant",
@@ -102,7 +102,7 @@ const { entities, footer } = Astro.props;
               </td>
               <td
                 class:list={[
-                  "px-6 py-3 border-b border-outline-variant text-right",
+                  "px-4 py-3 border-b border-outline-variant text-right",
                   entity.investment
                     ? " text-investment"
                     : "text-on-surface-variant",
@@ -112,7 +112,7 @@ const { entities, footer } = Astro.props;
               </td>
               <td
                 class:list={[
-                  "px-6 py-3 border-b border-outline-variant text-right",
+                  "px-4 py-3 border-b border-outline-variant text-right",
                   entity.retirement
                     ? " text-retirement"
                     : "text-on-surface-variant",
@@ -129,19 +129,19 @@ const { entities, footer } = Astro.props;
       </tbody>
       <tfoot>
         <tr class="bg-surface-container-high font-bold">
-          <td class="px-6 py-4 text-label-caps">{footer.label}</td>
-          <td class="px-6 py-4 text-right text-contingency"
+          <td class="px-4 py-4 text-label-caps text-nowrap">{footer.label}</td>
+          <td class="px-4 py-4 text-right text-contingency"
             >{footer.contingency}</td
           >
-          <td class="px-6 py-4 text-right text-emergency">{footer.emergency}</td
+          <td class="px-4 py-4 text-right text-emergency">{footer.emergency}</td
           >
-          <td class="px-6 py-4 text-right text-investment"
+          <td class="px-4 py-4 text-right text-investment"
             >{footer.investment}</td
           >
-          <td class="px-6 py-4 text-right text-retirement"
+          <td class="px-4 py-4 text-right text-retirement"
             >{footer.retirement}</td
           >
-          <td class="px-6 py-4 text-right">{footer.total}</td>
+          <td class="px-4 py-4 text-right">{footer.total}</td>
         </tr>
       </tfoot>
     </table>
