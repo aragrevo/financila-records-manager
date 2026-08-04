@@ -14,4 +14,9 @@ export const KEYS = {
   TRANSACTIONS_BY_ACCOUNT: 'transactions:by-account',
   TRANSACTIONS_BY_CATEGORY: 'transactions:by-category',
   TRANSACTIONS_BY_DATE: 'transactions:by-date',
+  BILLING_RECORD: 'billing-record',
+  BILLING_RECORDS_INDEX: 'billing-records:index',
+  BILLING_BALANCE_SNAPSHOT: 'billing-balance-snapshot',
+  BILLING_BALANCE_SNAPSHOTS_INDEX: 'billing-balance-snapshots:index',
+  BILLING_SEED_VERSION: 'billing:seed-version',
 } as const;

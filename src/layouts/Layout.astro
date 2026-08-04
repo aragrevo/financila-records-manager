@@ -10,7 +10,7 @@ import {
   IconCreditCard,
   IconClock,
   IconTrendingUp,
-  IconShield,
+  IconBanknotes,
 } from "../components/icons";
 
 interface Props {
@@ -34,6 +34,12 @@ const navItems = [
     label: "Wealth Management",
     icon: IconTrendingUp,
     page: "wealth",
+  },
+  {
+    href: "/billing-summary",
+    label: "Billing Summary",
+    icon: IconBanknotes,
+    page: "billing-summary",
   },
 ];
 ---
@@ -117,7 +123,7 @@ const navItems = [
         text-align: center;
       }
       body.sidebar-collapsed #sidebar .sidebar-brand .sidebar-collapsed-label {
-        display: inline;
+        display: flex;
       }
       body.sidebar-collapsed #sidebar .sidebar-user {
         justify-content: center;
@@ -144,7 +150,7 @@ const navItems = [
         >
           <span class="sidebar-text absolute inset-0">Financial Records</span>
           <span
-            class="sidebar-collapsed-label hidden absolute inset-0 flex items-center justify-center text-primary font-bold text-lg"
+            class="sidebar-collapsed-label hidden absolute inset-0 items-center justify-center text-primary font-bold text-lg"
             >FR</span
           >
         </h1>

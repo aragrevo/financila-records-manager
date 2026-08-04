@@ -1,0 +1,92 @@
+---
+import type { BillingBalanceSummaryRow } from "../../lib/types";
+import { formatCurrencyCOP } from "../../utils/format";
+
+interface Props {
+  balanceMonths: Array<{ key: string; label: string }>;
+  balanceSummaryRows: BillingBalanceSummaryRow[];
+}
+
+const { balanceMonths, balanceSummaryRows } = Astro.props;
+
+const balanceTotalsByMonth = Object.fromEntries(
+  balanceMonths.map((month) => [
+    month.key,
+    balanceSummaryRows.reduce(
+      (sum, row) => sum + (row.monthValues[month.key] ?? 0),
+      0,
+    ),
+  ]),
+);
+const balanceGrandTotal = balanceSummaryRows.reduce(
+  (sum, row) => sum + row.total,
+  0,
+);
+---
+
+<section
+  class="xl:col-span-2 rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm"
+>
+  <div class="border-b border-outline-variant px-6 py-4">
+    <h2 class="text-headline-md font-headline-md text-on-surface">
+      Balance by Month
+    </h2>
+    <p class="text-body-md text-on-surface-variant">
+      Pending balances still awaiting payment.
+    </p>
+  </div>
+
+  <div class="overflow-x-auto px-4 py-4">
+    <table class="w-full min-w-[360px] text-left text-sm">
+      <thead>
+        <tr
+          class="border-b border-outline-variant text-label-caps font-label-caps text-on-surface-variant"
+        >
+          <th class="px-2 py-3">Project</th>
+          {
+            balanceMonths.map((month) => (
+              <th class="px-2 py-3 text-right">{month.label}</th>
+            ))
+          }
+          <th class="px-2 py-3 text-right">Total</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant/30">
+        {
+          balanceSummaryRows.map((row) => (
+            <tr>
+              <td class="px-2 py-3 font-medium text-on-surface">
+                {row.project}
+              </td>
+              {balanceMonths.map((month) => (
+                <td class="px-2 py-3 text-right font-mono text-on-surface">
+                  {row.monthValues[month.key]
+                    ? formatCurrencyCOP(row.monthValues[month.key])
+                    : "-"}
+                </td>
+              ))}
+              <td class="px-2 py-3 text-right font-mono font-semibold text-on-surface">
+                {formatCurrencyCOP(row.total)}
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+      <tfoot>
+        <tr class="border-t border-outline-variant bg-surface-container-low">
+          <td class="px-2 py-3 font-bold text-on-surface">Total</td>
+          {
+            balanceMonths.map((month) => (
+              <td class="px-2 py-3 text-right font-mono font-bold text-on-surface">
+                {formatCurrencyCOP(balanceTotalsByMonth[month.key] ?? 0)}
+              </td>
+            ))
+          }
+          <td class="px-2 py-3 text-right font-mono font-bold text-on-surface">
+            {formatCurrencyCOP(balanceGrandTotal)}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</section>

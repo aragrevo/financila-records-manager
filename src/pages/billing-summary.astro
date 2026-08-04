@@ -1,0 +1,122 @@
+---
+import SummaryCard from "../components/dashboard/SummaryCard.astro";
+import BalanceByMonthTable from "../components/billing/BalanceByMonthTable.astro";
+import BillingRecordsTable from "../components/billing/BillingRecordsTable.astro";
+import CreateBillingModal from "../components/billing/CreateBillingModal.astro";
+import MonthlyHoursTrendChart from "../components/billing/MonthlyHoursTrendChart.astro";
+import Layout from "../layouts/Layout.astro";
+import { billingService } from "../services/billing.service";
+import { formatCurrencyCOP } from "../utils/format";
+
+const { records, balanceMonths, balanceSummaryRows, monthlyTrend, metrics } =
+  await billingService.getPageData();
+
+const formatHours = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
+    maximumFractionDigits: 1,
+  }).format(value);
+
+const billingSummaryCards = [
+  {
+    title: "Outstanding Balance",
+    value: formatCurrencyCOP(metrics.outstandingBalance),
+    subtitle: "Open receivables from the latest cycle",
+    subtitleType: "negative" as const,
+    icon: "payments",
+    accentColor: "primary" as const,
+  },
+  {
+    title: "Pending Hours",
+    value: `${formatHours(metrics.pendingHours)} h`,
+    subtitle: "Remaining hours still awaiting payment",
+    subtitleType: "neutral" as const,
+    icon: "schedule",
+    accentColor: "investment" as const,
+  },
+  {
+    title: "Average Monthly Hours",
+    value: `${formatHours(metrics.averageMonthlyHours)} h`,
+    subtitle: "Average billable hours across tracked months",
+    subtitleType: "neutral" as const,
+    icon: "bar_chart",
+    accentColor: "retirement" as const,
+  },
+  {
+    title: "Average Hourly Rate",
+    value: formatCurrencyCOP(metrics.averageHourlyRate),
+    subtitle: "Weighted from the imported billing rows",
+    subtitleType: "neutral" as const,
+    icon: "attach_money",
+    accentColor: "emergency" as const,
+  },
+];
+
+const projectRateMap = new Map<string, number>();
+
+for (const record of records) {
+  if (!projectRateMap.has(record.project)) {
+    projectRateMap.set(record.project, record.hourlyRate);
+  }
+}
+
+const projectOptions = Array.from(projectRateMap.entries())
+  .map(([project, hourlyRate]) => ({
+    project,
+    hourlyRate,
+  }))
+  .sort((left, right) => left.project.localeCompare(right.project));
+---
+
+<Layout title="Billing Summary" activePage="billing-summary">
+  <div class="space-y-6">
+    <div
+      class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
+    >
+      <div>
+        <h1 class="text-headline-lg font-headline-lg text-primary">
+          Project Billing Summary
+        </h1>
+        <p class="text-body-md text-on-surface-variant">
+          Consolidated view of billable hours, balances, and monthly volume.
+        </p>
+      </div>
+
+      <button
+        id="btn-new-billing"
+        type="button"
+        class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-label-caps font-label-caps text-on-primary transition-opacity hover:opacity-90"
+      >
+        <span class="material-symbols-outlined text-sm">add</span>
+        NEW BILLING
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 gap-gutter md:grid-cols-2 lg:grid-cols-4">
+      {
+        billingSummaryCards.map((card) => (
+          <SummaryCard
+            title={card.title}
+            value={card.value}
+            subtitle={card.subtitle}
+            subtitleType={card.subtitleType}
+            icon={card.icon}
+            accentColor={card.accentColor}
+          />
+        ))
+      }
+    </div>
+
+    <div class="grid grid-cols-1 items-start gap-gutter xl:grid-cols-5">
+      <MonthlyHoursTrendChart monthlyTrend={monthlyTrend} />
+      <BalanceByMonthTable
+        balanceMonths={balanceMonths}
+        balanceSummaryRows={balanceSummaryRows}
+      />
+    </div>
+
+    <BillingRecordsTable records={records} />
+  </div>
+</Layout>
+
+<CreateBillingModal projectOptions={projectOptions} />

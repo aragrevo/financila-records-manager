@@ -1,0 +1,106 @@
+---
+import type { BillingRecord } from "../../lib/types";
+import { formatCurrencyCOP } from "../../utils/format";
+
+interface Props {
+  records: BillingRecord[];
+}
+
+const { records } = Astro.props;
+
+const formatHours = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
+    maximumFractionDigits: 1,
+  }).format(value);
+---
+
+<section
+  class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm"
+>
+  <div
+    class="flex items-center justify-between border-b border-outline-variant px-6 py-4"
+  >
+    <div>
+      <h2 class="text-headline-md font-headline-md text-on-surface">
+        Detailed Billing Rows
+      </h2>
+      <p class="text-body-md text-on-surface-variant">
+        Detail by project, month, billable hours, and outstanding balance.
+      </p>
+    </div>
+    <span
+      class="rounded-full bg-surface-container px-3 py-1 text-label-caps font-label-caps text-on-surface-variant"
+    >
+      {records.length} rows
+    </span>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="data-table min-w-[980px]">
+      <thead>
+        <tr>
+          <th>Project</th>
+          <th>Month</th>
+          <th class="text-right">Total Hr</th>
+          <th class="text-right">Paid Hr</th>
+          <th class="text-right">Remaining Hr</th>
+          <th class="text-right">Hr Rate</th>
+          <th class="text-right">Amount</th>
+          <th class="text-right">Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          records.map((record) => {
+            const statusClass =
+              record.balance > 0 ? "bg-contingency/5" : "bg-transparent";
+
+            return (
+              <tr class={statusClass}>
+                <td class="font-semibold text-on-surface">
+                  {record.project}
+                </td>
+                <td class="text-on-surface-variant">{record.monthLabel}</td>
+                <td class="text-right font-mono text-on-surface">
+                  {formatHours(record.totalHours)}
+                </td>
+                <td class="text-right font-mono text-on-surface">
+                  {formatHours(record.paidHours)}
+                </td>
+                <td class="text-right font-mono">
+                  <span
+                    class:list={[
+                      record.remainingHours > 0
+                        ? "text-contingency"
+                        : "text-on-surface-variant",
+                    ]}
+                  >
+                    {formatHours(record.remainingHours)}
+                  </span>
+                </td>
+                <td class="text-right font-mono text-on-surface">
+                  {formatCurrencyCOP(record.hourlyRate)}
+                </td>
+                <td class="text-right font-mono text-on-surface">
+                  {formatCurrencyCOP(record.amount)}
+                </td>
+                <td class="text-right font-mono font-semibold">
+                  <span
+                    class:list={[
+                      record.balance > 0
+                        ? "rounded-full bg-contingency/10 px-2 py-1 text-contingency"
+                        : "text-retirement",
+                    ]}
+                  >
+                    {record.balance > 0 ? formatCurrencyCOP(record.balance) : "Paid"}
+                  </span>
+                </td>
+              </tr>
+            );
+          })
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

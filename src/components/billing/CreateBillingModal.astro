@@ -1,0 +1,447 @@
+---
+interface ProjectOption {
+  project: string;
+  hourlyRate: number;
+}
+
+interface Props {
+  projectOptions: ProjectOption[];
+}
+
+const { projectOptions } = Astro.props;
+---
+
+<div
+  id="create-billing-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
+>
+  <div
+    class="w-full max-w-lg rounded-xl bg-surface shadow-xl"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="create-billing-title"
+  >
+    <div
+      class="flex items-center justify-between border-b border-outline-variant p-6"
+    >
+      <div>
+        <h3
+          id="create-billing-title"
+          class="text-headline-md font-headline-md text-on-surface"
+        >
+          New Billing
+        </h3>
+        <p class="text-body-md text-on-surface-variant">
+          Add a billing row and calculate the amount automatically.
+        </p>
+      </div>
+      <button
+        id="billing-modal-close"
+        type="button"
+        class="text-on-surface-variant transition-colors hover:text-on-surface"
+        aria-label="Close create billing modal"
+      >
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <form id="create-billing-form" class="space-y-4 p-6">
+      <div>
+        <label
+          for="billing-project"
+          class="mb-1 block text-label-md text-on-surface-variant"
+        >
+          Project
+        </label>
+        <select
+          id="billing-project"
+          name="project"
+          required
+          class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2 text-body-md text-on-surface focus:border-primary focus:outline-none"
+        >
+          <option value="">Select project</option>
+          <option value="__new__">New project</option>
+          {
+            projectOptions.map((option) => (
+              <option value={option.project} data-hourly-rate={option.hourlyRate}>
+                {option.project}
+              </option>
+            ))
+          }
+        </select>
+      </div>
+
+      <div id="billing-custom-project-wrapper" class="hidden">
+        <label
+          for="billing-custom-project"
+          class="mb-1 block text-label-md text-on-surface-variant"
+        >
+          New Project Name
+        </label>
+        <input
+          id="billing-custom-project"
+          name="customProject"
+          type="text"
+          class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2 text-body-md text-on-surface focus:border-primary focus:outline-none"
+          placeholder="Ej. Nuevo proyecto"
+        />
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label
+            for="billing-month"
+            class="mb-1 block text-label-md text-on-surface-variant"
+          >
+            Month
+          </label>
+          <input
+            id="billing-month"
+            name="monthKey"
+            type="month"
+            required
+            class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2 text-body-md text-on-surface focus:border-primary focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label
+            for="billing-rate"
+            class="mb-1 block text-label-md text-on-surface-variant"
+          >
+            Hourly Rate
+          </label>
+          <input
+            id="billing-rate"
+            name="hourlyRate"
+            type="number"
+            min="0"
+            step="1"
+            required
+            class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2 text-body-md text-on-surface focus:border-primary focus:outline-none"
+            placeholder="0"
+          />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label
+            for="billing-total-hours"
+            class="mb-1 block text-label-md text-on-surface-variant"
+          >
+            Total Hours
+          </label>
+          <input
+            id="billing-total-hours"
+            name="totalHours"
+            type="number"
+            min="0"
+            step="0.1"
+            required
+            class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2 text-body-md text-on-surface focus:border-primary focus:outline-none"
+            placeholder="0.0"
+          />
+        </div>
+
+        <div>
+          <label
+            for="billing-paid-hours"
+            class="mb-1 block text-label-md text-on-surface-variant"
+          >
+            Paid Hours
+          </label>
+          <input
+            id="billing-paid-hours"
+            name="paidHours"
+            type="number"
+            min="0"
+            step="0.1"
+            required
+            value="0"
+            class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2 text-body-md text-on-surface focus:border-primary focus:outline-none"
+            placeholder="0.0"
+          />
+        </div>
+      </div>
+
+      <div
+        class="grid grid-cols-2 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4"
+      >
+        <div>
+          <p class="text-label-md text-on-surface-variant">Amount</p>
+          <p
+            id="billing-amount-preview"
+            class="font-mono text-title-md text-on-surface"
+          >
+            $0
+          </p>
+        </div>
+        <div>
+          <p class="text-label-md text-on-surface-variant">Balance</p>
+          <p
+            id="billing-balance-preview"
+            class="font-mono text-title-md text-contingency"
+          >
+            $0
+          </p>
+        </div>
+      </div>
+
+      <p
+        id="billing-form-error"
+        class="hidden rounded-lg border border-contingency/30 bg-contingency/10 px-3 py-2 text-sm text-contingency"
+      >
+      </p>
+
+      <div class="flex gap-3 pt-2">
+        <button
+          id="billing-modal-cancel"
+          type="button"
+          class="flex-1 rounded-lg border border-outline-variant px-4 py-2 font-bold text-body-md text-on-surface transition-colors hover:bg-surface-container"
+        >
+          Cancel
+        </button>
+        <button
+          id="billing-submit"
+          type="submit"
+          class="flex-1 rounded-lg bg-primary px-4 py-2 font-bold text-body-md text-on-primary transition-opacity hover:opacity-90"
+        >
+          Save Billing
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const billingModal = document.getElementById("create-billing-modal");
+  const openBillingButton = document.getElementById("btn-new-billing");
+  const closeBillingButton = document.getElementById("billing-modal-close");
+  const cancelBillingButton = document.getElementById("billing-modal-cancel");
+  const billingForm = document.getElementById(
+    "create-billing-form",
+  ) as HTMLFormElement | null;
+  const billingProjectInput = document.getElementById(
+    "billing-project",
+  ) as HTMLSelectElement | null;
+  const billingMonthInput = document.getElementById(
+    "billing-month",
+  ) as HTMLInputElement | null;
+  const billingCustomProjectWrapper = document.getElementById(
+    "billing-custom-project-wrapper",
+  );
+  const billingCustomProjectInput = document.getElementById(
+    "billing-custom-project",
+  ) as HTMLInputElement | null;
+  const billingRateInput = document.getElementById(
+    "billing-rate",
+  ) as HTMLInputElement | null;
+  const billingTotalHoursInput = document.getElementById(
+    "billing-total-hours",
+  ) as HTMLInputElement | null;
+  const billingPaidHoursInput = document.getElementById(
+    "billing-paid-hours",
+  ) as HTMLInputElement | null;
+  const billingAmountPreview = document.getElementById("billing-amount-preview");
+  const billingBalancePreview = document.getElementById("billing-balance-preview");
+  const billingError = document.getElementById("billing-form-error");
+  const billingSubmitButton = document.getElementById(
+    "billing-submit",
+  ) as HTMLButtonElement | null;
+
+  const currencyFormatter = new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  });
+
+  const formatCurrency = (value: number) => currencyFormatter.format(value);
+
+  const getNumberValue = (input: HTMLInputElement | null) =>
+    input ? Number(input.value || 0) : 0;
+
+  const syncHourlyRateWithProject = () => {
+    if (!billingProjectInput || !billingRateInput) {
+      return;
+    }
+
+    const isNewProject = billingProjectInput.value === "__new__";
+    billingCustomProjectWrapper?.classList.toggle("hidden", !isNewProject);
+
+    if (billingCustomProjectInput) {
+      billingCustomProjectInput.required = isNewProject;
+
+      if (!isNewProject) {
+        billingCustomProjectInput.value = "";
+      }
+    }
+
+    if (isNewProject) {
+      billingRateInput.value = "";
+      billingCustomProjectInput?.focus();
+      updateBillingPreview();
+      return;
+    }
+
+    const selectedOption = billingProjectInput.selectedOptions[0];
+    const rate = selectedOption?.getAttribute("data-hourly-rate");
+
+    billingRateInput.value = rate ?? "";
+    updateBillingPreview();
+  };
+
+  const setBillingError = (message = "") => {
+    if (!billingError) {
+      return;
+    }
+
+    billingError.textContent = message;
+    billingError.classList.toggle("hidden", !message);
+  };
+
+  const openBillingModal = () => {
+    if (!billingModal) {
+      return;
+    }
+
+    setBillingError("");
+    billingModal.classList.remove("hidden");
+    billingModal.classList.add("flex");
+    billingProjectInput?.focus();
+  };
+
+  const closeBillingModal = () => {
+    if (!billingModal) {
+      return;
+    }
+
+    billingModal.classList.add("hidden");
+    billingModal.classList.remove("flex");
+    setBillingError("");
+    billingForm?.reset();
+
+    if (billingMonthInput) {
+      billingMonthInput.value = new Date().toISOString().slice(0, 7);
+    }
+
+    if (billingPaidHoursInput) {
+      billingPaidHoursInput.value = "0";
+    }
+
+    syncHourlyRateWithProject();
+    updateBillingPreview();
+  };
+
+  function updateBillingPreview() {
+    const totalHours = getNumberValue(billingTotalHoursInput);
+    const paidHours = getNumberValue(billingPaidHoursInput);
+    const hourlyRate = getNumberValue(billingRateInput);
+    const remainingHours = Math.max(totalHours - paidHours, 0);
+    const amount = Math.round(totalHours * hourlyRate);
+    const balance = Math.round(remainingHours * hourlyRate);
+
+    if (billingPaidHoursInput) {
+      billingPaidHoursInput.setCustomValidity(
+        paidHours > totalHours ? "Paid hours cannot exceed total hours" : "",
+      );
+    }
+
+    if (billingAmountPreview) {
+      billingAmountPreview.textContent = formatCurrency(amount);
+    }
+
+    if (billingBalancePreview) {
+      billingBalancePreview.textContent = formatCurrency(balance);
+    }
+  }
+
+  if (billingMonthInput) {
+    billingMonthInput.value = new Date().toISOString().slice(0, 7);
+  }
+
+  updateBillingPreview();
+
+  openBillingButton?.addEventListener("click", openBillingModal);
+  closeBillingButton?.addEventListener("click", closeBillingModal);
+  cancelBillingButton?.addEventListener("click", closeBillingModal);
+  billingProjectInput?.addEventListener("change", () => {
+    setBillingError("");
+    syncHourlyRateWithProject();
+  });
+
+  billingModal?.addEventListener("click", (event) => {
+    if (event.target === billingModal) {
+      closeBillingModal();
+    }
+  });
+
+  [billingRateInput, billingTotalHoursInput, billingPaidHoursInput].forEach(
+    (input) => {
+      input?.addEventListener("input", () => {
+        setBillingError("");
+        updateBillingPreview();
+      });
+    },
+  );
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && billingModal?.classList.contains("flex")) {
+      closeBillingModal();
+    }
+  });
+
+  billingForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setBillingError("");
+    updateBillingPreview();
+
+    if (!billingForm.reportValidity()) {
+      return;
+    }
+
+    if (!billingSubmitButton) {
+      return;
+    }
+
+    const payload = {
+      project:
+        billingProjectInput?.value === "__new__"
+          ? billingCustomProjectInput?.value.trim()
+          : billingProjectInput?.value.trim(),
+      monthKey: billingMonthInput?.value,
+      totalHours: getNumberValue(billingTotalHoursInput),
+      paidHours: getNumberValue(billingPaidHoursInput),
+      hourlyRate: getNumberValue(billingRateInput),
+    };
+
+    const originalText = billingSubmitButton.textContent;
+
+    try {
+      billingSubmitButton.disabled = true;
+      billingSubmitButton.textContent = "Saving...";
+
+      const response = await fetch("/api/billing", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.error || "Failed to save billing");
+      }
+
+      window.location.reload();
+    } catch (error) {
+      setBillingError(
+        error instanceof Error ? error.message : "Failed to save billing",
+      );
+    } finally {
+      billingSubmitButton.disabled = false;
+      billingSubmitButton.textContent = originalText;
+    }
+  });
+</script>

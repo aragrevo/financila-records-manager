@@ -35,3 +35,47 @@ export interface Transaction {
 export interface TransactionWithAccount extends Transaction {
   accountName: string;
 }
+
+export interface BillingRecord {
+  id: string;
+  userId: string;
+  project: string;
+  monthLabel: string;
+  monthKey: string;
+  totalHours: number;
+  paidHours: number;
+  remainingHours: number;
+  hourlyRate: number;
+  amount: number;
+  balance: number;
+  createdAt: string;
+}
+
+export interface BillingBalanceSnapshot {
+  id: string;
+  userId: string;
+  project: string;
+  monthLabel: string;
+  monthKey: string;
+  balance: number;
+  createdAt: string;
+}
+
+export interface BillingSummaryMetrics {
+  outstandingBalance: number;
+  pendingHours: number;
+  averageMonthlyHours: number;
+  averageHourlyRate: number;
+}
+
+export interface BillingBalanceSummaryRow {
+  project: string;
+  monthValues: Record<string, number>;
+  total: number;
+}
+
+export interface MonthlyBillingTrendPoint {
+  monthLabel: string;
+  monthKey: string;
+  totalHours: number;
+}
