@@ -48,6 +48,7 @@ const formatHours = (value: number) =>
           <th class="text-right">Hr Rate</th>
           <th class="text-right">Amount</th>
           <th class="text-right">Balance</th>
+          <th class="text-right">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -96,6 +97,23 @@ const formatHours = (value: number) =>
                     {record.balance > 0 ? formatCurrencyCOP(record.balance) : "Paid"}
                   </span>
                 </td>
+                <td class="text-right">
+                  <button
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-lg border border-outline-variant px-3 py-2 text-label-caps font-label-caps text-on-surface transition-colors hover:bg-surface-container"
+                    data-edit-billing
+                    data-id={record.id}
+                    data-project={record.project}
+                    data-month-label={record.monthLabel}
+                    data-total-hours={record.totalHours}
+                    data-paid-hours={record.paidHours}
+                    data-hourly-rate={record.hourlyRate}
+                    aria-label={`Edit billing for ${record.project} ${record.monthLabel}`}
+                    title="Edit billing"
+                  >
+                    <span class="material-symbols-outlined text-sm">edit</span>
+                  </button>
+                </td>
               </tr>
             );
           })
@@ -104,3 +122,340 @@ const formatHours = (value: number) =>
     </table>
   </div>
 </section>
+
+<div
+  id="edit-billing-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
+>
+  <div
+    class="w-full max-w-md rounded-xl bg-surface shadow-xl"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="edit-billing-title"
+  >
+    <div
+      class="flex items-center justify-between border-b border-outline-variant p-6"
+    >
+      <div>
+        <h3
+          id="edit-billing-title"
+          class="text-headline-md font-headline-md text-on-surface"
+        >
+          Update Paid Hours
+        </h3>
+        <p class="text-body-md text-on-surface-variant">
+          Edit the paid hours and refresh the outstanding balance.
+        </p>
+      </div>
+      <button
+        id="edit-billing-close"
+        type="button"
+        class="text-on-surface-variant transition-colors hover:text-on-surface"
+        aria-label="Close edit billing modal"
+      >
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <form id="edit-billing-form" class="space-y-4 p-6">
+      <input id="edit-billing-id" type="hidden" />
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <p class="mb-1 text-label-md text-on-surface-variant">Project</p>
+          <p id="edit-billing-project" class="text-body-md font-semibold text-on-surface">
+            -
+          </p>
+        </div>
+        <div>
+          <p class="mb-1 text-label-md text-on-surface-variant">Month</p>
+          <p id="edit-billing-month" class="text-body-md text-on-surface">
+            -
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <p class="mb-1 text-label-md text-on-surface-variant">Total Hours</p>
+          <p id="edit-billing-total-hours" class="font-mono text-body-md text-on-surface">
+            0
+          </p>
+        </div>
+        <div>
+          <p class="mb-1 text-label-md text-on-surface-variant">Hourly Rate</p>
+          <p id="edit-billing-hourly-rate" class="font-mono text-body-md text-on-surface">
+            $0
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <label
+          for="edit-billing-paid-hours"
+          class="mb-1 block text-label-md text-on-surface-variant"
+        >
+          Paid Hours
+        </label>
+        <input
+          id="edit-billing-paid-hours"
+          name="paidHours"
+          type="number"
+          min="0"
+          step="0.1"
+          required
+          class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2 text-body-md text-on-surface focus:border-primary focus:outline-none"
+          placeholder="0.0"
+        />
+      </div>
+
+      <div
+        class="grid grid-cols-2 gap-4 rounded-lg border border-outline-variant bg-surface-container-low p-4"
+      >
+        <div>
+          <p class="text-label-md text-on-surface-variant">Remaining Hours</p>
+          <p
+            id="edit-billing-remaining-hours"
+            class="font-mono text-title-md text-on-surface"
+          >
+            0
+          </p>
+        </div>
+        <div>
+          <p class="text-label-md text-on-surface-variant">Balance</p>
+          <p
+            id="edit-billing-balance"
+            class="font-mono text-title-md text-contingency"
+          >
+            $0
+          </p>
+        </div>
+      </div>
+
+      <p
+        id="edit-billing-error"
+        class="hidden rounded-lg border border-contingency/30 bg-contingency/10 px-3 py-2 text-sm text-contingency"
+      ></p>
+
+      <div class="flex gap-3 pt-2">
+        <button
+          id="edit-billing-cancel"
+          type="button"
+          class="flex-1 rounded-lg border border-outline-variant px-4 py-2 font-bold text-body-md text-on-surface transition-colors hover:bg-surface-container"
+        >
+          Cancel
+        </button>
+        <button
+          id="edit-billing-submit"
+          type="submit"
+          class="flex-1 rounded-lg bg-primary px-4 py-2 font-bold text-body-md text-on-primary transition-opacity hover:opacity-90"
+        >
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const editBillingModal = document.getElementById("edit-billing-modal");
+  const editBillingForm = document.getElementById(
+    "edit-billing-form",
+  ) as HTMLFormElement | null;
+  const editBillingIdInput = document.getElementById(
+    "edit-billing-id",
+  ) as HTMLInputElement | null;
+  const editBillingPaidHoursInput = document.getElementById(
+    "edit-billing-paid-hours",
+  ) as HTMLInputElement | null;
+  const editBillingProject = document.getElementById("edit-billing-project");
+  const editBillingMonth = document.getElementById("edit-billing-month");
+  const editBillingTotalHours = document.getElementById(
+    "edit-billing-total-hours",
+  );
+  const editBillingHourlyRate = document.getElementById(
+    "edit-billing-hourly-rate",
+  );
+  const editBillingRemainingHours = document.getElementById(
+    "edit-billing-remaining-hours",
+  );
+  const editBillingBalance = document.getElementById("edit-billing-balance");
+  const editBillingError = document.getElementById("edit-billing-error");
+  const editBillingSubmit = document.getElementById(
+    "edit-billing-submit",
+  ) as HTMLButtonElement | null;
+  const editBillingClose = document.getElementById("edit-billing-close");
+  const editBillingCancel = document.getElementById("edit-billing-cancel");
+  const editBillingButtons = document.querySelectorAll("[data-edit-billing]");
+
+  const editCurrencyFormatter = new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  });
+  const editHoursFormatter = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  });
+
+  let editBillingTotalHoursValue = 0;
+  let editBillingHourlyRateValue = 0;
+
+  const formatEditCurrency = (value: number) =>
+    editCurrencyFormatter.format(value);
+  const formatEditHours = (value: number) => editHoursFormatter.format(value);
+
+  const setEditBillingError = (message = "") => {
+    if (!editBillingError) {
+      return;
+    }
+
+    editBillingError.textContent = message;
+    editBillingError.classList.toggle("hidden", !message);
+  };
+
+  const updateEditBillingPreview = () => {
+    const paidHours = Number(editBillingPaidHoursInput?.value || 0);
+    const remainingHours = Math.max(editBillingTotalHoursValue - paidHours, 0);
+    const balance = Math.round(remainingHours * editBillingHourlyRateValue);
+
+    editBillingPaidHoursInput?.setCustomValidity(
+      paidHours > editBillingTotalHoursValue
+        ? "Paid hours cannot exceed total hours"
+        : "",
+    );
+
+    if (editBillingRemainingHours) {
+      editBillingRemainingHours.textContent = formatEditHours(remainingHours);
+    }
+
+    if (editBillingBalance) {
+      editBillingBalance.textContent = formatEditCurrency(balance);
+    }
+  };
+
+  const closeEditBillingModal = () => {
+    if (!editBillingModal) {
+      return;
+    }
+
+    editBillingModal.classList.add("hidden");
+    editBillingModal.classList.remove("flex");
+    setEditBillingError("");
+    editBillingForm?.reset();
+  };
+
+  const openEditBillingModal = (button: Element) => {
+    if (!editBillingModal || !(button instanceof HTMLElement)) {
+      return;
+    }
+
+    const { id, project, monthLabel, totalHours, paidHours, hourlyRate } =
+      button.dataset;
+
+    editBillingTotalHoursValue = Number(totalHours ?? 0);
+    editBillingHourlyRateValue = Number(hourlyRate ?? 0);
+
+    if (editBillingIdInput) {
+      editBillingIdInput.value = id ?? "";
+    }
+
+    if (editBillingProject) {
+      editBillingProject.textContent = project ?? "-";
+    }
+
+    if (editBillingMonth) {
+      editBillingMonth.textContent = monthLabel ?? "-";
+    }
+
+    if (editBillingTotalHours) {
+      editBillingTotalHours.textContent = formatEditHours(editBillingTotalHoursValue);
+    }
+
+    if (editBillingHourlyRate) {
+      editBillingHourlyRate.textContent = formatEditCurrency(
+        editBillingHourlyRateValue,
+      );
+    }
+
+    if (editBillingPaidHoursInput) {
+      editBillingPaidHoursInput.value = paidHours ?? "0";
+    }
+
+    setEditBillingError("");
+    updateEditBillingPreview();
+    editBillingModal.classList.remove("hidden");
+    editBillingModal.classList.add("flex");
+    editBillingPaidHoursInput?.focus();
+    editBillingPaidHoursInput?.select();
+  };
+
+  editBillingButtons.forEach((button) => {
+    button.addEventListener("click", () => openEditBillingModal(button));
+  });
+
+  editBillingClose?.addEventListener("click", closeEditBillingModal);
+  editBillingCancel?.addEventListener("click", closeEditBillingModal);
+
+  editBillingModal?.addEventListener("click", (event) => {
+    if (event.target === editBillingModal) {
+      closeEditBillingModal();
+    }
+  });
+
+  editBillingPaidHoursInput?.addEventListener("input", () => {
+    setEditBillingError("");
+    updateEditBillingPreview();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && editBillingModal?.classList.contains("flex")) {
+      closeEditBillingModal();
+    }
+  });
+
+  editBillingForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setEditBillingError("");
+    updateEditBillingPreview();
+
+    if (!editBillingForm.reportValidity() || !editBillingIdInput?.value) {
+      return;
+    }
+
+    const originalText = editBillingSubmit?.textContent;
+
+    try {
+      if (editBillingSubmit) {
+        editBillingSubmit.disabled = true;
+        editBillingSubmit.textContent = "Saving...";
+      }
+
+      const response = await fetch(`/api/billing/${editBillingIdInput.value}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          paidHours: Number(editBillingPaidHoursInput?.value || 0),
+        }),
+      });
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.error || "Failed to update billing");
+      }
+
+      window.location.reload();
+    } catch (error) {
+      setEditBillingError(
+        error instanceof Error ? error.message : "Failed to update billing",
+      );
+    } finally {
+      if (editBillingSubmit) {
+        editBillingSubmit.disabled = false;
+        editBillingSubmit.textContent = originalText ?? "Save Changes";
+      }
+    }
+  });
+</script>

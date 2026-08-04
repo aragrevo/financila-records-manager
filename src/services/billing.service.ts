@@ -22,6 +22,9 @@ type CreateBillingRecordInput = {
   paidHours: number;
   hourlyRate: number;
 };
+type UpdateBillingRecordInput = {
+  paidHours: number;
+};
 
 const DEFAULT_USER_ID = "user-001";
 
@@ -387,6 +390,61 @@ export class BillingService {
     return record;
   }
 
+  async getRecordById(id: string): Promise<BillingRecord | null> {
+    await this.ensureSeedData();
+
+    return deserializeBillingRecord(
+      (await redis.hgetall(
+        `${KEYS.BILLING_RECORD}:${id}`,
+      )) as Partial<BillingRecord> | null,
+    );
+  }
+
+  async updateRecord(
+    id: string,
+    input: UpdateBillingRecordInput,
+  ): Promise<BillingRecord> {
+    await this.ensureSeedData();
+
+    const existing = await this.getRecordById(id);
+
+    if (!existing) {
+      throw new Error("Billing record not found");
+    }
+
+    const paidHours = Number(input.paidHours);
+
+    if (!Number.isFinite(paidHours)) {
+      throw new Error("Paid hours must be a valid number");
+    }
+
+    if (paidHours < 0) {
+      throw new Error("Paid hours cannot be negative");
+    }
+
+    if (paidHours > existing.totalHours) {
+      throw new Error("Paid hours cannot exceed total hours");
+    }
+
+    const normalizedPaidHours = Number(paidHours.toFixed(2));
+    const remainingHours = Number(
+      (existing.totalHours - normalizedPaidHours).toFixed(2),
+    );
+    const updated: BillingRecord = {
+      ...existing,
+      paidHours: normalizedPaidHours,
+      remainingHours,
+      balance: Math.round(remainingHours * existing.hourlyRate),
+    };
+
+    await redis.hset(
+      `${KEYS.BILLING_RECORD}:${id}`,
+      updated as unknown as Record<string, unknown>,
+    );
+
+    return updated;
+  }
+
   private async ensureSeedData() {
     const existingIds = await redis.smembers(KEYS.BILLING_RECORDS_INDEX);
     const existingSnapshotIds = await redis.smembers(
@@ -442,9 +500,7 @@ export class BillingService {
       outstandingBalance,
       pendingHours,
       averageMonthlyHours:
-        monthsWithHours.size > 0
-          ? totalMonthlyHours / monthsWithHours.size
-          : 0,
+        monthsWithHours.size > 0 ? totalMonthlyHours / monthsWithHours.size : 0,
       averageHourlyRate:
         totalBillableHours > 0
           ? Math.round(weightedRateSum / totalBillableHours)
@@ -463,10 +519,15 @@ export class BillingService {
           monthKey: record.monthKey,
           monthLabel: record.monthLabel,
           totalHours: 0,
+          totalAmount: 0,
+          totalBalance: 0,
         });
       }
 
-      byMonth.get(record.monthKey)!.totalHours += record.totalHours;
+      const monthEntry = byMonth.get(record.monthKey)!;
+      monthEntry.totalHours += record.totalHours;
+      monthEntry.totalAmount += record.amount;
+      monthEntry.totalBalance += record.balance;
     }
 
     return Array.from(byMonth.values()).sort((left, right) =>

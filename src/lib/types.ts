@@ -78,4 +78,6 @@ export interface MonthlyBillingTrendPoint {
   monthLabel: string;
   monthKey: string;
   totalHours: number;
+  totalAmount: number;
+  totalBalance: number;
 }

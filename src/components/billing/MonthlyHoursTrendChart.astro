@@ -1,5 +1,6 @@
 ---
 import type { MonthlyBillingTrendPoint } from "../../lib/types";
+import { formatCurrencyCOP } from "../../utils/format";
 
 interface Props {
   monthlyTrend: MonthlyBillingTrendPoint[];
@@ -9,38 +10,108 @@ const { monthlyTrend } = Astro.props;
 
 const chartWidth = 760;
 const chartHeight = 350;
-const chartPadding = { top: 16, right: 20, bottom: 48, left: 44 };
+const chartPadding = { top: 28, right: 56, bottom: 80, left: 84 };
 const drawableWidth = chartWidth - chartPadding.left - chartPadding.right;
 const drawableHeight = chartHeight - chartPadding.top - chartPadding.bottom;
-const maxTrendValue = Math.max(
+
+const getNiceStep = (value: number) => {
+  if (value <= 0) {
+    return 1_000_000;
+  }
+
+  const roughStep = value / 5;
+  const magnitude = 10 ** Math.floor(Math.log10(roughStep));
+  const normalized = roughStep / magnitude;
+
+  if (normalized <= 1) {
+    return magnitude;
+  }
+
+  if (normalized <= 2) {
+    return 2 * magnitude;
+  }
+
+  if (normalized <= 5) {
+    return 5 * magnitude;
+  }
+
+  return 10 * magnitude;
+};
+
+const formatAxisCurrency = (value: number) =>
+  `$${Math.round(value).toLocaleString("es-CO")}`;
+const formatAxisHours = (value: number) => value.toFixed(1).replace(".0", "");
+
+const maxAmountValue = Math.max(
+  0,
+  ...monthlyTrend.map((point) => point.totalAmount),
+);
+const maxHoursValue = Math.max(
   0,
   ...monthlyTrend.map((point) => point.totalHours),
 );
-const roundedMaxTrend =
-  maxTrendValue > 0 ? Math.ceil(maxTrendValue / 25) * 25 : 25;
-const yTicks = Array.from(
+const amountStep = getNiceStep(maxAmountValue);
+const roundedMaxAmount =
+  maxAmountValue > 0
+    ? Math.ceil(maxAmountValue / amountStep) * amountStep
+    : amountStep * 5;
+const roundedMaxHours =
+  maxHoursValue > 0 ? Math.ceil(maxHoursValue / 25) * 25 : 25;
+const amountTicks = Array.from(
   { length: 6 },
-  (_, index) => (roundedMaxTrend / 5) * index,
+  (_, index) => (roundedMaxAmount / 5) * index,
+);
+const hoursTicks = Array.from(
+  { length: 6 },
+  (_, index) => (roundedMaxHours / 5) * index,
 );
 
+const groupWidth =
+  monthlyTrend.length > 0 ? drawableWidth / monthlyTrend.length : drawableWidth;
+const barWidth = Math.max(12, Math.min(22, groupWidth * 0.38));
+
 const chartPoints = monthlyTrend.map((point, index) => {
-  const x =
-    chartPadding.left +
-    (index / Math.max(monthlyTrend.length - 1, 1)) * drawableWidth;
-  const y =
+  const centerX = chartPadding.left + index * groupWidth + groupWidth / 2;
+  const amountHeight =
+    roundedMaxAmount > 0
+      ? (point.totalAmount / roundedMaxAmount) * drawableHeight
+      : 0;
+  const hoursY =
     chartHeight -
     chartPadding.bottom -
-    (point.totalHours / roundedMaxTrend) * drawableHeight;
+    (point.totalHours / roundedMaxHours) * drawableHeight;
+  const tooltipValue = formatCurrencyCOP(point.totalAmount);
+  const tooltipWidth = 132;
+  const tooltipHeight = 74;
+  const tooltipX = Math.max(
+    chartPadding.left,
+    Math.min(
+      centerX - tooltipWidth / 2,
+      chartWidth - chartPadding.right - tooltipWidth,
+    ),
+  );
+  const tooltipY = Math.max(
+    chartPadding.top,
+    chartHeight - chartPadding.bottom - amountHeight - tooltipHeight - 10,
+  );
 
   return {
     ...point,
-    x,
-    y,
+    centerX,
+    amountX: centerX - barWidth / 2,
+    amountY: chartHeight - chartPadding.bottom - amountHeight,
+    amountHeight,
+    hoursY,
+    tooltipValue,
+    tooltipWidth,
+    tooltipHeight,
+    tooltipX,
+    tooltipY,
   };
 });
 
 const chartPolyline = chartPoints
-  .map((point) => `${point.x},${point.y}`)
+  .map((point) => `${point.centerX},${point.hoursY}`)
   .join(" ");
 ---
 
@@ -52,23 +123,38 @@ const chartPolyline = chartPoints
       Monthly Hours Trend
     </h2>
     <p class="text-body-md text-on-surface-variant">
-      Monthly workload trend based on the recorded billing history.
+      Hours trend with billed amount by month.
     </p>
   </div>
 
   <div class="overflow-x-auto">
     <svg
       viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-      class="min-w-[720px]"
+      class="monthly-hours-chart min-w-[720px]"
       role="img"
-      aria-label="Line chart showing the monthly hours trend"
+      aria-label="Combined chart showing monthly hours and billed amount"
     >
+      <g>
+        <line
+          x1="170"
+          x2="186"
+          y1="7"
+          y2="7"
+          stroke="#dc2626"
+          stroke-width="3"
+          stroke-linecap="round"></line>
+        <circle cx="178" cy="7" r="3" fill="#dc2626"></circle>
+        <text x="194" y="10" font-size="12" fill="#1f2937">Hours</text>
+        <rect x="250" y="0" width="12" height="12" rx="2" fill="#2563eb"></rect>
+        <text x="270" y="10" font-size="12" fill="#1f2937">Amount</text>
+      </g>
+
       {
-        yTicks.map((tick) => {
+        amountTicks.map((tick) => {
           const y =
             chartHeight -
             chartPadding.bottom -
-            (tick / roundedMaxTrend) * drawableHeight;
+            (tick / roundedMaxAmount) * drawableHeight;
 
           return (
             <g>
@@ -87,9 +173,30 @@ const chartPolyline = chartPoints
                 font-size="11"
                 fill="#76777d"
               >
-                {tick.toFixed(0)}
+                {formatAxisCurrency(tick)}
               </text>
             </g>
+          );
+        })
+      }
+
+      {
+        hoursTicks.map((tick) => {
+          const y =
+            chartHeight -
+            chartPadding.bottom -
+            (tick / roundedMaxHours) * drawableHeight;
+
+          return (
+            <text
+              x={chartWidth - chartPadding.right + 10}
+              y={y + 4}
+              text-anchor="start"
+              font-size="10"
+              fill="#dc2626"
+            >
+              {formatAxisHours(tick)}h
+            </text>
           );
         })
       }
@@ -106,7 +213,7 @@ const chartPolyline = chartPoints
         chartPoints.length > 0 && (
           <polyline
             fill="none"
-            stroke="#2563eb"
+            stroke="#dc2626"
             stroke-width="3"
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -116,34 +223,134 @@ const chartPolyline = chartPoints
       }
 
       {
-        chartPoints.map((point, index) => (
+        chartPoints.map((point) => (
           <g>
-            <circle cx={point.x} cy={point.y} r="3.5" fill="#2563eb" />
+            <rect
+              x={point.amountX}
+              y={point.amountY}
+              width={barWidth}
+              height={Math.max(point.amountHeight, 0)}
+              rx="2"
+              fill="#2563eb"
+            />
+            <circle
+              cx={point.centerX}
+              cy={point.hoursY}
+              r="3.5"
+              fill="#dc2626"
+            />
             <text
-              x={point.x}
-              y={point.y - 10}
+              x={point.centerX}
+              y={point.hoursY - 10}
               text-anchor="middle"
               font-size="10"
               font-weight="700"
-              fill="#2563eb"
+              fill="#dc2626"
             >
-              {point.totalHours.toFixed(1).replace(".0", "")}
+              {formatAxisHours(point.totalHours)}
             </text>
-            {index % 2 === 0 && (
-              <text
-                x={point.x}
-                y={chartHeight - 16}
-                text-anchor="end"
-                transform={`rotate(-40 ${point.x} ${chartHeight - 16})`}
-                font-size="10"
-                fill="#76777d"
+            <text
+              x={point.centerX}
+              y={chartHeight - 18}
+              text-anchor="end"
+              transform={`rotate(-40 ${point.centerX} ${chartHeight - 18})`}
+              font-size="10"
+              fill="#76777d"
+            >
+              {point.monthLabel}
+            </text>
+          </g>
+        ))
+      }
+
+      {
+        chartPoints.map((point) => (
+          <g class="amount-hover-group">
+            <rect
+              x={point.amountX - 8}
+              y={chartPadding.top}
+              width={barWidth + 16}
+              height={drawableHeight + chartPadding.bottom - chartPadding.top}
+              fill="transparent"
+            />
+            <g class="bar-tooltip" pointer-events="none">
+              <foreignObject
+                x={point.tooltipX}
+                y={point.tooltipY}
+                width={point.tooltipWidth}
+                height={point.tooltipHeight}
               >
-                {point.monthLabel}
-              </text>
-            )}
+                <div class="bar-tooltip-card">
+                  <span class="bar-tooltip-month">{point.monthLabel}</span>
+                  <span class="bar-tooltip-title">Amount</span>
+                  <span class="bar-tooltip-value">{point.tooltipValue}</span>
+                  <span class="bar-tooltip-title">
+                    Hours:
+                    <span class="bar-tooltip-value">
+                      {formatAxisHours(point.totalHours)}h
+                    </span>
+                  </span>
+                </div>
+              </foreignObject>
+            </g>
           </g>
         ))
       }
     </svg>
   </div>
 </section>
+
+<style>
+  .monthly-hours-chart .bar-tooltip {
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+
+  .monthly-hours-chart .amount-hover-group:hover .bar-tooltip {
+    opacity: 1;
+  }
+
+  .monthly-hours-chart .bar-tooltip-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 6px 8px;
+    background-color: #191c1e;
+    color: #ffffff;
+    border-radius: 5px;
+    border-left: 3px solid #2563eb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    white-space: nowrap;
+  }
+
+  .monthly-hours-chart .bar-tooltip-month {
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    opacity: 0.6;
+    line-height: 1;
+  }
+
+  .monthly-hours-chart .bar-tooltip-title {
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .monthly-hours-chart .bar-tooltip-value {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: "JetBrains Mono Variable", monospace;
+    margin-top: 1px;
+    line-height: 1;
+  }
+
+  .monthly-hours-chart .bar-tooltip-meta {
+    font-size: 9px;
+    opacity: 0.55;
+    font-family: "JetBrains Mono Variable", monospace;
+    line-height: 1;
+  }
+</style>
