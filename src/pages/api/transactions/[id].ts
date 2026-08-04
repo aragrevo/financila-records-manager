@@ -1,103 +1,57 @@
-import type { APIRoute } from 'astro';
-import { redis, KEYS } from '../../../lib/db';
-import type { Transaction } from '../../../lib/types';
+import type { APIRoute } from "astro";
+import { transactionsService } from "../../../services/transactions.service";
+import { jsonResponse } from "../../../lib/http";
 
 export const GET: APIRoute = async ({ params }) => {
   try {
     const { id } = params;
-    const transaction = await redis.hgetall<Transaction>(`${KEYS.TRANSACTION}:${id}`);
+    const transaction = id ? await transactionsService.getById(id) : null;
 
-    if (!transaction || !transaction.id) {
-      return new Response(JSON.stringify({ error: 'Transaction not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    if (!transaction) {
+      return jsonResponse({ error: "Transaction not found" }, 404);
     }
 
-    return new Response(JSON.stringify(transaction), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse(transaction);
   } catch (error) {
-    console.error('Error fetching transaction:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch transaction' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error("Error fetching transaction:", error);
+    return jsonResponse({ error: "Failed to fetch transaction" }, 500);
   }
 };
 
 export const PUT: APIRoute = async ({ params, request }) => {
   try {
     const { id } = params;
-    const existing = await redis.hgetall<Transaction>(`${KEYS.TRANSACTION}:${id}`);
 
-    if (!existing || !existing.id) {
-      return new Response(JSON.stringify({ error: 'Transaction not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    if (!id) {
+      return jsonResponse({ error: "Transaction not found" }, 404);
     }
 
     const body = await request.json();
-    const updated: Transaction = {
-      ...existing,
-      ...body,
-      id,
-    };
+    const updated = await transactionsService.update(id, body);
 
-    await redis.hset(`${KEYS.TRANSACTION}:${id}`, updated);
+    if (!updated) {
+      return jsonResponse({ error: "Transaction not found" }, 404);
+    }
 
-    return new Response(JSON.stringify(updated), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse(updated);
   } catch (error) {
-    console.error('Error updating transaction:', error);
-    return new Response(JSON.stringify({ error: 'Failed to update transaction' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error("Error updating transaction:", error);
+    return jsonResponse({ error: "Failed to update transaction" }, 500);
   }
 };
 
 export const DELETE: APIRoute = async ({ params }) => {
   try {
     const { id } = params;
-    const existing = await redis.hgetall<Transaction>(`${KEYS.TRANSACTION}:${id}`);
+    const deleted = id ? await transactionsService.delete(id) : false;
 
-    if (!existing || !existing.id) {
-      return new Response(JSON.stringify({ error: 'Transaction not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    if (!deleted) {
+      return jsonResponse({ error: "Transaction not found" }, 404);
     }
 
-    await redis.del(`${KEYS.TRANSACTION}:${id}`);
-    await redis.srem(KEYS.TRANSACTIONS_INDEX, id);
-    await redis.zrem(`${KEYS.TRANSACTIONS_BY_ACCOUNT}:${existing.accountId}`, id);
-    await redis.zrem(`${KEYS.TRANSACTIONS_BY_CATEGORY}:${existing.categoryId}`, id);
-    await redis.zrem(`${KEYS.TRANSACTIONS_BY_DATE}:user-001`, id);
-
-    // Revert account balance
-    const account = await redis.hgetall<{ balance: number }>(`${KEYS.ACCOUNT}:${existing.accountId}`);
-    if (account) {
-      const newBalance = account.balance - existing.amount;
-      await redis.hset(`${KEYS.ACCOUNT}:${existing.accountId}`, {
-        balance: newBalance,
-        lastUpdated: new Date().toISOString().split('T')[0],
-      });
-    }
-
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ success: true });
   } catch (error) {
-    console.error('Error deleting transaction:', error);
-    return new Response(JSON.stringify({ error: 'Failed to delete transaction' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error("Error deleting transaction:", error);
+    return jsonResponse({ error: "Failed to delete transaction" }, 500);
   }
 };

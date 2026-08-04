@@ -1,91 +1,57 @@
-import type { APIRoute } from 'astro';
-import { redis, KEYS } from '../../../lib/db';
-import type { Account } from '../../../lib/types';
+import type { APIRoute } from "astro";
+import { accountsService } from "../../../services/accounts.service";
+import { jsonResponse } from "../../../lib/http";
 
 export const GET: APIRoute = async ({ params }) => {
   try {
     const { id } = params;
-    const account = await redis.hgetall<Account>(`${KEYS.ACCOUNT}:${id}`);
+    const account = id ? await accountsService.getById(id) : null;
 
-    if (!account || !account.id) {
-      return new Response(JSON.stringify({ error: 'Account not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    if (!account) {
+      return jsonResponse({ error: "Account not found" }, 404);
     }
 
-    return new Response(JSON.stringify(account), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse(account);
   } catch (error) {
-    console.error('Error fetching account:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch account' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error("Error fetching account:", error);
+    return jsonResponse({ error: "Failed to fetch account" }, 500);
   }
 };
 
 export const PUT: APIRoute = async ({ params, request }) => {
   try {
     const { id } = params;
-    const existing = await redis.hgetall<Account>(`${KEYS.ACCOUNT}:${id}`);
 
-    if (!existing || !existing.id) {
-      return new Response(JSON.stringify({ error: 'Account not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    if (!id) {
+      return jsonResponse({ error: "Account not found" }, 404);
     }
 
     const body = await request.json();
-    const updated: Account = {
-      ...existing,
-      ...body,
-      id,
-      lastUpdated: new Date().toISOString().split('T')[0],
-    };
+    const updated = await accountsService.update(id, body);
 
-    await redis.hset(`${KEYS.ACCOUNT}:${id}`, updated);
+    if (!updated) {
+      return jsonResponse({ error: "Account not found" }, 404);
+    }
 
-    return new Response(JSON.stringify(updated), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse(updated);
   } catch (error) {
-    console.error('Error updating account:', error);
-    return new Response(JSON.stringify({ error: 'Failed to update account' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error("Error updating account:", error);
+    return jsonResponse({ error: "Failed to update account" }, 500);
   }
 };
 
 export const DELETE: APIRoute = async ({ params }) => {
   try {
     const { id } = params;
-    const existing = await redis.hgetall<Account>(`${KEYS.ACCOUNT}:${id}`);
+    const deleted = id ? await accountsService.delete(id) : false;
 
-    if (!existing || !existing.id) {
-      return new Response(JSON.stringify({ error: 'Account not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    if (!deleted) {
+      return jsonResponse({ error: "Account not found" }, 404);
     }
 
-    await redis.del(`${KEYS.ACCOUNT}:${id}`);
-    await redis.srem(KEYS.ACCOUNTS_INDEX, id);
-
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ success: true });
   } catch (error) {
-    console.error('Error deleting account:', error);
-    return new Response(JSON.stringify({ error: 'Failed to delete account' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error("Error deleting account:", error);
+    return jsonResponse({ error: "Failed to delete account" }, 500);
   }
 };
