@@ -166,6 +166,7 @@ export class DashboardService {
       category: `${t.categoryId.charAt(0).toLocaleUpperCase()}${t.categoryId.slice(1)}`,
       type: t.type,
       amount: formatCurrencyCOP(t.amount),
+      description: t.description || "N/A",
     }));
   }
 
@@ -395,6 +396,7 @@ export class DashboardService {
       category: t.categoryId,
       type: t.type,
       amount: t.amount,
+      description: t.description || "N/A",
     }));
   }
 

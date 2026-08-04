@@ -31,6 +31,7 @@ export interface Movement {
   category: string;
   type: string;
   amount: string | number;
+  description: string;
 }
 
 export interface FundStatus {
@@ -240,80 +241,6 @@ export const dashboardData = {
     { label: "Emergency", color: "bg-emergency", amount: 19836745 },
     { label: "Investment", color: "bg-investment", amount: 12047315 },
   ],
-
-  accountCards: [
-    {
-      initial: "G",
-      name: "Global66",
-      description: "Digital Wallet - High Liquidity",
-      balance: 12373439,
-      category: "EMERGENCY",
-      categoryColor:
-        "background-color: rgba(239, 68, 68, 0.1); color: #991b1b;",
-      categoryId: "4829",
-      isActive: true,
-    },
-    {
-      initial: "M",
-      name: "MejorCDT",
-      description: "Fixed Income Certificate",
-      balance: 15400000,
-      category: "RETIREMENT",
-      categoryColor:
-        "background-color: rgba(16, 185, 129, 0.1); color: #065f46;",
-      categoryId: "1042",
-    },
-    {
-      initial: "N",
-      name: "Nubank (NU)",
-      description: "Savings & Cajitas System",
-      balance: 10475159,
-      category: "MULTI-FUND",
-      categoryColor:
-        "background-color: rgba(218, 226, 253, 1); color: #3f465c;",
-      fundDots: ["bg-contingency", "bg-emergency", "bg-retirement"],
-    },
-    {
-      initial: "T",
-      name: "Tyba",
-      description: "FIC & Retirement Funds",
-      balance: 24219241,
-      category: "INVESTMENT",
-      categoryColor:
-        "background-color: rgba(245, 158, 11, 0.1); color: #92400e;",
-      categoryId: "8821",
-    },
-    {
-      initial: "X",
-      name: "XTB Broker",
-      description: "Stock Market & ETFs",
-      balance: 3582865,
-      category: "INVESTMENT",
-      categoryColor:
-        "background-color: rgba(245, 158, 11, 0.1); color: #92400e;",
-      categoryId: "5540",
-    },
-  ] as AccountCard[],
-
-  recentTransactions: [
-    {
-      icon: "payments",
-      title: "Transferencia Recibida - XTB",
-      date: "16 MAY 2026",
-      category: "INVERSIÓN",
-      amount: 382100,
-      amountColor: "text-retirement",
-      status: "Completado",
-    },
-    {
-      icon: "savings",
-      title: "Ahorro Programado - NU",
-      date: "08 MAY 2026",
-      category: "CONTINGENCY",
-      amount: 568611,
-      status: "Completado",
-    },
-  ] as RecentTransaction[],
 
   movements: [
     { date: "16/05/2026", account: "XTB", type: "Investment", amount: 382100 },
