@@ -8,19 +8,13 @@ import { dashboardService } from "../services/dashboard.service";
 import { formatCurrencyCOP } from "../utils/format";
 import { ACCOUNT_TYPES, ACCOUNT_CATEGORIES } from "../lib/constants";
 
-const [
+const {
   entitySummary,
   entitySummaryFooter,
   distributionFunds,
   accountCards,
   recentTransactions,
-] = await Promise.all([
-  dashboardService.getEntitySummary(),
-  dashboardService.getEntitySummaryFooter(),
-  dashboardService.getDistributionFunds(),
-  dashboardService.getAccountCards(),
-  dashboardService.getRecentTransactions(),
-]);
+} = await dashboardService.getAccountsPageData();
 
 const summaryEntities = entitySummary.map((entity) => ({
   ...entity,

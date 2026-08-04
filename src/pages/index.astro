@@ -7,13 +7,8 @@ import FundStatusTable from "../components/dashboard/FundStatusTable.astro";
 import { dashboardService } from "../services/dashboard.service";
 import { formatCurrencyCOP } from "../utils/format";
 
-const [summaryCards, chartEntities, recentMovements, fundStatus] =
-  await Promise.all([
-    dashboardService.getSummaryCards(),
-    dashboardService.getChartEntities(),
-    dashboardService.getRecentMovements(),
-    dashboardService.getFundStatus(),
-  ]);
+const { summaryCards, chartEntities, recentMovements, fundStatus } =
+  await dashboardService.getDashboardData();
 
 const formattedFundStatus = fundStatus.map((fund) => ({
   ...fund,

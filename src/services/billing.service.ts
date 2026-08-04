@@ -28,6 +28,8 @@ type UpdateBillingRecordInput = {
 
 const DEFAULT_USER_ID = "user-001";
 
+let seedCheckCompleted = false;
+
 const MONTH_MAP: Record<string, string> = {
   ene: "01",
   feb: "02",
@@ -252,19 +254,7 @@ export class BillingService {
     await this.ensureSeedData();
 
     const ids = await redis.smembers(KEYS.BILLING_RECORDS_INDEX);
-    const records: BillingRecord[] = [];
-
-    for (const id of ids) {
-      const record = deserializeBillingRecord(
-        (await redis.hgetall(
-          `${KEYS.BILLING_RECORD}:${id}`,
-        )) as Partial<BillingRecord> | null,
-      );
-
-      if (record) {
-        records.push(record);
-      }
-    }
+    const records = await this.hydrateRecords(ids);
 
     return aggregateBillingRecords(records).sort((left, right) => {
       if (left.monthKey !== right.monthKey) {
@@ -381,11 +371,13 @@ export class BillingService {
       createdAt,
     };
 
-    await redis.hset(
+    const pipeline = redis.pipeline();
+    pipeline.hset(
       `${KEYS.BILLING_RECORD}:${id}`,
       record as unknown as Record<string, unknown>,
     );
-    await redis.sadd(KEYS.BILLING_RECORDS_INDEX, id);
+    pipeline.sadd(KEYS.BILLING_RECORDS_INDEX, id);
+    await pipeline.exec();
 
     return record;
   }
@@ -446,23 +438,31 @@ export class BillingService {
   }
 
   private async ensureSeedData() {
-    const existingIds = await redis.smembers(KEYS.BILLING_RECORDS_INDEX);
-    const existingSnapshotIds = await redis.smembers(
-      KEYS.BILLING_BALANCE_SNAPSHOTS_INDEX,
-    );
-    const currentVersion = await redis.get<string>(KEYS.BILLING_SEED_VERSION);
+    if (seedCheckCompleted) {
+      return;
+    }
+
+    const [existingIds, existingSnapshotIds, currentVersion] =
+      await Promise.all([
+        redis.smembers(KEYS.BILLING_RECORDS_INDEX),
+        redis.smembers(KEYS.BILLING_BALANCE_SNAPSHOTS_INDEX),
+        redis.get<string>(KEYS.BILLING_SEED_VERSION),
+      ]);
 
     if (existingIds.length > 0 || existingSnapshotIds.length > 0) {
       await this.normalizeStoredData();
+      seedCheckCompleted = true;
       return;
     }
 
     if (currentVersion === BILLING_SEED_VERSION) {
+      seedCheckCompleted = true;
       return;
     }
 
     await this.replaceAll(billingSeedRecords, billingSeedBalanceSnapshots);
     await redis.set(KEYS.BILLING_SEED_VERSION, BILLING_SEED_VERSION);
+    seedCheckCompleted = true;
   }
 
   private getSummaryMetrics(records: BillingRecord[]): BillingSummaryMetrics {
@@ -615,6 +615,7 @@ export class BillingService {
     );
 
     const createdAt = new Date().toISOString();
+    const pipeline = redis.pipeline();
 
     for (const [index, record] of normalizedRecords.entries()) {
       const id = `bill-${Date.now()}-${index}`;
@@ -633,11 +634,11 @@ export class BillingService {
         createdAt,
       };
 
-      await redis.hset(
+      pipeline.hset(
         `${KEYS.BILLING_RECORD}:${id}`,
         payload as unknown as Record<string, unknown>,
       );
-      await redis.sadd(KEYS.BILLING_RECORDS_INDEX, id);
+      pipeline.sadd(KEYS.BILLING_RECORDS_INDEX, id);
     }
 
     for (const [index, snapshot] of normalizedSnapshots.entries()) {
@@ -652,14 +653,17 @@ export class BillingService {
         createdAt,
       };
 
-      await redis.hset(
+      pipeline.hset(
         `${KEYS.BILLING_BALANCE_SNAPSHOT}:${id}`,
         payload as unknown as Record<string, unknown>,
       );
-      await redis.sadd(KEYS.BILLING_BALANCE_SNAPSHOTS_INDEX, id);
+      pipeline.sadd(KEYS.BILLING_BALANCE_SNAPSHOTS_INDEX, id);
     }
 
-    await redis.set(KEYS.BILLING_SEED_VERSION, BILLING_SEED_VERSION);
+    pipeline.set(KEYS.BILLING_SEED_VERSION, BILLING_SEED_VERSION);
+
+    await pipeline.exec();
+    seedCheckCompleted = true;
   }
 
   private async normalizeStoredData() {
@@ -699,50 +703,55 @@ export class BillingService {
 
   private async getStoredRecordsRaw(): Promise<BillingRecord[]> {
     const ids = await redis.smembers(KEYS.BILLING_RECORDS_INDEX);
-    const records: BillingRecord[] = [];
-
-    for (const id of ids) {
-      const record = deserializeBillingRecord(
-        (await redis.hgetall(
-          `${KEYS.BILLING_RECORD}:${id}`,
-        )) as Partial<BillingRecord> | null,
-      );
-
-      if (record) {
-        records.push(record);
-      }
-    }
-
-    return records;
+    return this.hydrateRecords(ids);
   }
 
   private async getStoredSnapshotsRaw(): Promise<BillingBalanceSnapshot[]> {
     const ids = await redis.smembers(KEYS.BILLING_BALANCE_SNAPSHOTS_INDEX);
-    const snapshots: BillingBalanceSnapshot[] = [];
+    return this.hydrateSnapshots(ids);
+  }
 
+  private async hydrateRecords(ids: string[]): Promise<BillingRecord[]> {
+    if (ids.length === 0) return [];
+
+    const pipeline = redis.pipeline();
     for (const id of ids) {
-      const snapshot = deserializeBillingBalanceSnapshot(
-        (await redis.hgetall(
-          `${KEYS.BILLING_BALANCE_SNAPSHOT}:${id}`,
-        )) as Partial<BillingBalanceSnapshot> | null,
-      );
-
-      if (snapshot) {
-        snapshots.push(snapshot);
-      }
+      pipeline.hgetall(`${KEYS.BILLING_RECORD}:${id}`);
     }
 
-    return snapshots;
+    const results = (await pipeline.exec()) as Array<Partial<BillingRecord> | null>;
+    return results
+      .map(deserializeBillingRecord)
+      .filter((record): record is BillingRecord => record !== null);
+  }
+
+  private async hydrateSnapshots(
+    ids: string[],
+  ): Promise<BillingBalanceSnapshot[]> {
+    if (ids.length === 0) return [];
+
+    const pipeline = redis.pipeline();
+    for (const id of ids) {
+      pipeline.hgetall(`${KEYS.BILLING_BALANCE_SNAPSHOT}:${id}`);
+    }
+
+    const results = (await pipeline.exec()) as Array<Partial<BillingBalanceSnapshot> | null>;
+    return results
+      .map(deserializeBillingBalanceSnapshot)
+      .filter(
+        (snapshot): snapshot is BillingBalanceSnapshot => snapshot !== null,
+      );
   }
 
   private async clearCollection(indexKey: string, itemKeyPrefix: string) {
     const ids = await redis.smembers(indexKey);
 
+    const pipeline = redis.pipeline();
     for (const id of ids) {
-      await redis.del(`${itemKeyPrefix}:${id}`);
+      pipeline.del(`${itemKeyPrefix}:${id}`);
     }
-
-    await redis.del(indexKey);
+    pipeline.del(indexKey);
+    await pipeline.exec();
   }
 }
 

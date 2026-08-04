@@ -7,11 +7,8 @@ import { dashboardService } from "../services/dashboard.service";
 import { formatCurrencyCOP } from "../utils/format";
 import { TRANSACTION_TYPES, ACCOUNT_CATEGORIES } from "../lib/constants";
 
-const [movements, accounts, types] = await Promise.all([
-  dashboardService.getMovements(),
-  dashboardService.getMovementAccounts(),
-  dashboardService.getMovementTypes(),
-]);
+const { movements, accounts, types } =
+  await dashboardService.getHistoryPageData();
 
 const formattedMovements = movements.map((mov) => ({
   ...mov,

@@ -1,9 +1,5 @@
-import { redis, KEYS } from "../lib/db";
-import type {
-  Account,
-  Transaction,
-  TransactionWithAccount,
-} from "../lib/types";
+import { redis } from "../lib/db";
+import type { Account, TransactionWithAccount } from "../lib/types";
 import type {
   SummaryCard,
   ChartEntity,
@@ -14,60 +10,173 @@ import type {
   RecentTransaction,
 } from "../data/dashboard";
 import { formatCurrencyCOP, formatDate } from "../utils/format";
-import { transactionsService } from "./transactions.service";
+import {
+  TRANSACTIONS_DATE_KEY,
+  fetchAllAccounts,
+  hydrateTransactions,
+  withAccountNames,
+} from "../lib/queries";
+
+const EMERGENCY_TARGET = 24000000;
+const MOVEMENT_TYPES = ["income", "expense", "transfer", "investment"];
+
+const CATEGORY_META: Record<string, { label: string; color: string }> = {
+  retirement: { label: "Retirement", color: "#16a34a" },
+  emergency: { label: "Emergency", color: "#dc2626" },
+  investment: { label: "Investment", color: "#eab308" },
+  contingency: { label: "Contingency", color: "#2563eb" },
+};
+
+const CATEGORY_BG_CLASSES: Record<string, string> = {
+  retirement: "bg-retirement",
+  emergency: "bg-emergency",
+  investment: "bg-investment",
+  contingency: "bg-contingency",
+};
+
+const CATEGORY_CARD_STYLES: Record<string, string> = {
+  emergency: "background-color: rgba(239, 68, 68, 0.1); color: #991b1b;",
+  investment: "background-color: rgba(245, 158, 11, 0.1); color: #92400e;",
+  retirement: "background-color: rgba(16, 185, 129, 0.1); color: #065f46;",
+  contingency: "background-color: rgba(139, 92, 246, 0.1); color: #5b21b6;",
+};
+
+const capitalize = (value: string) =>
+  `${value.charAt(0).toLocaleUpperCase()}${value.slice(1)}`;
+
+const sumByCategory = (accounts: Account[]): Record<string, number> => {
+  const byCategory: Record<string, number> = {};
+  for (const a of accounts) {
+    byCategory[a.category] = (byCategory[a.category] || 0) + a.balance;
+  }
+  return byCategory;
+};
+
+const groupByInstitution = (
+  accounts: Account[],
+): Map<string, Record<string, number>> => {
+  const byInstitution = new Map<string, Record<string, number>>();
+  for (const a of accounts) {
+    if (!byInstitution.has(a.name)) {
+      byInstitution.set(a.name, {});
+    }
+    const cats = byInstitution.get(a.name)!;
+    cats[a.category] = (cats[a.category] || 0) + a.balance;
+  }
+  return byInstitution;
+};
 
 export class DashboardService {
-  async getSummaryCards(): Promise<SummaryCard[]> {
-    const accounts = await this.getAccounts();
+  async getDashboardData(): Promise<{
+    summaryCards: SummaryCard[];
+    chartEntities: ChartEntity[];
+    recentMovements: Movement[];
+    fundStatus: FundStatus[];
+  }> {
+    const [accounts, transactions] = await Promise.all([
+      fetchAllAccounts(),
+      this.getTransactions(),
+    ]);
+
+    return {
+      summaryCards: this.buildSummaryCards(accounts, transactions),
+      chartEntities: this.buildChartEntities(accounts),
+      recentMovements: this.buildMovements(transactions.slice(0, 5)).map(
+        (m) => ({
+          ...m,
+          date: formatDate(m.date),
+          category: capitalize(m.category),
+          amount: formatCurrencyCOP(m.amount as number),
+        }),
+      ),
+      fundStatus: this.buildFundStatus(accounts, transactions),
+    };
+  }
+
+  async getAccountsPageData(): Promise<{
+    entitySummary: EntitySummary[];
+    entitySummaryFooter: EntitySummary & { label: string };
+    distributionFunds: Array<{ label: string; color: string; amount: number }>;
+    accountCards: AccountCard[];
+    recentTransactions: RecentTransaction[];
+  }> {
+    const [accounts, recentTxns] = await Promise.all([
+      fetchAllAccounts(),
+      this.getRecentTransactions(5),
+    ]);
+
+    return {
+      entitySummary: this.buildEntitySummary(accounts),
+      entitySummaryFooter: this.buildEntitySummaryFooter(accounts),
+      distributionFunds: this.buildDistributionFunds(accounts),
+      accountCards: this.buildAccountCards(accounts),
+      recentTransactions: recentTxns.map((t) => ({
+        icon: t.type === "income" ? "payments" : "shopping_cart",
+        title: t.description,
+        date: formatDate(t.date),
+        category: t.accountName.toLocaleUpperCase(),
+        amount: formatCurrencyCOP(t.amount),
+        status: capitalize(t.categoryId),
+      })),
+    };
+  }
+
+  async getHistoryPageData(): Promise<{
+    movements: Movement[];
+    accounts: string[];
+    types: string[];
+  }> {
+    const [transactions, accounts] = await Promise.all([
+      this.getTransactions(),
+      fetchAllAccounts(),
+    ]);
+
+    return {
+      movements: this.buildMovements(transactions),
+      accounts: accounts.map((a) => a.name),
+      types: MOVEMENT_TYPES,
+    };
+  }
+
+  private buildSummaryCards(
+    accounts: Account[],
+    transactions: TransactionWithAccount[],
+  ): SummaryCard[] {
     const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+    const byCategory = sumByCategory(accounts);
 
-    const byCategory: Record<string, number> = {};
-    for (const a of accounts) {
-      byCategory[a.category] = (byCategory[a.category] || 0) + a.balance;
-    }
-
-    const emergencyTarget = 24000000;
     const emergencyCurrent = byCategory["emergency"] || 0;
-    const emergencyPct = Math.round((emergencyCurrent / emergencyTarget) * 100);
+    const emergencyPct = Math.round(
+      (emergencyCurrent / EMERGENCY_TARGET) * 100,
+    );
 
-    // Calculate real month-over-month change
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    // Get first and last day of current month
-    const firstDayCurrentMonth = new Date(currentYear, currentMonth, 1);
-    const lastDayCurrentMonth = new Date(currentYear, currentMonth + 1, 0);
-
-    const startDate = firstDayCurrentMonth.toISOString().split("T")[0];
-    const endDate = lastDayCurrentMonth.toISOString().split("T")[0];
-
-    // Get current month transactions
-    const currentMonthTxns = await transactionsService.getByDateRange(
-      startDate,
-      endDate,
-    );
-
-    // Calculate net flow (income - expenses)
     let monthlyIncome = 0;
     let monthlyExpenses = 0;
 
-    for (const t of currentMonthTxns) {
-      monthlyIncome += t.amount;
+    for (const t of transactions) {
+      const d = new Date(t.date);
+      if (d.getMonth() !== currentMonth || d.getFullYear() !== currentYear) {
+        continue;
+      }
+      if (t.type === "income") {
+        monthlyIncome += t.amount;
+      } else if (t.type === "expense") {
+        monthlyExpenses += Math.abs(t.amount);
+      }
     }
 
     const netFlow = monthlyIncome - monthlyExpenses;
-    // Balance at start of month = current balance - net flow
     const balanceStartOfMonth = totalBalance - netFlow;
 
-    // Calculate percentage change
     let changePercent = 0;
     if (balanceStartOfMonth > 0) {
-      changePercent =
-        ((totalBalance - balanceStartOfMonth) / balanceStartOfMonth) * 100;
+      changePercent = (netFlow / balanceStartOfMonth) * 100;
     }
 
-    // Format subtitle
     const sign = changePercent >= 0 ? "+" : "";
     const subtitle = `${sign}${changePercent.toFixed(1)}% vs last month`;
     const subtitleType = changePercent >= 0 ? "positive" : "negative";
@@ -84,7 +193,7 @@ export class DashboardService {
       {
         title: "Emergency Fund",
         value: emergencyCurrent,
-        subtitle: `Target: ${formatCurrencyCOP(emergencyTarget)} (${emergencyPct}%)`,
+        subtitle: `Target: ${formatCurrencyCOP(EMERGENCY_TARGET)} (${emergencyPct}%)`,
         subtitleType: "neutral" as const,
         icon: "emergency",
         accentColor: "emergency" as const,
@@ -108,33 +217,17 @@ export class DashboardService {
     ];
   }
 
-  async getChartEntities(): Promise<ChartEntity[]> {
-    const accounts = await this.getAccounts();
+  private buildChartEntities(accounts: Account[]): ChartEntity[] {
     const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
-
-    const byInstitution = new Map<string, Map<string, number>>();
-    for (const a of accounts) {
-      if (!byInstitution.has(a.name)) {
-        byInstitution.set(a.name, new Map());
-      }
-      const cats = byInstitution.get(a.name)!;
-      cats.set(a.category, (cats.get(a.category) || 0) + a.balance);
-    }
-
-    const categoryMeta: Record<string, { label: string; color: string }> = {
-      retirement: { label: "Retirement", color: "#16a34a" },
-      emergency: { label: "Emergency", color: "#dc2626" },
-      investment: { label: "Investment", color: "#eab308" },
-      contingency: { label: "Contingency", color: "#2563eb" },
-    };
+    const byInstitution = groupByInstitution(accounts);
 
     const result: ChartEntity[] = [];
     for (const [name, cats] of byInstitution) {
-      const total = [...cats.values()].reduce((s, v) => s + v, 0);
+      const total = Object.values(cats).reduce((s, v) => s + v, 0);
 
-      const categories = [...cats.entries()]
+      const categories = Object.entries(cats)
         .map(([key, amount]) => {
-          const meta = categoryMeta[key] || { label: key, color: "#9ca3af" };
+          const meta = CATEGORY_META[key] || { label: key, color: "#9ca3af" };
           return {
             key,
             label: meta.label,
@@ -149,7 +242,7 @@ export class DashboardService {
         name,
         total,
         formattedTotal: formatCurrencyCOP(total),
-        pct: (total / totalBalance) * 100,
+        pct: totalBalance > 0 ? (total / totalBalance) * 100 : 0,
         categories,
       });
     }
@@ -157,23 +250,21 @@ export class DashboardService {
     return result.sort((a, b) => b.pct - a.pct);
   }
 
-  async getRecentMovements(): Promise<Movement[]> {
-    const txns = await this.getTransactions();
-
-    return txns.slice(0, 5).map((t) => ({
+  private buildMovements(transactions: TransactionWithAccount[]): Movement[] {
+    return transactions.map((t) => ({
       account: t.accountName || t.accountId,
-      date: formatDate(t.date),
-      category: `${t.categoryId.charAt(0).toLocaleUpperCase()}${t.categoryId.slice(1)}`,
+      date: t.date,
+      category: t.categoryId,
       type: t.type,
-      amount: formatCurrencyCOP(t.amount),
+      amount: t.amount,
       description: t.description || "N/A",
     }));
   }
 
-  async getFundStatus(): Promise<FundStatus[]> {
-    const accounts = await this.getAccounts();
-    const txns = await this.getTransactions();
-
+  private buildFundStatus(
+    accounts: Account[],
+    transactions: TransactionWithAccount[],
+  ): FundStatus[] {
     const byCategory: Record<
       string,
       { current: number; institutions: Set<string> }
@@ -195,7 +286,7 @@ export class DashboardService {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
     let monthlyIncome = 0;
-    for (const t of txns) {
+    for (const t of transactions) {
       const d = new Date(t.date);
       if (
         t.type === "income" &&
@@ -206,42 +297,38 @@ export class DashboardService {
       }
     }
 
-    const emergencyTarget = 24000000;
-    const investmentExpected = Math.round(monthlyIncome * 0.1);
+    const investmentExpected = Math.round(monthlyIncome * 0.1) || 798231;
     const contingencyExpected = 568611;
     const retirementExpected = byCategory["retirement"].current;
+
+    const institutions = (category: string) =>
+      Array.from(byCategory[category].institutions).join(" - ") || "N/A";
 
     return [
       {
         name: "Emergencia",
         term: "6 meses",
-        expected: emergencyTarget,
+        expected: EMERGENCY_TARGET,
         current: byCategory["emergency"].current,
-        institution:
-          Array.from(byCategory["emergency"].institutions).join(" - ") || "N/A",
+        institution: institutions("emergency"),
         color: "emergency",
-        difference: byCategory["emergency"].current - emergencyTarget,
+        difference: byCategory["emergency"].current - EMERGENCY_TARGET,
       },
       {
         name: "Inversión",
         term: "10% Save",
-        expected: investmentExpected || 798231,
+        expected: investmentExpected,
         current: byCategory["investment"].current,
-        institution:
-          Array.from(byCategory["investment"].institutions).join(" - ") ||
-          "N/A",
+        institution: institutions("investment"),
         color: "investment",
-        difference:
-          byCategory["investment"].current - (investmentExpected || 798231),
+        difference: byCategory["investment"].current - investmentExpected,
       },
       {
         name: "Imprevistos",
         term: "Vacaciones",
         expected: contingencyExpected,
         current: byCategory["contingency"].current,
-        institution:
-          Array.from(byCategory["contingency"].institutions).join(" - ") ||
-          "N/A",
+        institution: institutions("contingency"),
         color: "contingency",
         difference: byCategory["contingency"].current - contingencyExpected,
       },
@@ -250,26 +337,15 @@ export class DashboardService {
         term: "Cesantias, Prima",
         expected: retirementExpected,
         current: byCategory["retirement"].current,
-        institution:
-          Array.from(byCategory["retirement"].institutions).join(" - ") ||
-          "N/A",
+        institution: institutions("retirement"),
         color: "retirement",
         difference: 0,
       },
     ];
   }
 
-  async getEntitySummary(): Promise<EntitySummary[]> {
-    const accounts = await this.getAccounts();
-    const byInstitution = new Map<string, Record<string, number>>();
-
-    for (const a of accounts) {
-      if (!byInstitution.has(a.name)) {
-        byInstitution.set(a.name, {});
-      }
-      const cats = byInstitution.get(a.name)!;
-      cats[a.category] = (cats[a.category] || 0) + a.balance;
-    }
+  private buildEntitySummary(accounts: Account[]): EntitySummary[] {
+    const byInstitution = groupByInstitution(accounts);
 
     const result: EntitySummary[] = [];
     for (const [name, cats] of byInstitution) {
@@ -282,34 +358,23 @@ export class DashboardService {
         (emergency || 0) +
         (investment || 0) +
         (retirement || 0);
-      result.push({
-        name,
-        contingency,
-        emergency,
-        investment,
-        retirement,
-        total,
-      });
+      result.push({ name, contingency, emergency, investment, retirement, total });
     }
 
     return result.sort((a, b) => b.total - a.total);
   }
 
-  async getEntitySummaryFooter() {
-    const accounts = await this.getAccounts();
-    let contingency = 0,
-      emergency = 0,
-      investment = 0,
-      retirement = 0;
-
-    for (const a of accounts) {
-      if (a.category === "contingency") contingency += a.balance;
-      else if (a.category === "emergency") emergency += a.balance;
-      else if (a.category === "investment") investment += a.balance;
-      else if (a.category === "retirement") retirement += a.balance;
-    }
+  private buildEntitySummaryFooter(
+    accounts: Account[],
+  ): EntitySummary & { label: string } {
+    const byCategory = sumByCategory(accounts);
+    const contingency = byCategory["contingency"] || 0;
+    const emergency = byCategory["emergency"] || 0;
+    const investment = byCategory["investment"] || 0;
+    const retirement = byCategory["retirement"] || 0;
 
     return {
+      name: "SUMA TOTAL",
       label: "SUMA TOTAL",
       contingency,
       emergency,
@@ -319,48 +384,20 @@ export class DashboardService {
     };
   }
 
-  async getDistributionFunds() {
-    const accounts = await this.getAccounts();
-    const byCategory: Record<string, number> = {};
-
-    for (const a of accounts) {
-      byCategory[a.category] = (byCategory[a.category] || 0) + a.balance;
-    }
-
-    const totalBalance = Object.values(byCategory).reduce((s, v) => s + v, 0);
-    const categoryColors: Record<string, string> = {
-      retirement: "bg-retirement",
-      emergency: "bg-emergency",
-      investment: "bg-investment",
-      contingency: "bg-contingency",
-    };
-
-    const categoryLabels: Record<string, string> = {
-      retirement: "Retirement",
-      emergency: "Emergency",
-      investment: "Investment",
-      contingency: "Contingency",
-    };
+  private buildDistributionFunds(accounts: Account[]) {
+    const byCategory = sumByCategory(accounts);
 
     return Object.entries(byCategory)
       .filter(([_, amount]) => amount > 0)
       .map(([category, amount]) => ({
-        label: categoryLabels[category] || category,
-        color: categoryColors[category] || "bg-gray-400",
+        label: CATEGORY_META[category]?.label || category,
+        color: CATEGORY_BG_CLASSES[category] || "bg-gray-400",
         amount,
       }))
       .sort((a, b) => b.amount - a.amount);
   }
 
-  async getAccountCards(): Promise<AccountCard[]> {
-    const accounts = await this.getAccounts();
-    const categoryColors: Record<string, string> = {
-      emergency: "background-color: rgba(239, 68, 68, 0.1); color: #991b1b;",
-      investment: "background-color: rgba(245, 158, 11, 0.1); color: #92400e;",
-      retirement: "background-color: rgba(16, 185, 129, 0.1); color: #065f46;",
-      contingency: "background-color: rgba(139, 92, 246, 0.1); color: #5b21b6;",
-    };
-
+  private buildAccountCards(accounts: Account[]): AccountCard[] {
     return accounts.map((a) => ({
       initial: a.name.charAt(0),
       name: a.name,
@@ -368,95 +405,29 @@ export class DashboardService {
       balance: formatCurrencyCOP(a.balance),
       category: a.category.toUpperCase(),
       categoryColor:
-        categoryColors[a.category] ||
+        CATEGORY_CARD_STYLES[a.category] ||
         "background-color: rgba(218, 226, 253, 1); color: #3f465c;",
       accountId: a.id,
       isActive: a.status === "active",
     }));
   }
 
-  async getRecentTransactions(): Promise<RecentTransaction[]> {
-    const txns = await this.getTransactions();
-    return txns.slice(0, 5).map((t) => ({
-      icon: t.type === "income" ? "payments" : "shopping_cart",
-      title: t.description,
-      date: formatDate(t.date),
-      category: t.accountName.toLocaleUpperCase(),
-      amount: formatCurrencyCOP(t.amount),
-      status: `${t.categoryId.charAt(0).toLocaleUpperCase()}${t.categoryId.slice(1)}`,
-    }));
-  }
-
-  async getMovements(): Promise<Movement[]> {
-    const txns = await this.getTransactions();
-
-    return txns.map((t) => ({
-      account: t.accountName || t.accountId,
-      date: t.date,
-      category: t.categoryId,
-      type: t.type,
-      amount: t.amount,
-      description: t.description || "N/A",
-    }));
-  }
-
-  async getMovementAccounts(): Promise<string[]> {
-    const accounts = await this.getAccounts();
-    return accounts.map((a) => a.name);
-  }
-
-  async getMovementAccountsData(): Promise<{ id: string; name: string }[]> {
-    const accounts = await this.getAccounts();
-    return accounts.map((a) => ({ id: a.id, name: a.name }));
-  }
-
-  async getMovementTypes(): Promise<string[]> {
-    return ["income", "expense", "transfer", "investment"];
-  }
-
-  private async getAccounts(): Promise<Account[]> {
-    const accountIds = await redis.smembers(KEYS.ACCOUNTS_INDEX);
-    const pipeline = redis.pipeline();
-    for (const id of accountIds) {
-      pipeline.hgetall(`${KEYS.ACCOUNT}:${id}`);
-    }
-    const results = (await pipeline.exec()) as Array<Account | null>;
-    return results.filter((acc): acc is Account => acc !== null && "id" in acc);
-  }
-
   private async getTransactions(): Promise<TransactionWithAccount[]> {
-    const txnIds = await redis.zrange(
-      `${KEYS.TRANSACTIONS_BY_DATE}:user-001`,
-      0,
-      -1,
-      { rev: true },
-    );
+    const txnIds = await redis.zrange<string[]>(TRANSACTIONS_DATE_KEY, 0, -1, {
+      rev: true,
+    });
+    const transactions = await hydrateTransactions(txnIds);
+    return withAccountNames(transactions);
+  }
 
-    const pipeline = redis.pipeline();
-    for (const id of txnIds) {
-      pipeline.hgetall(`${KEYS.TRANSACTION}:${id}`);
-    }
-    const txnResults: Array<Transaction | null> = await pipeline.exec();
-    const transactions = txnResults.filter(
-      (txn): txn is Transaction => txn !== null && "id" in txn,
-    );
-
-    const accountIds = [...new Set(transactions.map((t) => t.accountId))];
-    const accountPipeline = redis.pipeline();
-    for (const id of accountIds) {
-      accountPipeline.hgetall(`${KEYS.ACCOUNT}:${id}`);
-    }
-    const accountResults: Array<Account | null> = await accountPipeline.exec();
-    const accounts = accountResults.filter(
-      (acc): acc is Account => acc !== null && "id" in acc,
-    );
-
-    const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
-
-    return transactions.map((txn) => ({
-      ...txn,
-      accountName: accountMap.get(txn.accountId) || txn.accountId,
-    }));
+  private async getRecentTransactions(
+    limit: number,
+  ): Promise<TransactionWithAccount[]> {
+    const txnIds = await redis.zrange<string[]>(TRANSACTIONS_DATE_KEY, 0, limit - 1, {
+      rev: true,
+    });
+    const transactions = await hydrateTransactions(txnIds);
+    return withAccountNames(transactions);
   }
 }
 
