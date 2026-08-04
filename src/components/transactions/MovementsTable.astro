@@ -5,6 +5,7 @@ import { formatCurrencyCOP } from "../../utils/format";
 interface Movement {
   date: string;
   account: string;
+  description?: string;
   category: string;
   type: string;
   amount: string;
@@ -61,6 +62,10 @@ const categoryStyles: Record<string, string> = {
           >
           <th
             class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant"
+            >Descripción</th
+          >
+          <th
+            class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant"
             >Categoría</th
           >
           <th
@@ -92,6 +97,9 @@ const categoryStyles: Record<string, string> = {
                     mov.type as keyof typeof TRANSACTION_TYPES
                   ] || mov.type}
                 </span>
+              </td>
+              <td class="px-6 py-4 text-table-data font-table-data text-on-surface">
+                {mov.description || "N/A"}
               </td>
               <td class="px-6 py-4">
                 <span
