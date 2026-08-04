@@ -4,9 +4,12 @@ import { formatCurrencyCOP } from "../../utils/format";
 
 interface Props {
   records: BillingRecord[];
+  pageSize?: number;
 }
 
-const { records } = Astro.props;
+const { records, pageSize = 10 } = Astro.props;
+const totalRecords = records.length;
+const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
 
 const formatHours = (value: number) =>
   new Intl.NumberFormat("en-US", {
@@ -17,6 +20,8 @@ const formatHours = (value: number) =>
 
 <section
   class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm"
+  data-billing-records-table
+  data-page-size={pageSize}
 >
   <div
     class="flex items-center justify-between border-b border-outline-variant px-6 py-4"
@@ -32,7 +37,7 @@ const formatHours = (value: number) =>
     <span
       class="rounded-full bg-surface-container px-3 py-1 text-label-caps font-label-caps text-on-surface-variant"
     >
-      {records.length} rows
+      {totalRecords} rows
     </span>
   </div>
 
@@ -53,15 +58,17 @@ const formatHours = (value: number) =>
       </thead>
       <tbody>
         {
-          records.map((record) => {
+          records.map((record, index) => {
             const statusClass =
               record.balance > 0 ? "bg-contingency/5" : "bg-transparent";
 
             return (
-              <tr class={statusClass}>
-                <td class="font-semibold text-on-surface">
-                  {record.project}
-                </td>
+              <tr
+                class:list={[statusClass, index >= pageSize && "hidden"]}
+                data-billing-row
+                data-row-index={index}
+              >
+                <td class="font-semibold text-on-surface">{record.project}</td>
                 <td class="text-on-surface-variant">{record.monthLabel}</td>
                 <td class="text-right font-mono text-on-surface">
                   {formatHours(record.totalHours)}
@@ -94,7 +101,9 @@ const formatHours = (value: number) =>
                         : "text-retirement",
                     ]}
                   >
-                    {record.balance > 0 ? formatCurrencyCOP(record.balance) : "Paid"}
+                    {record.balance > 0
+                      ? formatCurrencyCOP(record.balance)
+                      : "Paid"}
                   </span>
                 </td>
                 <td class="text-right">
@@ -121,6 +130,55 @@ const formatHours = (value: number) =>
       </tbody>
     </table>
   </div>
+
+  {
+    totalPages > 1 && (
+      <div
+        class="flex items-center justify-between border-t border-outline-variant bg-surface px-6 py-3"
+        data-billing-pagination
+      >
+        <div class="flex gap-2">
+          <button
+            type="button"
+            data-pagination-prev
+            class="px-2 py-1 border border-outline-variant rounded-lg text-label-caps transition-colors hover:bg-surface-container-high disabled:pointer-events-none disabled:opacity-50"
+            disabled
+          >
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+            (page) => (
+              <button
+                type="button"
+                data-pagination-page={page}
+                class:list={[
+                  "px-4 py-2 rounded-lg text-label-caps transition-colors",
+                  page === 1
+                    ? "bg-primary text-on-primary"
+                    : "border border-outline-variant hover:bg-surface-container-high",
+                ]}
+              >
+                {page}
+              </button>
+            ),
+          )}
+          <button
+            type="button"
+            data-pagination-next
+            class="p-1 border border-outline-variant rounded-lg text-label-caps transition-colors hover:bg-surface-container-high disabled:pointer-events-none disabled:opacity-50"
+          >
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+        <div
+          class="text-label-caps font-label-caps text-on-surface-variant"
+          data-pagination-status
+        >
+          Página 1 de {totalPages}
+        </div>
+      </div>
+    )
+  }
 </section>
 
 <div
@@ -163,28 +221,35 @@ const formatHours = (value: number) =>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <p class="mb-1 text-label-md text-on-surface-variant">Project</p>
-          <p id="edit-billing-project" class="text-body-md font-semibold text-on-surface">
+          <p
+            id="edit-billing-project"
+            class="text-body-md font-semibold text-on-surface"
+          >
             -
           </p>
         </div>
         <div>
           <p class="mb-1 text-label-md text-on-surface-variant">Month</p>
-          <p id="edit-billing-month" class="text-body-md text-on-surface">
-            -
-          </p>
+          <p id="edit-billing-month" class="text-body-md text-on-surface">-</p>
         </div>
       </div>
 
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <p class="mb-1 text-label-md text-on-surface-variant">Total Hours</p>
-          <p id="edit-billing-total-hours" class="font-mono text-body-md text-on-surface">
+          <p
+            id="edit-billing-total-hours"
+            class="font-mono text-body-md text-on-surface"
+          >
             0
           </p>
         </div>
         <div>
           <p class="mb-1 text-label-md text-on-surface-variant">Hourly Rate</p>
-          <p id="edit-billing-hourly-rate" class="font-mono text-body-md text-on-surface">
+          <p
+            id="edit-billing-hourly-rate"
+            class="font-mono text-body-md text-on-surface"
+          >
             $0
           </p>
         </div>
@@ -235,7 +300,8 @@ const formatHours = (value: number) =>
       <p
         id="edit-billing-error"
         class="hidden rounded-lg border border-contingency/30 bg-contingency/10 px-3 py-2 text-sm text-contingency"
-      ></p>
+      >
+      </p>
 
       <div class="flex gap-3 pt-2">
         <button
@@ -287,6 +353,22 @@ const formatHours = (value: number) =>
   const editBillingClose = document.getElementById("edit-billing-close");
   const editBillingCancel = document.getElementById("edit-billing-cancel");
   const editBillingButtons = document.querySelectorAll("[data-edit-billing]");
+  const billingRecordsTable = document.querySelector(
+    "[data-billing-records-table]",
+  );
+  const billingRows = Array.from(
+    document.querySelectorAll<HTMLTableRowElement>("[data-billing-row]"),
+  );
+  const paginationPrev = document.querySelector<HTMLButtonElement>(
+    "[data-pagination-prev]",
+  );
+  const paginationNext = document.querySelector<HTMLButtonElement>(
+    "[data-pagination-next]",
+  );
+  const paginationStatus = document.querySelector("[data-pagination-status]");
+  const paginationPageButtons = Array.from(
+    document.querySelectorAll<HTMLButtonElement>("[data-pagination-page]"),
+  );
 
   const editCurrencyFormatter = new Intl.NumberFormat("es-CO", {
     style: "currency",
@@ -300,6 +382,14 @@ const formatHours = (value: number) =>
 
   let editBillingTotalHoursValue = 0;
   let editBillingHourlyRateValue = 0;
+  let currentPage = 1;
+  const billingPageSize = Number(
+    billingRecordsTable?.getAttribute("data-page-size") ?? 10,
+  );
+  const billingTotalPages = Math.max(
+    1,
+    Math.ceil(billingRows.length / billingPageSize),
+  );
 
   const formatEditCurrency = (value: number) =>
     editCurrencyFormatter.format(value);
@@ -332,6 +422,47 @@ const formatHours = (value: number) =>
     if (editBillingBalance) {
       editBillingBalance.textContent = formatEditCurrency(balance);
     }
+  };
+
+  const updatePaginationUI = () => {
+    const startIndex = (currentPage - 1) * billingPageSize;
+    const endIndex = startIndex + billingPageSize;
+
+    billingRows.forEach((row, index) => {
+      row.classList.toggle("hidden", index < startIndex || index >= endIndex);
+    });
+
+    paginationPageButtons.forEach((button) => {
+      const page = Number(button.dataset.paginationPage);
+      const isCurrentPage = page === currentPage;
+
+      button.classList.toggle("bg-primary", isCurrentPage);
+      button.classList.toggle("text-on-primary", isCurrentPage);
+      button.classList.toggle("border", !isCurrentPage);
+      button.classList.toggle("border-outline-variant", !isCurrentPage);
+      button.classList.toggle(
+        "hover:bg-surface-container-high",
+        !isCurrentPage,
+      );
+      button.setAttribute("aria-current", isCurrentPage ? "page" : "false");
+    });
+
+    if (paginationPrev) {
+      paginationPrev.disabled = currentPage <= 1;
+    }
+
+    if (paginationNext) {
+      paginationNext.disabled = currentPage >= billingTotalPages;
+    }
+
+    if (paginationStatus) {
+      paginationStatus.textContent = `Página ${currentPage} de ${billingTotalPages}`;
+    }
+  };
+
+  const setCurrentPage = (page: number) => {
+    currentPage = Math.min(Math.max(page, 1), billingTotalPages);
+    updatePaginationUI();
   };
 
   const closeEditBillingModal = () => {
@@ -369,7 +500,9 @@ const formatHours = (value: number) =>
     }
 
     if (editBillingTotalHours) {
-      editBillingTotalHours.textContent = formatEditHours(editBillingTotalHoursValue);
+      editBillingTotalHours.textContent = formatEditHours(
+        editBillingTotalHoursValue,
+      );
     }
 
     if (editBillingHourlyRate) {
@@ -394,6 +527,20 @@ const formatHours = (value: number) =>
     button.addEventListener("click", () => openEditBillingModal(button));
   });
 
+  paginationPrev?.addEventListener("click", () => {
+    setCurrentPage(currentPage - 1);
+  });
+
+  paginationNext?.addEventListener("click", () => {
+    setCurrentPage(currentPage + 1);
+  });
+
+  paginationPageButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      setCurrentPage(Number(button.dataset.paginationPage));
+    });
+  });
+
   editBillingClose?.addEventListener("click", closeEditBillingModal);
   editBillingCancel?.addEventListener("click", closeEditBillingModal);
 
@@ -409,12 +556,17 @@ const formatHours = (value: number) =>
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && editBillingModal?.classList.contains("flex")) {
+    if (
+      event.key === "Escape" &&
+      editBillingModal?.classList.contains("flex")
+    ) {
       closeEditBillingModal();
     }
   });
 
+  updatePaginationUI();
   editBillingForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
     event.preventDefault();
     setEditBillingError("");
     updateEditBillingPreview();

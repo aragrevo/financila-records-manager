@@ -2,41 +2,87 @@
 interface Props {
   currentPage: number;
   totalPages: number;
+  basePath?: string;
+  queryParam?: string;
 }
 
-const { currentPage, totalPages } = Astro.props;
+const {
+  currentPage,
+  totalPages,
+  basePath = Astro.url.pathname,
+  queryParam = "page",
+} = Astro.props;
 
-const pages = Array.from({ length: Math.min(totalPages, 3) }, (_, i) => i + 1);
+const maxVisiblePages = 3;
+const startPage = Math.max(
+  1,
+  Math.min(currentPage - 1, totalPages - maxVisiblePages + 1),
+);
+const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+const pages = Array.from(
+  { length: Math.max(0, endPage - startPage + 1) },
+  (_, i) => startPage + i,
+);
+
+const buildPageHref = (page: number) => {
+  const params = new URLSearchParams(Astro.url.searchParams);
+
+  if (page <= 1) {
+    params.delete(queryParam);
+  } else {
+    params.set(queryParam, String(page));
+  }
+
+  const query = params.toString();
+
+  return query ? `${basePath}?${query}` : basePath;
+};
 ---
 
 <div
   class="border-t border-outline-variant px-6 py-3 bg-surface flex justify-between items-center"
 >
   <div class="flex gap-2">
-    <button
-      class="px-2 py-1 border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors text-label-caps"
+    <a
+      href={buildPageHref(Math.max(1, currentPage - 1))}
+      aria-disabled={currentPage <= 1}
+      class:list={[
+        "px-2 py-1 border border-outline-variant rounded-lg text-label-caps transition-colors",
+        currentPage <= 1
+          ? "pointer-events-none opacity-50"
+          : "hover:bg-surface-container-high",
+      ]}
     >
       <span class="material-symbols-outlined">chevron_left</span>
-    </button>
+    </a>
     {
       pages.map((page) => (
-        <button
+        <a
+          href={buildPageHref(page)}
+          aria-current={page === currentPage ? "page" : undefined}
           class:list={[
-            "px-4 py-2 rounded-lg text-label-caps ",
+            "px-4 py-2 rounded-lg text-label-caps",
             page === currentPage
               ? "bg-primary text-on-primary"
               : "border border-outline-variant hover:bg-surface-container-high transition-colors",
           ]}
         >
           {page}
-        </button>
+        </a>
       ))
     }
-    <button
-      class="p-1 border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors text-label-caps"
+    <a
+      href={buildPageHref(Math.min(totalPages, currentPage + 1))}
+      aria-disabled={currentPage >= totalPages}
+      class:list={[
+        "p-1 border border-outline-variant rounded-lg text-label-caps transition-colors",
+        currentPage >= totalPages
+          ? "pointer-events-none opacity-50"
+          : "hover:bg-surface-container-high",
+      ]}
     >
       <span class="material-symbols-outlined">chevron_right</span>
-    </button>
+    </a>
   </div>
   <div class="text-label-caps font-label-caps text-on-surface-variant">
     Página {currentPage} de {totalPages}

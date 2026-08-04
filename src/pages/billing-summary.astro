@@ -21,8 +21,8 @@ const billingSummaryCards = [
   {
     title: "Outstanding Balance",
     value: formatCurrencyCOP(metrics.outstandingBalance),
-    subtitle: "Open receivables from the latest cycle",
-    subtitleType: "negative" as const,
+    subtitle: "Outstanding balance pending collection",
+    subtitleType: "neutral" as const,
     icon: "payments",
     accentColor: "primary" as const,
   },
@@ -37,7 +37,7 @@ const billingSummaryCards = [
   {
     title: "Average Monthly Hours",
     value: `${formatHours(metrics.averageMonthlyHours)} h`,
-    subtitle: "Average billable hours across tracked months",
+    subtitle: "Average billable hours across tracked",
     subtitleType: "neutral" as const,
     icon: "bar_chart",
     accentColor: "retirement" as const,
