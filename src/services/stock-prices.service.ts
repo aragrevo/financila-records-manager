@@ -2,6 +2,11 @@ const YAHOO_CHART_ENDPOINT =
   "https://query1.finance.yahoo.com/v8/finance/chart";
 const REQUEST_TIMEOUT_MS = 5000;
 const CHUNK_SIZE = 3;
+const YAHOO_SYMBOL_ALIASES: Record<string, string> = {
+  IB1T: "IB1T.DE",
+  SPYL: "SPYL.DE",
+  TEP: "TEP.PA",
+};
 
 export interface StockQuotesResult {
   quotesBySymbol: Record<string, number>;
@@ -23,6 +28,9 @@ const normalizeSymbols = (symbols: string[]): string[] => [
     symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean),
   ),
 ];
+
+const getYahooSymbol = (symbol: string): string =>
+  YAHOO_SYMBOL_ALIASES[symbol] ?? symbol;
 
 const getRegularMarketPrice = (payload: unknown): number | null => {
   if (typeof payload !== "object" || payload === null) {
@@ -90,7 +98,7 @@ export class StockPricesService {
       const results = await Promise.all(
         chunk.map(async (symbol) => ({
           symbol,
-          price: await this.getQuoteForSymbol(symbol),
+          price: await this.getQuoteForSymbol(getYahooSymbol(symbol)),
         })),
       );
 
