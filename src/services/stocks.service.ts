@@ -6,6 +6,7 @@ import {
   fetchAllStockPositions,
   hydrateStockPositions,
 } from "../lib/queries";
+import { stockPricesService } from "./stock-prices.service";
 
 const toNumber = (value: unknown): number => {
   if (typeof value === "number") {
@@ -57,6 +58,13 @@ export type CreateStockPositionInput = Pick<
   "accountId" | "symbol" | "name" | "assetType" | "shares" | "averageCost"
 > &
   Partial<Pick<StockPosition, "currentPrice" | "sector" | "region" | "notes">>;
+
+export interface StockPriceSyncSummary {
+  updatedSymbols: string[];
+  updatedPositions: number;
+  failedSymbols: string[];
+  syncedAt: string;
+}
 
 export class StocksService {
   async getAccounts(): Promise<StockBrokerAccount[]> {
@@ -171,6 +179,70 @@ export class StocksService {
     );
     if (!position || !position.id) return null;
     return normalizeStockPosition(position);
+  }
+
+  async syncActivePositionPrices(): Promise<StockPriceSyncSummary> {
+    const syncedAt = new Date().toISOString();
+    const activePositions = (await this.getPositions()).filter(
+      (position) => position.status === "active",
+    );
+
+    if (activePositions.length === 0) {
+      return {
+        updatedSymbols: [],
+        updatedPositions: 0,
+        failedSymbols: [],
+        syncedAt,
+      };
+    }
+
+    const symbols = [...new Set(activePositions.map((position) => position.symbol.toUpperCase()))];
+
+    try {
+      const { quotesBySymbol, failedSymbols } = await stockPricesService.getQuotes(symbols);
+      const updatedSymbols = new Set<string>();
+      let updatedPositions = 0;
+      const pipeline = redis.pipeline();
+
+      for (const position of activePositions) {
+        const nextPrice = quotesBySymbol[position.symbol.toUpperCase()];
+        if (nextPrice === undefined || nextPrice === position.currentPrice) {
+          continue;
+        }
+
+        const updated: StockPosition = {
+          ...position,
+          currentPrice: nextPrice,
+          updatedAt: syncedAt,
+        };
+
+        pipeline.hset(
+          `${KEYS.STOCK_POSITION}:${position.id}`,
+          sanitizeRecord(updated as unknown as Record<string, unknown>),
+        );
+        updatedSymbols.add(position.symbol.toUpperCase());
+        updatedPositions += 1;
+      }
+
+      if (updatedPositions > 0) {
+        await pipeline.exec();
+      }
+
+      return {
+        updatedSymbols: [...updatedSymbols],
+        updatedPositions,
+        failedSymbols,
+        syncedAt,
+      };
+    } catch (error) {
+      console.error("Error syncing stock prices:", error);
+      return {
+        updatedSymbols: [],
+        updatedPositions: 0,
+        failedSymbols: symbols,
+        syncedAt,
+      };
+    }
   }
 
   async createPosition(input: CreateStockPositionInput): Promise<StockPosition> {

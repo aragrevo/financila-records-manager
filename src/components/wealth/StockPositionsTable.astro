@@ -18,9 +18,30 @@ interface Props {
   closedHoldings: HoldingWithContext[];
   brokerVariant: Record<keyof typeof STOCK_BROKERS, BrokerChipVariant>;
   assetVariant: Record<keyof typeof STOCK_ASSET_TYPES, AssetChipVariant>;
+  failedPriceSymbols: string[];
 }
 
-const { holdings, closedHoldings, brokerVariant, assetVariant } = Astro.props;
+const {
+  holdings,
+  closedHoldings,
+  brokerVariant,
+  assetVariant,
+  failedPriceSymbols,
+} = Astro.props as Props;
+const failedPriceSymbolSet = new Set(
+  failedPriceSymbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean),
+);
+
+const getPriceDifferencePercentage = (holding: HoldingWithContext): number => {
+  if (holding.averageCost <= 0) return 0;
+  return ((holding.currentPrice - holding.averageCost) / holding.averageCost) * 100;
+};
+
+const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
+  if (holding.currentPrice > holding.averageCost) return "up";
+  if (holding.currentPrice < holding.averageCost) return "down";
+  return "flat";
+};
 ---
 
 <Card class="overflow-hidden p-0">
@@ -61,7 +82,17 @@ const { holdings, closedHoldings, brokerVariant, assetVariant } = Astro.props;
               class="align-top transition-colors hover:bg-surface-container-low/50"
             >
               <td class="px-3 py-3 font-mono font-semibold text-on-surface">
-                {holding.symbol}
+                <div class="flex flex-col items-start gap-1">
+                  <span>{holding.symbol}</span>
+                  {failedPriceSymbolSet.has(holding.symbol.toUpperCase()) ? (
+                    <span class="inline-flex items-center gap-1 rounded-full bg-emergency/10 px-2 py-0.5 text-[11px] font-medium text-emergency">
+                      <span class="material-symbols-outlined text-[14px]">
+                        sync_problem
+                      </span>
+                      Sin actualizar
+                    </span>
+                  ) : null}
+                </div>
               </td>
               <td class="px-3 py-3">
                 <div>
@@ -97,10 +128,38 @@ const { holdings, closedHoldings, brokerVariant, assetVariant } = Astro.props;
                 {formatCurrency(holding.averageCost)}
               </td>
               <td class="px-3 py-3 text-right font-mono">
-                <div class="flex justify-end">
-                  <span data-current-price-display>
-                    {formatCurrency(holding.currentPrice)}
-                  </span>
+                <div class="flex flex-col items-end gap-1">
+                  <div
+                    data-current-price-display
+                    class="flex flex-col items-end gap-1"
+                  >
+                    <span class="inline-flex items-center gap-1">
+                      <span>{formatCurrency(holding.currentPrice)}</span>
+                      {getPriceTrend(holding) === "up" ? (
+                        <span class="material-symbols-outlined text-sm text-retirement">
+                          arrow_upward
+                        </span>
+                      ) : getPriceTrend(holding) === "down" ? (
+                        <span class="material-symbols-outlined text-sm text-error">
+                          arrow_downward
+                        </span>
+                      ) : null}
+                    </span>
+                    <span
+                      class:list={[
+                        "text-[11px]",
+                        getPriceTrend(holding) === "up"
+                          ? "text-retirement"
+                          : getPriceTrend(holding) === "down"
+                            ? "text-error"
+                            : "text-on-surface-variant",
+                      ]}
+                    >
+                      {getPriceDifferencePercentage(holding) > 0 ? "+" : ""}
+                      {formatPercentage(getPriceDifferencePercentage(holding))}
+                    </span>
+                  </div>
+                  
                   <form
                     class="hidden items-center gap-2"
                     data-inline-price-form

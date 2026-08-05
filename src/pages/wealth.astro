@@ -31,8 +31,11 @@ const assetVariant: Record<keyof typeof STOCK_ASSET_TYPES, AssetChipVariant> = {
   adr: "retirement",
 };
 
-const stockAccounts = await stocksService.getAccounts();
-const stockPositions = await stocksService.getPositions();
+const priceSyncSummary = await stocksService.syncActivePositionPrices();
+const [stockAccounts, stockPositions] = await Promise.all([
+  stocksService.getAccounts(),
+  stocksService.getPositions(),
+]);
 const activeStockPositions = stockPositions.filter((position) => position.status === "active");
 const closedStockPositions = stockPositions
   .filter((position) => position.status === "closed")
@@ -77,6 +80,15 @@ const summaryMetrics: SummaryMetrics = {
     0,
   ),
 };
+
+const priceSyncMessage =
+  priceSyncSummary.failedSymbols.length === 0
+    ? ""
+    : priceSyncSummary.updatedPositions === 0
+      ? "No se pudieron refrescar las cotizaciones de Yahoo. Se mantienen los ultimos precios guardados."
+      : `${priceSyncSummary.failedSymbols.length} ticker${
+          priceSyncSummary.failedSymbols.length === 1 ? "" : "s"
+        } conservaron su ultimo precio por falta de cotizacion.`;
 
 const holdingsWithContext: HoldingWithContext[] = activeStockPositions
   .map((position) => {
@@ -231,6 +243,11 @@ const assetTypeSummary: AssetTypeSummaryItem[] = Object.values(
         <p class="mt-1 text-body-md text-on-surface-variant">
           Registra brokers, cuentas y posiciones reales para consolidar tu portafolio.
         </p>
+        {priceSyncMessage ? (
+          <p class="mt-2 text-body-sm text-on-surface-variant">
+            {priceSyncMessage}
+          </p>
+        ) : null}
       </div>
       <div class="flex flex-wrap gap-3">
         <button
@@ -268,6 +285,7 @@ const assetTypeSummary: AssetTypeSummaryItem[] = Object.values(
       closedHoldings={closedHoldingsWithContext}
       brokerVariant={brokerVariant}
       assetVariant={assetVariant}
+      failedPriceSymbols={priceSyncSummary.failedSymbols}
     />
 
     <PortfolioInsights
