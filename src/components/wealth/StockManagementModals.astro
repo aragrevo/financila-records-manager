@@ -1,0 +1,460 @@
+---
+import {
+  STOCK_ACCOUNT_STATUSES,
+  STOCK_ASSET_TYPES,
+  STOCK_BROKERS,
+} from "../../lib/constants";
+import type { StockBrokerAccount } from "../../lib/types";
+
+interface Props {
+  stockAccounts: StockBrokerAccount[];
+}
+
+const { stockAccounts } = Astro.props;
+---
+
+<div
+  id="stock-account-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
+>
+  <div class="w-full max-w-lg rounded-xl bg-surface shadow-xl">
+    <div class="flex items-center justify-between border-b border-outline-variant p-6">
+      <h3 class="text-headline-md font-headline-md text-on-surface">Nueva Cuenta de Broker</h3>
+      <button id="stock-account-close" class="text-on-surface-variant hover:text-on-surface">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <form id="stock-account-form" class="space-y-4 p-6">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="stock-broker" class="mb-1 block text-label-md text-on-surface-variant">Broker</label>
+          <select id="stock-broker" name="broker" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2">
+            {Object.entries(STOCK_BROKERS).map(([value, label]) => <option value={value}>{label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label for="stock-status" class="mb-1 block text-label-md text-on-surface-variant">Estado</label>
+          <select id="stock-status" name="status" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2">
+            {Object.entries(STOCK_ACCOUNT_STATUSES).map(([value, label]) => <option value={value}>{label}</option>)}
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="stock-account-name" class="mb-1 block text-label-md text-on-surface-variant">Nombre</label>
+          <input id="stock-account-name" name="name" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="Ej: XTB principal" />
+        </div>
+        <div>
+          <label for="stock-owner" class="mb-1 block text-label-md text-on-surface-variant">Titular</label>
+          <input id="stock-owner" name="owner" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="Ej: Personal" />
+        </div>
+      </div>
+      <div>
+        <label for="stock-strategy" class="mb-1 block text-label-md text-on-surface-variant">Estrategia</label>
+        <input id="stock-strategy" name="strategy" class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="Ej: Largo plazo y ETFs" />
+      </div>
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label for="stock-currency" class="mb-1 block text-label-md text-on-surface-variant">Moneda</label>
+          <input id="stock-currency" name="currency" value="USD" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" />
+        </div>
+        <div>
+          <label for="stock-cash" class="mb-1 block text-label-md text-on-surface-variant">Caja</label>
+          <input id="stock-cash" name="availableCash" type="number" step="0.01" min="0" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="0.00" />
+        </div>
+        <div>
+          <label for="stock-monthly" class="mb-1 block text-label-md text-on-surface-variant">Aporte mensual</label>
+          <input id="stock-monthly" name="monthlyContribution" type="number" step="0.01" min="0" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="0.00" />
+        </div>
+      </div>
+      <div>
+        <label for="stock-account-notes" class="mb-1 block text-label-md text-on-surface-variant">Notas</label>
+        <textarea id="stock-account-notes" name="notes" rows="3" class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="Opcional"></textarea>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" id="stock-account-cancel" class="flex-1 rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface hover:bg-surface-container transition-colors">Cancelar</button>
+        <button type="submit" class="flex-1 rounded-lg bg-primary px-4 py-2 font-bold text-on-primary hover:opacity-90 transition-opacity">Guardar Cuenta</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div
+  id="stock-position-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
+>
+  <div class="w-full max-w-2xl rounded-xl bg-surface shadow-xl">
+    <div class="flex items-center justify-between border-b border-outline-variant p-6">
+      <h3 class="text-headline-md font-headline-md text-on-surface">Nueva Posición</h3>
+      <button id="stock-position-close" class="text-on-surface-variant hover:text-on-surface">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <form id="stock-position-form" class="space-y-4 p-6">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="stock-position-account" class="mb-1 block text-label-md text-on-surface-variant">Cuenta</label>
+          <select id="stock-position-account" name="accountId" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2">
+            <option value="">Selecciona una cuenta</option>
+            {stockAccounts.map((account) => (
+              <option value={account.id}>{account.name} · {STOCK_BROKERS[account.broker]}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label for="stock-position-type" class="mb-1 block text-label-md text-on-surface-variant">Tipo</label>
+          <select id="stock-position-type" name="assetType" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2">
+            {Object.entries(STOCK_ASSET_TYPES).map(([value, label]) => <option value={value}>{label}</option>)}
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="stock-symbol" class="mb-1 block text-label-md text-on-surface-variant">Ticker</label>
+          <input id="stock-symbol" name="symbol" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2 uppercase" placeholder="Ej: VOO" />
+        </div>
+        <div>
+          <label for="stock-name" class="mb-1 block text-label-md text-on-surface-variant">Nombre</label>
+          <input id="stock-name" name="name" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="Ej: Vanguard S&P 500 ETF" />
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label for="stock-shares" class="mb-1 block text-label-md text-on-surface-variant">Cantidad</label>
+          <input id="stock-shares" name="shares" type="number" step="0.0001" min="0" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="0" />
+        </div>
+        <div>
+            <label for="stock-average-cost" class="mb-1 block text-label-md text-on-surface-variant">Costo prom. por acción</label>
+          <input id="stock-average-cost" name="averageCost" type="number" step="0.0001" min="0" required class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="0.00" />
+        </div>
+        <div>
+            <label for="stock-current-price" class="mb-1 block text-label-md text-on-surface-variant">Precio actual por acción</label>
+            <input id="stock-current-price" name="currentPrice" type="number" step="0.0001" min="0" class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="Si lo dejas vacío, se usa el costo" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="stock-sector" class="mb-1 block text-label-md text-on-surface-variant">Sector</label>
+          <input id="stock-sector" name="sector" class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="Ej: Tecnología" />
+        </div>
+        <div>
+          <label for="stock-region" class="mb-1 block text-label-md text-on-surface-variant">Región</label>
+          <input id="stock-region" name="region" class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="Ej: USA" />
+        </div>
+      </div>
+      <div>
+        <label for="stock-position-notes" class="mb-1 block text-label-md text-on-surface-variant">Notas</label>
+        <textarea id="stock-position-notes" name="notes" rows="3" class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2" placeholder="Opcional"></textarea>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" id="stock-position-cancel" class="flex-1 rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface hover:bg-surface-container transition-colors">Cancelar</button>
+        <button type="submit" class="flex-1 rounded-lg bg-primary px-4 py-2 font-bold text-on-primary hover:opacity-90 transition-opacity">Guardar Posición</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const accountModal = document.getElementById("stock-account-modal");
+  const accountForm = document.getElementById("stock-account-form") as HTMLFormElement | null;
+  const openAccountButton = document.getElementById("btn-new-stock-account");
+  const closeAccountButton = document.getElementById("stock-account-close");
+  const cancelAccountButton = document.getElementById("stock-account-cancel");
+
+  const positionModal = document.getElementById("stock-position-modal");
+  const positionForm = document.getElementById("stock-position-form") as HTMLFormElement | null;
+  const openPositionButton = document.getElementById("btn-new-stock-position");
+  const closePositionButton = document.getElementById("stock-position-close");
+  const cancelPositionButton = document.getElementById("stock-position-cancel");
+  const averageCostInput = document.getElementById("stock-average-cost") as HTMLInputElement | null;
+  const currentPriceInput = document.getElementById("stock-current-price") as HTMLInputElement | null;
+  let currentPriceTouched = false;
+
+  function openModal(modal: HTMLElement | null) {
+    modal?.classList.remove("hidden");
+    modal?.classList.add("flex");
+  }
+
+  function closeModal(modal: HTMLElement | null, form: HTMLFormElement | null) {
+    modal?.classList.add("hidden");
+    modal?.classList.remove("flex");
+    form?.reset();
+    currentPriceTouched = false;
+  }
+
+  function getPositionRow(positionId: string) {
+    return document.querySelector(
+      `[data-stock-position-row="${positionId}"]`,
+    ) as HTMLElement | null;
+  }
+
+  function setInlineEditState(positionId: string, editing: boolean) {
+    const row = getPositionRow(positionId);
+    if (!row) return;
+
+    const display = row.querySelector("[data-current-price-display]") as HTMLElement | null;
+    const form = row.querySelector("[data-inline-price-form]") as HTMLFormElement | null;
+    const editButton = row.querySelector(
+      `[data-edit-stock-position="${positionId}"]`,
+    ) as HTMLButtonElement | null;
+    const saveButton = row.querySelector(
+      `[data-save-stock-position="${positionId}"]`,
+    ) as HTMLButtonElement | null;
+    const cancelButton = row.querySelector(
+      `[data-cancel-edit-stock-position="${positionId}"]`,
+    ) as HTMLButtonElement | null;
+    const closeButton = row.querySelector(
+      `[data-close-stock-position="${positionId}"]`,
+    ) as HTMLButtonElement | null;
+    const input = form?.querySelector('input[name="currentPrice"]') as HTMLInputElement | null;
+
+    display?.classList.toggle("hidden", editing);
+    form?.classList.toggle("hidden", !editing);
+    form?.classList.toggle("flex", editing);
+    editButton?.classList.toggle("hidden", editing);
+    saveButton?.classList.toggle("hidden", !editing);
+    saveButton?.classList.toggle("inline-flex", editing);
+    cancelButton?.classList.toggle("hidden", !editing);
+    cancelButton?.classList.toggle("inline-flex", editing);
+    closeButton?.classList.toggle("hidden", editing);
+
+    if (editing) {
+      input?.focus();
+      input?.select();
+    }
+  }
+
+  async function saveInlinePrice(positionId: string) {
+    const row = getPositionRow(positionId);
+    if (!row) return;
+
+    const form = row.querySelector("[data-inline-price-form]") as HTMLFormElement | null;
+    const input = form?.querySelector('input[name="currentPrice"]') as HTMLInputElement | null;
+    const saveButton = row.querySelector(
+      `[data-save-stock-position="${positionId}"]`,
+    ) as HTMLButtonElement | null;
+
+    const currentPrice = Number.parseFloat(input?.value || "");
+    if (!Number.isFinite(currentPrice) || currentPrice < 0) {
+      alert("Ingresa un precio valido.");
+      input?.focus();
+      return;
+    }
+
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.textContent = "Guardando...";
+    }
+
+    try {
+      const response = await fetch(`/api/stocks/positions/${positionId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPrice }),
+      });
+
+      if (response.ok) {
+        window.location.reload();
+        return;
+      }
+
+      alert("No se pudo actualizar el precio.");
+    } catch {
+      alert("Error de conexion al actualizar el precio.");
+    } finally {
+      if (saveButton) {
+        saveButton.disabled = false;
+        saveButton.textContent = "Guardar";
+      }
+    }
+  }
+
+  openAccountButton?.addEventListener("click", () => openModal(accountModal));
+  closeAccountButton?.addEventListener("click", () => closeModal(accountModal, accountForm));
+  cancelAccountButton?.addEventListener("click", () => closeModal(accountModal, accountForm));
+
+  openPositionButton?.addEventListener("click", () => openModal(positionModal));
+  closePositionButton?.addEventListener("click", () => closeModal(positionModal, positionForm));
+  cancelPositionButton?.addEventListener("click", () => closeModal(positionModal, positionForm));
+
+  currentPriceInput?.addEventListener("input", () => {
+    currentPriceTouched = Boolean(currentPriceInput.value.trim());
+  });
+
+  averageCostInput?.addEventListener("input", () => {
+    if (!currentPriceTouched && currentPriceInput) {
+      currentPriceInput.value = averageCostInput.value;
+    }
+  });
+
+  accountModal?.addEventListener("click", (event) => {
+    if (event.target === accountModal) closeModal(accountModal, accountForm);
+  });
+
+  positionModal?.addEventListener("click", (event) => {
+    if (event.target === positionModal) closeModal(positionModal, positionForm);
+  });
+
+  accountForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formData = new FormData(accountForm);
+    const payload = {
+      broker: formData.get("broker"),
+      name: String(formData.get("name") || ""),
+      owner: String(formData.get("owner") || ""),
+      strategy: String(formData.get("strategy") || "") || undefined,
+      currency: String(formData.get("currency") || "USD"),
+      availableCash: parseFloat(String(formData.get("availableCash") || "0")),
+      monthlyContribution: parseFloat(String(formData.get("monthlyContribution") || "0")),
+      status: formData.get("status"),
+      notes: String(formData.get("notes") || "") || undefined,
+    };
+
+    try {
+      const response = await fetch("/api/stocks/accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        closeModal(accountModal, accountForm);
+        window.location.reload();
+        return;
+      }
+
+      alert("No se pudo guardar la cuenta.");
+    } catch {
+      alert("Error de conexión al guardar la cuenta.");
+    }
+  });
+
+  positionForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formData = new FormData(positionForm);
+    const currentPriceRaw = String(formData.get("currentPrice") || "").trim();
+    const payload = {
+      accountId: formData.get("accountId"),
+      assetType: formData.get("assetType"),
+      symbol: String(formData.get("symbol") || "").toUpperCase(),
+      name: String(formData.get("name") || ""),
+      shares: parseFloat(String(formData.get("shares") || "0")),
+      averageCost: parseFloat(String(formData.get("averageCost") || "0")),
+      currentPrice: currentPriceRaw ? parseFloat(currentPriceRaw) : undefined,
+      sector: String(formData.get("sector") || "") || undefined,
+      region: String(formData.get("region") || "") || undefined,
+      notes: String(formData.get("notes") || "") || undefined,
+    };
+
+    try {
+      const response = await fetch("/api/stocks/positions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        closeModal(positionModal, positionForm);
+        window.location.reload();
+        return;
+      }
+
+      alert("No se pudo guardar la posición.");
+    } catch {
+      alert("Error de conexión al guardar la posición.");
+    }
+  });
+
+  document.querySelectorAll("[data-delete-stock-account]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const id = button.getAttribute("data-delete-stock-account");
+      if (!id || !confirm("Se eliminará la cuenta y sus posiciones asociadas. ¿Continuar?")) return;
+
+      const response = await fetch(`/api/stocks/accounts/${id}`, { method: "DELETE" });
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert("No se pudo eliminar la cuenta.");
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-edit-stock-position]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.getAttribute("data-edit-stock-position");
+      if (!id) return;
+      setInlineEditState(id, true);
+    });
+  });
+
+  document.querySelectorAll("[data-cancel-edit-stock-position]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.getAttribute("data-cancel-edit-stock-position");
+      if (!id) return;
+
+      const row = getPositionRow(id);
+      const form = row?.querySelector("[data-inline-price-form]") as HTMLFormElement | null;
+      form?.reset();
+      setInlineEditState(id, false);
+    });
+  });
+
+  document.querySelectorAll("[data-save-stock-position]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const id = button.getAttribute("data-save-stock-position");
+      if (!id) return;
+      await saveInlinePrice(id);
+    });
+  });
+
+  document.querySelectorAll("[data-inline-price-form]").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const id = form.getAttribute("data-stock-position-id");
+      if (!id) return;
+      await saveInlinePrice(id);
+    });
+  });
+
+  document.querySelectorAll("[data-inline-price-form] input[name='currentPrice']").forEach((element) => {
+    const input = element as HTMLInputElement;
+
+    input.addEventListener("keydown", (event) => {
+      const keyboardEvent = event as KeyboardEvent;
+
+      if (keyboardEvent.key === "Escape") {
+        const row = input.closest("[data-stock-position-row]") as HTMLElement | null;
+        if (!row) return;
+
+        const id = row?.getAttribute("data-stock-position-row");
+        if (!id) return;
+
+        const form = row.querySelector("[data-inline-price-form]") as HTMLFormElement | null;
+        form?.reset();
+        setInlineEditState(id, false);
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-close-stock-position]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const id = button.getAttribute("data-close-stock-position");
+      if (!id || !confirm("La posición saldrá del portafolio activo y pasará al historial. ¿Continuar?")) return;
+
+      const response = await fetch(`/api/stocks/positions/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "closed",
+          closedAt: new Date().toISOString(),
+        }),
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert("No se pudo cerrar la posición.");
+      }
+    });
+  });
+</script>
