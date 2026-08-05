@@ -1,250 +1,278 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import CategoryChart from '../components/dashboard/CategoryChart.astro';
-import ProgressBars from '../components/dashboard/ProgressBars.astro';
-import { summaryService } from '../services/summary.service';
-import { formatCurrency } from '../utils/format';
+import Layout from "../layouts/Layout.astro";
+import { STOCK_ASSET_TYPES, STOCK_BROKERS } from "../lib/constants";
+import { stocksService } from "../services/stocks.service";
+import BrokerOverview from "../components/wealth/BrokerOverview.astro";
+import PortfolioInsights from "../components/wealth/PortfolioInsights.astro";
+import PortfolioSummaryCards from "../components/wealth/PortfolioSummaryCards.astro";
+import StockManagementModals from "../components/wealth/StockManagementModals.astro";
+import StockPositionsTable from "../components/wealth/StockPositionsTable.astro";
+import type {
+  AccountMetric,
+  AssetTypeSummaryItem,
+  AssetChipVariant,
+  BrokerChipVariant,
+  BrokerSummaryItem,
+  HoldingWithContext,
+  RepeatedTickerSummaryItem,
+  SummaryMetrics,
+} from "../components/wealth/types";
 
-const summaryData = await summaryService.getSummary();
+const brokerVariant: Record<keyof typeof STOCK_BROKERS, BrokerChipVariant> = {
+  xtb: "contingency",
+  hapi: "investment",
+  tyba: "retirement",
+};
 
-const wealthCategories = [
-  {
-    name: 'Stocks & ETFs',
-    amount: 98750,
-    percentage: 34.7,
-    color: 'investment' as const,
-  },
-  {
-    name: 'Bonds & Fixed Income',
-    amount: 35000,
-    percentage: 12.3,
-    color: 'contingency' as const,
-  },
-  {
-    name: 'Real Estate',
-    amount: 45000,
-    percentage: 15.8,
-    color: 'retirement' as const,
-  },
-  {
-    name: 'Cash & Equivalents',
-    amount: 62500,
-    percentage: 22.0,
-    color: 'emergency' as const,
-  },
-  {
-    name: 'Alternative Investments',
-    amount: 43500,
-    percentage: 15.3,
-    color: 'investment' as const,
-  },
-];
+const assetVariant: Record<keyof typeof STOCK_ASSET_TYPES, AssetChipVariant> = {
+  stock: "contingency",
+  etf: "investment",
+  reit: "emergency",
+  adr: "retirement",
+};
 
-const goals = [
-  {
-    name: 'Retirement Fund',
-    target: 1000000,
-    current: 218750,
-    color: 'retirement' as const,
-    deadline: '2045',
-  },
-  {
-    name: 'Emergency Fund',
-    target: 50000,
-    current: 45000,
-    color: 'emergency' as const,
-    deadline: '2026',
-  },
-  {
-    name: 'House Down Payment',
-    target: 100000,
-    current: 35000,
-    color: 'contingency' as const,
-    deadline: '2028',
-  },
-  {
-    name: 'Investment Portfolio',
-    target: 500000,
-    current: 156250,
-    color: 'investment' as const,
-    deadline: '2035',
-  },
-];
+const stockAccounts = await stocksService.getAccounts();
+const stockPositions = await stocksService.getPositions();
+const activeStockPositions = stockPositions.filter((position) => position.status === "active");
+const closedStockPositions = stockPositions
+  .filter((position) => position.status === "closed")
+  .sort((left, right) => {
+    const leftTime = left.closedAt ? new Date(left.closedAt).getTime() : 0;
+    const rightTime = right.closedAt ? new Date(right.closedAt).getTime() : 0;
+    return rightTime - leftTime;
+  });
 
-const performanceMetrics = [
-  { label: 'Total Return', value: '+12.4%', change: '+2.1%', positive: true },
-  { label: 'YTD Return', value: '+8.7%', change: '+1.3%', positive: true },
-  { label: '1-Year Return', value: '+15.2%', change: '+3.4%', positive: true },
-  { label: '3-Year Annualized', value: '+9.8%', change: '-0.5%', positive: false },
-];
+const accountMetrics: AccountMetric[] = stockAccounts.map((account) => {
+  const positions = activeStockPositions.filter((position) => position.accountId === account.id);
+  const investedCapital = positions.reduce(
+    (sum, position) => sum + position.shares * position.averageCost,
+    0,
+  );
+  const marketValue = positions.reduce(
+    (sum, position) => sum + position.shares * position.currentPrice,
+    0,
+  );
+
+  return {
+    ...account,
+    positionsCount: positions.length,
+    investedCapital,
+    marketValue,
+    totalValue: marketValue + account.availableCash,
+    unrealizedGain: marketValue - investedCapital,
+  };
+});
+
+const investedCapital = accountMetrics.reduce((sum, account) => sum + account.investedCapital, 0);
+const marketValue = accountMetrics.reduce((sum, account) => sum + account.marketValue, 0);
+const availableCash = stockAccounts.reduce((sum, account) => sum + account.availableCash, 0);
+
+const summaryMetrics: SummaryMetrics = {
+  portfolioValue: marketValue + availableCash,
+  investedCapital,
+  unrealizedGain: marketValue - investedCapital,
+  performance: investedCapital > 0 ? ((marketValue - investedCapital) / investedCapital) * 100 : 0,
+  totalMonthlyContribution: stockAccounts.reduce(
+    (sum, account) => sum + account.monthlyContribution,
+    0,
+  ),
+};
+
+const holdingsWithContext: HoldingWithContext[] = activeStockPositions
+  .map((position) => {
+    const account = stockAccounts.find((item) => item.id === position.accountId);
+    const currentValue = position.shares * position.currentPrice;
+    const costBasis = position.shares * position.averageCost;
+
+    return {
+      ...position,
+      accountName: account?.name ?? "Cuenta eliminada",
+      broker: account?.broker ?? "xtb",
+      currentValue,
+      costBasis,
+      gain: currentValue - costBasis,
+      weight: marketValue > 0 ? (currentValue / marketValue) * 100 : 0,
+    };
+  })
+  .sort((left, right) => right.currentValue - left.currentValue);
+
+const repeatedTickers: RepeatedTickerSummaryItem[] = Object.values(
+  holdingsWithContext.reduce<Record<string, HoldingWithContext[]>>((summary, holding) => {
+    if (!summary[holding.symbol]) {
+      summary[holding.symbol] = [];
+    }
+
+    summary[holding.symbol].push(holding);
+    return summary;
+  }, {}),
+)
+  .map((holdings) => {
+    const accountsCount = new Set(holdings.map((holding) => holding.accountId)).size;
+    if (accountsCount < 2) {
+      return null;
+    }
+
+    const marketValue = holdings.reduce((sum, holding) => sum + holding.currentValue, 0);
+
+    return {
+      symbol: holdings[0]?.symbol ?? "",
+      name: holdings[0]?.name ?? "",
+      accountsCount,
+      positionsCount: holdings.length,
+      marketValue,
+      percentage: 0,
+    };
+  })
+  .filter((ticker): ticker is RepeatedTickerSummaryItem => Boolean(ticker));
+
+const totalRepeatedTickersValue = repeatedTickers.reduce((sum, ticker) => sum + ticker.marketValue, 0);
+
+const repeatedTickersChart = repeatedTickers
+  .map((ticker) => ({
+    ...ticker,
+    percentage: totalRepeatedTickersValue > 0 ? (ticker.marketValue / totalRepeatedTickersValue) * 100 : 0,
+  }))
+  .sort((left, right) => right.marketValue - left.marketValue);
+
+const closedHoldingsWithContext: HoldingWithContext[] = closedStockPositions
+  .map((position) => {
+    const account = stockAccounts.find((item) => item.id === position.accountId);
+    const currentValue = position.shares * position.currentPrice;
+    const costBasis = position.shares * position.averageCost;
+
+    return {
+      ...position,
+      accountName: account?.name ?? "Cuenta eliminada",
+      broker: account?.broker ?? "xtb",
+      currentValue,
+      costBasis,
+      gain: currentValue - costBasis,
+      weight: 0,
+    };
+  });
+
+const brokerSummary: BrokerSummaryItem[] = Object.values(
+  accountMetrics.reduce<Record<keyof typeof STOCK_BROKERS, BrokerSummaryItem>>(
+    (summary, account) => {
+      const broker = account.broker;
+
+      summary[broker].accounts += 1;
+      summary[broker].positions += account.positionsCount;
+      summary[broker].investedCapital += account.investedCapital;
+      summary[broker].marketValue += account.marketValue;
+      summary[broker].availableCash += account.availableCash;
+      summary[broker].gain += account.unrealizedGain;
+
+      return summary;
+    },
+    {
+      xtb: {
+        broker: "xtb",
+        accounts: 0,
+        positions: 0,
+        investedCapital: 0,
+        marketValue: 0,
+        availableCash: 0,
+        gain: 0,
+      },
+      hapi: {
+        broker: "hapi",
+        accounts: 0,
+        positions: 0,
+        investedCapital: 0,
+        marketValue: 0,
+        availableCash: 0,
+        gain: 0,
+      },
+      tyba: {
+        broker: "tyba",
+        accounts: 0,
+        positions: 0,
+        investedCapital: 0,
+        marketValue: 0,
+        availableCash: 0,
+        gain: 0,
+      },
+    },
+  ),
+).filter((broker) => broker.accounts > 0 || broker.positions > 0);
+
+const assetTypeSummary: AssetTypeSummaryItem[] = Object.values(
+  holdingsWithContext.reduce<Record<string, AssetTypeSummaryItem>>((summary, holding) => {
+    const assetType = holding.assetType;
+    if (!summary[assetType]) {
+      summary[assetType] = {
+        assetType,
+        label: STOCK_ASSET_TYPES[assetType],
+        value: 0,
+        percentage: 0,
+        color: assetVariant[assetType],
+      };
+    }
+
+    summary[assetType].value += holding.currentValue;
+    return summary;
+  }, {}),
+)
+  .map((item) => ({
+    ...item,
+    percentage: marketValue > 0 ? (item.value / marketValue) * 100 : 0,
+  }))
+  .sort((left, right) => right.value - left.value);
 ---
 
-<Layout title="Wealth Management" activePage="wealth">
+<Layout title="Acciones" activePage="wealth">
   <div class="space-y-6">
-    <!-- Page Header -->
-    <div>
-      <h1 class="text-headline-lg font-bold text-on-surface">Wealth Management</h1>
-      <p class="text-body-md text-on-surface-variant mt-1">Track and manage your investment portfolio</p>
-    </div>
-
-    <!-- Portfolio Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-white rounded-lg shadow-card p-6">
-        <p class="text-label-caps text-on-surface-variant uppercase">Total Portfolio Value</p>
-        <p class="text-headline-lg font-bold text-on-surface mt-2 financial-figure">
-          {formatCurrency(summaryData.totalBalance)}
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <h1 class="text-headline-lg font-bold text-on-surface">Gestión de Acciones</h1>
+        <p class="mt-1 text-body-md text-on-surface-variant">
+          Registra brokers, cuentas y posiciones reales para consolidar tu portafolio.
         </p>
-        <p class="text-sm text-retirement mt-1">+12.4% all time</p>
       </div>
-      
-      <div class="bg-white rounded-lg shadow-card p-6">
-        <p class="text-label-caps text-on-surface-variant uppercase">Today's Change</p>
-        <p class="text-headline-md font-bold text-retirement mt-2 financial-figure">
-          +{formatCurrency(1250)}
-        </p>
-        <p class="text-sm text-retirement mt-1">+0.44%</p>
-      </div>
-      
-      <div class="bg-white rounded-lg shadow-card p-6">
-        <p class="text-label-caps text-on-surface-variant uppercase">Unrealized Gains</p>
-        <p class="text-headline-md font-bold text-retirement mt-2 financial-figure">
-          +{formatCurrency(34750)}
-        </p>
-        <p class="text-sm text-on-surface-variant mt-1">Since inception</p>
-      </div>
-      
-      <div class="bg-white rounded-lg shadow-card p-6">
-        <p class="text-label-caps text-on-surface-variant uppercase">Dividend Income</p>
-        <p class="text-headline-md font-bold text-on-surface mt-2 financial-figure">
-          {formatCurrency(342.18)}
-        </p>
-        <p class="text-sm text-on-surface-variant mt-1">This month</p>
+      <div class="flex flex-wrap gap-3">
+        <button
+          id="btn-new-stock-account"
+          class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant text-on-surface transition-colors hover:bg-surface-container"
+          title="Nueva cuenta"
+          aria-label="Nueva cuenta"
+        >
+          <span class="material-symbols-outlined">account_balance</span>
+        </button>
+        <button
+          id="btn-new-stock-position"
+          class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary text-on-primary transition-opacity hover:opacity-90"
+          title="Nueva posición"
+          aria-label="Nueva posición"
+        >
+          <span class="material-symbols-outlined">add</span>
+        </button>
       </div>
     </div>
 
-    <!-- Performance Metrics -->
-    <div class="bg-white rounded-lg shadow-card p-6">
-      <h3 class="text-lg font-semibold text-on-surface mb-4">Performance Metrics</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {performanceMetrics.map((metric) => (
-          <div class="p-4 bg-surface-container-low rounded-lg">
-            <p class="text-label-caps text-on-surface-variant uppercase">{metric.label}</p>
-            <p class="text-data-display font-bold text-on-surface mt-1">{metric.value}</p>
-            <p class:list={['text-sm mt-1', metric.positive ? 'text-retirement' : 'text-error']}>
-              {metric.change}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
+    <PortfolioSummaryCards metrics={summaryMetrics} />
 
-    <!-- Asset Allocation & Goals -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Asset Allocation -->
-      <div class="bg-white rounded-lg shadow-card p-6">
-        <CategoryChart categories={wealthCategories} />
-      </div>
+    <BrokerOverview
+      brokerSummary={brokerSummary}
+      portfolioValue={summaryMetrics.portfolioValue}
+      accountsCount={stockAccounts.length}
+      positionsCount={activeStockPositions.length}
+      assetTypesCount={assetTypeSummary.length}
+      brokerVariant={brokerVariant}
+    />
 
-      <!-- Investment Goals -->
-      <div class="bg-white rounded-lg shadow-card p-6">
-        <h3 class="text-lg font-semibold text-on-surface mb-4">Investment Goals</h3>
-        <ProgressBars
-          items={goals.map(goal => ({
-            label: `${goal.name} (${goal.deadline})`,
-            value: goal.current,
-            maxValue: goal.target,
-            color: goal.color,
-          }))}
-        />
-      </div>
-    </div>
+    <StockPositionsTable
+      holdings={holdingsWithContext}
+      closedHoldings={closedHoldingsWithContext}
+      brokerVariant={brokerVariant}
+      assetVariant={assetVariant}
+    />
 
-    <!-- Holdings Table -->
-    <div class="bg-white rounded-lg shadow-card p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-on-surface">Top Holdings</h3>
-        <button class="text-sm text-contingency hover:underline">View all holdings</button>
-      </div>
-      
-      <div class="overflow-x-auto">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Symbol</th>
-              <th>Name</th>
-              <th>Type</th>
-              <th class="text-right">Shares</th>
-              <th class="text-right">Avg Cost</th>
-              <th class="text-right">Current Price</th>
-              <th class="text-right">Market Value</th>
-              <th class="text-right">Gain/Loss</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              { symbol: 'AAPL', name: 'Apple Inc.', type: 'Stock', shares: 50, avgCost: 145.20, currentPrice: 178.50, gain: 1665 },
-              { symbol: 'MSFT', name: 'Microsoft Corp.', type: 'Stock', shares: 30, avgCost: 280.50, currentPrice: 315.20, gain: 1041 },
-              { symbol: 'VOO', name: 'Vanguard S&P 500 ETF', type: 'ETF', shares: 100, avgCost: 380.75, currentPrice: 412.30, gain: 3155 },
-              { symbol: 'BND', name: 'Vanguard Total Bond ETF', type: 'Bond ETF', shares: 200, avgCost: 72.50, currentPrice: 74.80, gain: 460 },
-              { symbol: 'VTI', name: 'Vanguard Total Stock ETF', type: 'ETF', shares: 75, avgCost: 205.30, currentPrice: 218.90, gain: 1020 },
-            ].map((holding) => (
-              <tr>
-                <td class="font-mono font-medium text-on-surface">{holding.symbol}</td>
-                <td class="text-on-surface-variant">{holding.name}</td>
-                <td class="text-on-surface-variant">{holding.type}</td>
-                <td class="text-right font-mono text-on-surface">{holding.shares}</td>
-                <td class="text-right font-mono text-on-surface">{formatCurrency(holding.avgCost)}</td>
-                <td class="text-right font-mono text-on-surface">{formatCurrency(holding.currentPrice)}</td>
-                <td class="text-right font-mono font-medium text-on-surface">
-                  {formatCurrency(holding.shares * holding.currentPrice)}
-                </td>
-                <td class="text-right font-mono font-medium text-retirement">
-                  +{formatCurrency(holding.gain)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Risk Analysis -->
-    <div class="bg-white rounded-lg shadow-card p-6">
-      <h3 class="text-lg font-semibold text-on-surface mb-4">Risk Analysis</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div>
-          <p class="text-label-caps text-on-surface-variant uppercase mb-2">Risk Score</p>
-          <div class="flex items-center space-x-4">
-            <div class="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
-              <div class="h-full bg-investment rounded-full" style="width: 65%" />
-            </div>
-            <span class="text-lg font-bold text-on-surface">6.5/10</span>
-          </div>
-          <p class="text-sm text-on-surface-variant mt-2">Moderate Aggressive</p>
-        </div>
-        
-        <div>
-          <p class="text-label-caps text-on-surface-variant uppercase mb-2">Diversification Score</p>
-          <div class="flex items-center space-x-4">
-            <div class="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
-              <div class="h-full bg-retirement rounded-full" style="width: 82%" />
-            </div>
-            <span class="text-lg font-bold text-on-surface">8.2/10</span>
-          </div>
-          <p class="text-sm text-on-surface-variant mt-2">Well Diversified</p>
-        </div>
-        
-        <div>
-          <p class="text-label-caps text-on-surface-variant uppercase mb-2">Volatility (30-day)</p>
-          <div class="flex items-center space-x-4">
-            <div class="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
-              <div class="h-full bg-contingency rounded-full" style="width: 45%" />
-            </div>
-            <span class="text-lg font-bold text-on-surface">4.5%</span>
-          </div>
-          <p class="text-sm text-on-surface-variant mt-2">Low Volatility</p>
-        </div>
-      </div>
-    </div>
+    <PortfolioInsights
+      assetTypeSummary={assetTypeSummary}
+      repeatedTickers={repeatedTickersChart}
+    />
   </div>
+
+  <StockManagementModals stockAccounts={stockAccounts} />
 </Layout>
