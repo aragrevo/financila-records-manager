@@ -129,7 +129,13 @@ export class TransactionsService {
     const existing = await this.getById(id);
     if (!existing) return null;
 
-    const updated: Transaction = { ...existing, ...input, id };
+    const updated: Transaction = {
+      ...existing,
+      ...input,
+      id,
+      userId: existing.userId,
+      createdAt: existing.createdAt,
+    };
 
     const pipeline = redis.pipeline();
     pipeline.hset(

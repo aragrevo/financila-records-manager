@@ -42,13 +42,13 @@ export class AccountsService {
   async create(input: CreateAccountInput): Promise<Account> {
     const id = `acc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const account: Account = {
+      currency: "USD",
+      status: "active",
+      ...input,
       id,
       userId: DEFAULT_USER_ID,
       createdAt: new Date().toISOString(),
       lastUpdated: new Date().toISOString().split("T")[0],
-      currency: "USD",
-      status: "active",
-      ...input,
     };
 
     const pipeline = redis.pipeline();
@@ -73,6 +73,8 @@ export class AccountsService {
       ...existing,
       ...input,
       id,
+      userId: existing.userId,
+      createdAt: existing.createdAt,
       lastUpdated: new Date().toISOString().split("T")[0],
     };
 
