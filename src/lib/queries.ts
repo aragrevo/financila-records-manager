@@ -1,5 +1,11 @@
 import { redis, KEYS } from "./db";
-import type { Account, Transaction, TransactionWithAccount } from "./types";
+import type {
+  Account,
+  Transaction,
+  TransactionWithAccount,
+  StockBrokerAccount,
+  StockPosition,
+} from "./types";
 
 export const DEFAULT_USER_ID = "user-001";
 
@@ -53,4 +59,42 @@ export async function withAccountNames(
     ...t,
     accountName: names.get(t.accountId) || t.accountId,
   }));
+}
+
+export async function hydrateStockAccounts(
+  ids: string[],
+): Promise<StockBrokerAccount[]> {
+  if (ids.length === 0) return [];
+
+  const pipeline = redis.pipeline();
+  for (const id of ids) {
+    pipeline.hgetall(`${KEYS.STOCK_ACCOUNT}:${id}`);
+  }
+
+  const results = (await pipeline.exec()) as Array<StockBrokerAccount | null>;
+  return results.filter(hasId);
+}
+
+export async function fetchAllStockAccounts(): Promise<StockBrokerAccount[]> {
+  const ids = await redis.smembers(KEYS.STOCK_ACCOUNTS_INDEX);
+  return hydrateStockAccounts(ids);
+}
+
+export async function hydrateStockPositions(
+  ids: string[],
+): Promise<StockPosition[]> {
+  if (ids.length === 0) return [];
+
+  const pipeline = redis.pipeline();
+  for (const id of ids) {
+    pipeline.hgetall(`${KEYS.STOCK_POSITION}:${id}`);
+  }
+
+  const results = (await pipeline.exec()) as Array<StockPosition | null>;
+  return results.filter(hasId);
+}
+
+export async function fetchAllStockPositions(): Promise<StockPosition[]> {
+  const ids = await redis.smembers(KEYS.STOCK_POSITIONS_INDEX);
+  return hydrateStockPositions(ids);
 }
