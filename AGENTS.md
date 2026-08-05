@@ -90,11 +90,15 @@ src/
 │   └── transactions/                 # TransactionTable
 ├── lib/
 │   ├── db.ts                         # Redis client and key helpers
-│   └── types.ts                      # Shared TypeScript types
+│   ├── types.ts                      # Shared TypeScript types
+│   ├── queries.ts                    # Batched (pipeline) Redis read helpers
+│   └── http.ts                       # JSON response helper for API routes
 ├── services/
 │   ├── accounts.service.ts           # Account data access (Redis)
 │   ├── transactions.service.ts       # Transaction data access (Redis)
-│   └── dashboard.service.ts          # Dashboard computed data
+│   ├── dashboard.service.ts          # Dashboard computed data
+│   ├── summary.service.ts            # Wealth summary computed data
+│   └── billing.service.ts            # Billing records data access (Redis)
 ├── data/
 │   └── dashboard.ts                  # Dashboard display data (hardcoded)
 └── styles/
