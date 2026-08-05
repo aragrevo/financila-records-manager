@@ -113,11 +113,13 @@ const repeatedTickers: RepeatedTickerSummaryItem[] = Object.values(
     }
 
     const marketValue = holdings.reduce((sum, holding) => sum + holding.currentValue, 0);
+    const brokers = [...new Set(holdings.map((holding) => holding.broker))];
 
     return {
       symbol: holdings[0]?.symbol ?? "",
       name: holdings[0]?.name ?? "",
       accountsCount,
+      brokers,
       positionsCount: holdings.length,
       marketValue,
       percentage: 0,
@@ -271,6 +273,7 @@ const assetTypeSummary: AssetTypeSummaryItem[] = Object.values(
     <PortfolioInsights
       assetTypeSummary={assetTypeSummary}
       repeatedTickers={repeatedTickersChart}
+      brokerVariant={brokerVariant}
     />
   </div>
 

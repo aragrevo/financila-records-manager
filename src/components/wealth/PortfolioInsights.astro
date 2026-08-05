@@ -1,14 +1,22 @@
 ---
 import Card from "../ui/Card.astro";
+import Chip from "../ui/Chip.astro";
+import { STOCK_BROKERS } from "../../lib/constants";
+import type { StockBroker } from "../../lib/constants";
 import { formatCurrency, formatPercentage } from "../../utils/format";
-import type { AssetTypeSummaryItem, RepeatedTickerSummaryItem } from "./types";
+import type {
+  AssetTypeSummaryItem,
+  BrokerChipVariant,
+  RepeatedTickerSummaryItem,
+} from "./types";
 
 interface Props {
   assetTypeSummary: AssetTypeSummaryItem[];
   repeatedTickers: RepeatedTickerSummaryItem[];
+  brokerVariant: Record<StockBroker, BrokerChipVariant>;
 }
 
-const { assetTypeSummary, repeatedTickers } = Astro.props;
+const { assetTypeSummary, repeatedTickers, brokerVariant } = Astro.props;
 
 const colorClasses = {
   contingency: "bg-contingency",
@@ -24,12 +32,32 @@ const strokeColors = {
   retirement: "var(--color-retirement)",
 } as const;
 
+const tickerColorKeys = [
+  "investment",
+  "emergency",
+  "retirement",
+  "contingency",
+] as const;
+
+const tickerAvatarClasses = {
+  investment: "bg-investment text-on-surface",
+  emergency: "bg-emergency text-white",
+  retirement: "bg-retirement text-white",
+  contingency: "bg-contingency text-white",
+} as const;
+
 const donutRadius = 36;
 const donutCircumference = 2 * Math.PI * donutRadius;
 const totalValue = assetTypeSummary.reduce((sum, item) => sum + item.value, 0);
 
 const donutSegments = assetTypeSummary.reduce<
-  Array<AssetTypeSummaryItem & { dashArray: string; dashOffset: number; stroke: string }>
+  Array<
+    AssetTypeSummaryItem & {
+      dashArray: string;
+      dashOffset: number;
+      stroke: string;
+    }
+  >
 >((segments, item) => {
   const previousLength = segments.reduce(
     (sum, segment) => sum + (parseFloat(segment.dashArray.split(" ")[0]) || 0),
@@ -51,134 +79,163 @@ const donutSegments = assetTypeSummary.reduce<
 <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
   <Card class="space-y-4">
     <div>
-      <h2 class="text-headline-md font-bold text-on-surface">Distribución por tipo</h2>
-      <p class="text-sm text-on-surface-variant">Calculada con el valor actual de cada tipo de activo</p>
+      <h2 class="text-headline-md font-bold text-on-surface">
+        Distribución por tipo
+      </h2>
+      <p class="text-sm text-on-surface-variant">
+        Calculada con el valor actual de cada tipo de activo
+      </p>
     </div>
 
-    {assetTypeSummary.length > 0 ? (
-      <div class="grid gap-6 md:grid-cols-[280px_minmax(0,1fr)] md:items-center">
-        <div class="flex justify-center">
-          <div class="relative h-72 w-72">
-            <svg
-              viewBox="0 0 120 120"
-              class="h-full w-full -rotate-90 drop-shadow-[0_8px_18px_rgba(25,28,30,0.08)]"
-              aria-hidden="true"
-            >
-              <circle
-                cx="60"
-                cy="60"
-                r={donutRadius}
-                fill="none"
-                stroke="rgba(118, 119, 125, 0.14)"
-                stroke-width="18"
-              />
-
-              {donutSegments.map((segment) => (
+    {
+      assetTypeSummary.length > 0 ? (
+        <div class="grid gap-6 md:grid-cols-[280px_minmax(0,1fr)] md:items-center">
+          <div class="flex justify-center">
+            <div class="relative h-72 w-72">
+              <svg
+                viewBox="0 0 120 120"
+                class="h-full w-full -rotate-90 drop-shadow-[0_8px_18px_rgba(25,28,30,0.08)]"
+                aria-hidden="true"
+              >
                 <circle
                   cx="60"
                   cy="60"
                   r={donutRadius}
                   fill="none"
-                  stroke={segment.stroke}
+                  stroke="rgba(118, 119, 125, 0.14)"
                   stroke-width="18"
-                  stroke-linecap="round"
-                  stroke-dasharray={segment.dashArray}
-                  stroke-dashoffset={segment.dashOffset}
                 />
-              ))}
 
-              <circle
-                cx="60"
-                cy="60"
-                r="24"
-                fill="white"
-                stroke="rgba(198, 198, 205, 0.45)"
-                stroke-width="1.5"
-              />
-            </svg>
+                {donutSegments.map((segment) => (
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r={donutRadius}
+                    fill="none"
+                    stroke={segment.stroke}
+                    stroke-width="18"
+                    stroke-linecap="round"
+                    stroke-dasharray={segment.dashArray}
+                    stroke-dashoffset={segment.dashOffset}
+                  />
+                ))}
 
-            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span class="text-label-caps uppercase text-on-surface-variant">Total</span>
-              <span class="mt-1 font-mono text-lg font-semibold text-on-surface">
-                {formatCurrency(totalValue)}
-              </span>
-              <span class="mt-2 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
-                {assetTypeSummary.length} tipos
-              </span>
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="24"
+                  fill="white"
+                  stroke="rgba(198, 198, 205, 0.45)"
+                  stroke-width="1.5"
+                />
+              </svg>
+
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span class="text-label-caps uppercase text-on-surface-variant">
+                  Total
+                </span>
+                <span class="mt-1 font-mono text-lg font-semibold text-on-surface">
+                  {formatCurrency(totalValue)}
+                </span>
+                <span class="mt-2 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                  {assetTypeSummary.length} tipos
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
           <div class="space-y-2">
-          {assetTypeSummary.map((item) => (
-            <div class="flex items-center gap-3 rounded-lg bg-surface-container-low px-3 py-2.5">
-              <div class:list={["h-2.5 w-2.5 rounded-full shrink-0", colorClasses[item.color]]} />
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-on-surface">{item.label}</p>
-                <p class="text-xs text-on-surface-variant">{formatCurrency(item.value)}</p>
+            {assetTypeSummary.map((item) => (
+              <div class="flex items-center gap-3 rounded-lg bg-surface-container-low px-3 py-2.5">
+                <div
+                  class:list={[
+                    "h-2.5 w-2.5 rounded-full shrink-0",
+                    colorClasses[item.color],
+                  ]}
+                />
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-medium text-on-surface">
+                    {item.label}
+                  </p>
+                  <p class="text-xs text-on-surface-variant">
+                    {formatCurrency(item.value)}
+                  </p>
+                </div>
+                <div class="text-right">
+                  <p class="font-mono text-sm font-semibold text-on-surface">
+                    {formatPercentage(item.percentage)}
+                  </p>
+                </div>
               </div>
-              <div class="text-right">
-                <p class="font-mono text-sm font-semibold text-on-surface">{formatPercentage(item.percentage)}</p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-    ) : (
-      <p class="text-sm text-on-surface-variant">Aún no hay suficientes datos para mostrar la distribución por tipo.</p>
-    )}
+      ) : (
+        <p class="text-sm text-on-surface-variant">
+          Aún no hay suficientes datos para mostrar la distribución por tipo.
+        </p>
+      )
+    }
   </Card>
 
   <Card class="space-y-4">
     <div>
-      <h2 class="text-headline-md font-bold text-on-surface">Tickers repetidos entre cuentas</h2>
+      <h2 class="text-headline-md font-bold text-on-surface">
+        Tickers repetidos entre cuentas
+      </h2>
       <p class="text-sm text-on-surface-variant">
         Concentración por ticker cuando lo tienes abierto en varias cuentas
       </p>
     </div>
 
-    {repeatedTickers.length > 0 ? (
-      <div class="space-y-3">
-        {repeatedTickers.map((ticker) => (
-          <div class="rounded-xl bg-surface-container-low p-4">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                  <p class="font-mono text-base font-semibold text-on-surface">{ticker.symbol}</p>
-                  <span class="rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-primary">
-                    {ticker.accountsCount} cuentas
-                  </span>
+    {
+      repeatedTickers.length > 0 ? (
+        <div class="grid gap-2 sm:grid-cols-2">
+          {repeatedTickers.map((ticker, index) => (
+            <div class="rounded-xl bg-surface-container-low p-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class:list={[
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold",
+                    tickerAvatarClasses[
+                      tickerColorKeys[index % tickerColorKeys.length]
+                    ],
+                  ]}
+                >
+                  {ticker.symbol.slice(0, 4)}
                 </div>
-                <p class="mt-1 truncate text-sm text-on-surface-variant">{ticker.name}</p>
+                <div class="w-full flex flex-col gap-1">
+                  <div class="flex items-center justify-between w-full">
+                    <p class="min-w-0 flex-1 truncate text-sm font-medium text-on-surface">
+                      {ticker.name}
+                    </p>
+                    <p class="font-mono text-sm font-semibold text-on-surface">
+                      {formatCurrency(ticker.marketValue)}
+                    </p>
+                  </div>
+                  <div class="mt-0 flex flex-wrap items-center gap-1.5">
+                    {ticker.brokers.map((broker) => (
+                      <Chip variant={brokerVariant[broker]} size="sm">
+                        {STOCK_BROKERS[broker]}
+                      </Chip>
+                    ))}
+                    <span class="text-xs text-on-surface-variant self-end ms-auto flex items-center gap-1">
+                      {ticker.positionsCount}
+                      <span class="material-symbols-outlined text-on-surface-variant text-xs">
+                        package_2
+                      </span>
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div class="text-right">
-                <p class="font-mono text-sm font-semibold text-on-surface">
-                  {formatCurrency(ticker.marketValue)}
-                </p>
-                <p class="text-xs text-on-surface-variant">
-                  {ticker.positionsCount} posiciones
-                </p>
-              </div>
             </div>
-
-            <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-white/80">
-              <div
-                class="h-full rounded-full bg-primary"
-                style={`width: ${Math.max(ticker.percentage, 6)}%`}
-              />
-            </div>
-
-            <div class="mt-2 flex items-center justify-between text-xs text-on-surface-variant">
-              <span>Peso entre repetidos</span>
-              <span class="font-mono">{formatPercentage(ticker.percentage)}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <div class="rounded-xl bg-surface-container-low p-4 text-sm text-on-surface-variant">
-        No hay tickers activos repetidos en varias cuentas todavía.
-      </div>
-    )}
+          ))}
+        </div>
+      ) : (
+        <div class="rounded-xl bg-surface-container-low p-4 text-sm text-on-surface-variant">
+          No hay tickers activos repetidos en varias cuentas todavía.
+        </div>
+      )
+    }
   </Card>
 </section>
