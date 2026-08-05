@@ -1,0 +1,52 @@
+---
+import Card from "../ui/Card.astro";
+import { formatCurrency, formatPercentage } from "../../utils/format";
+import type { SummaryMetrics } from "./types";
+
+interface Props {
+  metrics: SummaryMetrics;
+}
+
+const { metrics } = Astro.props;
+---
+
+<section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+  <Card>
+    <p class="text-label-caps uppercase text-on-surface-variant">Valor total</p>
+    <p class="mt-2 font-mono text-headline-lg font-bold text-on-surface">
+      {formatCurrency(metrics.portfolioValue)}
+    </p>
+    <p class="mt-1 text-sm text-on-surface-variant">Mercado + caja disponible</p>
+  </Card>
+
+  <Card>
+    <p class="text-label-caps uppercase text-on-surface-variant">Capital invertido</p>
+    <p class="mt-2 font-mono text-headline-lg font-bold text-on-surface">
+      {formatCurrency(metrics.investedCapital)}
+    </p>
+    <p class="mt-1 text-sm text-on-surface-variant">Costo promedio acumulado</p>
+  </Card>
+
+  <Card>
+    <p class="text-label-caps uppercase text-on-surface-variant">P/L no realizado</p>
+    <p
+      class:list={[
+        "mt-2 font-mono text-headline-lg font-bold",
+        metrics.unrealizedGain >= 0 ? "text-retirement" : "text-error",
+      ]}
+    >
+      {metrics.unrealizedGain >= 0 ? "+" : ""}{formatCurrency(metrics.unrealizedGain)}
+    </p>
+    <p class="mt-1 text-sm text-on-surface-variant">
+      {formatPercentage(metrics.performance)} sobre capital invertido
+    </p>
+  </Card>
+
+  <Card>
+    <p class="text-label-caps uppercase text-on-surface-variant">Aporte mensual</p>
+    <p class="mt-2 font-mono text-headline-lg font-bold text-on-surface">
+      {formatCurrency(metrics.totalMonthlyContribution)}
+    </p>
+    <p class="mt-1 text-sm text-on-surface-variant">Suma configurada en todas las cuentas</p>
+  </Card>
+</section>

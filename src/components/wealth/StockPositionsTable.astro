@@ -1,0 +1,276 @@
+---
+import Card from "../ui/Card.astro";
+import Chip from "../ui/Chip.astro";
+import { STOCK_ASSET_TYPES, STOCK_BROKERS } from "../../lib/constants";
+import {
+  formatCurrency,
+  formatDate,
+  formatPercentage,
+} from "../../utils/format";
+import type {
+  AssetChipVariant,
+  BrokerChipVariant,
+  HoldingWithContext,
+} from "./types";
+
+interface Props {
+  holdings: HoldingWithContext[];
+  closedHoldings: HoldingWithContext[];
+  brokerVariant: Record<keyof typeof STOCK_BROKERS, BrokerChipVariant>;
+  assetVariant: Record<keyof typeof STOCK_ASSET_TYPES, AssetChipVariant>;
+}
+
+const { holdings, closedHoldings, brokerVariant, assetVariant } = Astro.props;
+---
+
+<Card class="overflow-hidden p-0">
+  <div
+    class="flex items-center justify-between border-b border-outline-variant px-6 py-4"
+  >
+    <div>
+      <h2 class="text-headline-md font-bold text-on-surface">
+        Posiciones activas
+      </h2>
+      <p class="text-sm text-on-surface-variant">
+        Activos que siguen contando dentro del portafolio actual
+      </p>
+    </div>
+  </div>
+
+  {
+    holdings.length > 0 ? (
+      <table class="w-full table-fixed text-left">
+        <thead>
+          <tr class="border-b border-outline-variant bg-surface-container-low/80 text-[11px] uppercase tracking-wide text-on-surface-variant">
+            <th class="px-3 py-3 font-bold">Ticker</th>
+            <th class="px-3 py-3 font-bold">Activo</th>
+            <th class="px-3 py-3 font-bold">Tipo</th>
+            <th class="px-3 py-3 font-bold">Cuenta</th>
+            <th class="px-3 py-3 text-right font-bold">Qty</th>
+            <th class="px-3 py-3 text-right font-bold">Costo</th>
+            <th class="px-3 py-3 text-right font-bold">Precio</th>
+            <th class="px-3 py-3 text-right font-bold">Valor</th>
+            <th class="px-3 py-3 text-right font-bold">P/L</th>
+            <th class="w-20 max-w-20 px-1 py-3 text-right font-bold" />
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant/30">
+          {holdings.map((holding) => (
+            <tr
+              data-stock-position-row={holding.id}
+              class="align-top transition-colors hover:bg-surface-container-low/50"
+            >
+              <td class="px-3 py-3 font-mono font-semibold text-on-surface">
+                {holding.symbol}
+              </td>
+              <td class="px-3 py-3">
+                <div>
+                  <p class="font-medium text-on-surface">{holding.name}</p>
+                  <p class="mt-1 text-xs text-on-surface-variant">
+                    {holding.sector || "Sin sector"} ·{" "}
+                    {holding.region || "Sin región"}
+                  </p>
+                </div>
+              </td>
+              <td class="px-3 py-3">
+                <Chip variant={assetVariant[holding.assetType]} size="sm">
+                  {STOCK_ASSET_TYPES[holding.assetType]}
+                </Chip>
+              </td>
+              <td class="px-3 py-3">
+                <div class="flex flex-col items-start gap-1">
+                  <Chip variant={brokerVariant[holding.broker]} size="sm">
+                    {STOCK_BROKERS[holding.broker]}
+                  </Chip>
+                  <span class="text-xs text-on-surface-variant">
+                    {holding.accountName}
+                  </span>
+                </div>
+              </td>
+              <td class="px-3 py-3 text-right font-mono">{holding.shares}</td>
+              <td class="px-3 py-3 text-right font-mono">
+                {formatCurrency(holding.averageCost)}
+              </td>
+              <td class="px-3 py-3 text-right font-mono">
+                <div class="flex justify-end">
+                  <span data-current-price-display>
+                    {formatCurrency(holding.currentPrice)}
+                  </span>
+                  <form
+                    class="hidden items-center gap-2"
+                    data-inline-price-form
+                    data-stock-position-id={holding.id}
+                  >
+                    <input
+                      type="number"
+                      name="currentPrice"
+                      step="0.0001"
+                      min="0"
+                      value={holding.currentPrice}
+                      class="w-24 rounded-lg border border-outline-variant bg-surface px-2 py-1 text-right font-mono text-sm text-on-surface outline-none focus:border-primary"
+                    />
+                  </form>
+                </div>
+              </td>
+              <td class="px-3 py-3 text-right">
+                <p class="font-mono font-semibold text-on-surface">
+                  {formatCurrency(holding.currentValue)}
+                </p>
+                <p class="text-xs text-on-surface-variant">
+                  {formatPercentage(holding.weight)}
+                </p>
+              </td>
+              <td
+                class:list={[
+                  "px-3 py-3 text-right font-mono font-semibold",
+                  holding.gain >= 0 ? "text-retirement" : "text-error",
+                ]}
+              >
+                {holding.gain >= 0 ? "+" : ""}
+                {formatCurrency(holding.gain)}
+              </td>
+              <td class="w-20 max-w-20 px-1 py-3 text-right">
+                <div class="flex justify-end gap-1">
+                  <button
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-full text-contingency transition-colors hover:bg-contingency/10"
+                    data-edit-stock-position={holding.id}
+                    title="Editar precio"
+                    aria-label="Editar precio"
+                  >
+                    <span class="material-symbols-outlined text-[18px]">
+                      edit
+                    </span>
+                  </button>
+                  <button
+                    class="hidden h-8 w-8 items-center justify-center rounded-full text-retirement transition-colors hover:bg-retirement/10"
+                    data-save-stock-position={holding.id}
+                    title="Guardar cambios"
+                    aria-label="Guardar cambios"
+                  >
+                    <span class="material-symbols-outlined text-[18px]">
+                      save
+                    </span>
+                  </button>
+                  <button
+                    class="hidden h-8 w-8 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high"
+                    data-cancel-edit-stock-position={holding.id}
+                    title="Cancelar edición"
+                    aria-label="Cancelar edición"
+                  >
+                    <span class="material-symbols-outlined text-[18px]">
+                      close
+                    </span>
+                  </button>
+                  <button
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-full text-error transition-colors hover:bg-error/10"
+                    data-close-stock-position={holding.id}
+                    title="Cerrar posición"
+                    aria-label="Cerrar posición"
+                  >
+                    <span class="material-symbols-outlined text-[18px]">
+                      task_alt
+                    </span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ) : (
+      <div class="p-6 text-sm text-on-surface-variant">
+        No hay posiciones activas registradas.
+      </div>
+    )
+  }
+</Card>
+
+<Card class="overflow-hidden p-0">
+  <div
+    class="flex items-center justify-between border-b border-outline-variant px-6 py-4"
+  >
+    <div>
+      <h2 class="text-headline-md font-bold text-on-surface">
+        Historial de posiciones cerradas
+      </h2>
+      <p class="text-sm text-on-surface-variant">
+        Registro histórico para no perder trazabilidad
+      </p>
+    </div>
+  </div>
+
+  {
+    closedHoldings.length > 0 ? (
+      <table class="w-full table-fixed text-left">
+        <thead>
+          <tr class="border-b border-outline-variant bg-surface-container-low/80 text-[11px] uppercase tracking-wide text-on-surface-variant">
+            <th class="px-3 py-3 font-bold">Ticker</th>
+            <th class="px-3 py-3 font-bold">Activo</th>
+            <th class="px-3 py-3 font-bold">Tipo</th>
+            <th class="px-3 py-3 font-bold">Cuenta</th>
+            <th class="px-3 py-3 text-right font-bold">Qty</th>
+            <th class="px-3 py-3 text-right font-bold">Costo</th>
+            <th class="px-3 py-3 text-right font-bold">Cierre</th>
+            <th class="px-3 py-3 text-right font-bold">Resultado</th>
+            <th class="px-3 py-3 text-right font-bold">Fecha</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant/30">
+          {closedHoldings.map((holding) => (
+            <tr class="align-top transition-colors hover:bg-surface-container-low/50">
+              <td class="px-3 py-3 font-mono font-semibold text-on-surface">
+                {holding.symbol}
+              </td>
+              <td class="px-3 py-3">
+                <div>
+                  <p class="font-medium text-on-surface">{holding.name}</p>
+                  <p class="mt-1 text-sm text-on-surface-variant">
+                    {holding.sector || "Sin sector"}
+                  </p>
+                </div>
+              </td>
+              <td class="px-3 py-3">
+                <Chip variant={assetVariant[holding.assetType]} size="sm">
+                  {STOCK_ASSET_TYPES[holding.assetType]}
+                </Chip>
+              </td>
+              <td class="px-3 py-3">
+                <div class="flex flex-col items-start gap-1">
+                  <Chip variant={brokerVariant[holding.broker]} size="sm">
+                    {STOCK_BROKERS[holding.broker]}
+                  </Chip>
+                  <span class="text-sm text-on-surface-variant">
+                    {holding.accountName}
+                  </span>
+                </div>
+              </td>
+              <td class="px-3 py-3 text-right font-mono">{holding.shares}</td>
+              <td class="px-3 py-3 text-right font-mono">
+                {formatCurrency(holding.averageCost)}
+              </td>
+              <td class="px-3 py-3 text-right font-mono">
+                {formatCurrency(holding.currentPrice)}
+              </td>
+              <td
+                class:list={[
+                  "px-3 py-3 text-right font-mono font-semibold",
+                  holding.gain >= 0 ? "text-retirement" : "text-error",
+                ]}
+              >
+                {holding.gain >= 0 ? "+" : ""}
+                {formatCurrency(holding.gain)}
+              </td>
+              <td class="px-3 py-3 text-right text-on-surface-variant">
+                {holding.closedAt ? formatDate(holding.closedAt) : "Sin fecha"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ) : (
+      <div class="p-6 text-sm text-on-surface-variant">
+        Todavía no has cerrado posiciones.
+      </div>
+    )
+  }
+</Card>
