@@ -2,6 +2,10 @@ import type {
   AccountType,
   AccountCategory,
   TransactionType,
+  StockBroker,
+  StockAccountStatus,
+  StockAssetType,
+  StockPositionStatus,
 } from "./constants";
 
 export interface Account {
@@ -80,4 +84,39 @@ export interface MonthlyBillingTrendPoint {
   totalHours: number;
   totalAmount: number;
   totalBalance: number;
+}
+
+export interface StockBrokerAccount {
+  id: string;
+  userId: string;
+  broker: StockBroker;
+  name: string;
+  owner: string;
+  currency: string;
+  strategy?: string;
+  availableCash: number;
+  monthlyContribution: number;
+  status: StockAccountStatus;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockPosition {
+  id: string;
+  userId: string;
+  accountId: string;
+  symbol: string;
+  name: string;
+  assetType: StockAssetType;
+  status: StockPositionStatus;
+  shares: number;
+  averageCost: number;
+  currentPrice: number;
+  sector?: string;
+  region?: string;
+  notes?: string;
+  closedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
