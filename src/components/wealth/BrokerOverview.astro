@@ -60,23 +60,52 @@ const totalBrokerValue = brokerSummary.reduce(
                     {formatPercentage(brokerWeight)}
                   </Chip>
                 </div>
-                <div class="mt-3 space-y-2">
+                <div class="mt-3 space-y-1">
                   <p class="font-mono text-xl font-semibold text-on-surface">
                     {formatCurrency(brokerValue)}
                   </p>
-                  <p class="text-sm text-on-surface-variant">
-                    Caja {formatCurrency(broker.availableCash)} · Invertido
-                    {formatCurrency(broker.investedCapital)}
-                  </p>
-                  <p
-                    class:list={[
-                      "text-sm font-medium",
-                      broker.gain >= 0 ? "text-retirement" : "text-error",
-                    ]}
-                  >
-                    {broker.gain >= 0 ? "+" : ""}
-                    {formatCurrency(broker.gain)}
-                  </p>
+                  <div class="flex items-center justify-between gap-3 rounded-xl bg-surface px-2 py-1">
+                    <span
+                      class="material-symbols-outlined text-on-surface-variant"
+                      title="Disponible"
+                    >
+                      payments
+                    </span>
+                    <p class="text-sm text-on-surface-variant mb-0">
+                      {formatCurrency(broker.availableCash)}
+                    </p>
+                  </div>
+                  <div class="flex items-center justify-between gap-3 rounded-xl bg-surface px-2 py-1">
+                    <span
+                      class="material-symbols-outlined text-on-surface-variant"
+                      title="Invertido"
+                    >
+                      finance
+                    </span>
+                    <p class="text-sm text-on-surface-variant mb-0">
+                      {formatCurrency(broker.investedCapital)}
+                    </p>
+                  </div>
+                  <div class="flex items-center justify-between gap-3 rounded-xl bg-surface px-2 py-1">
+                    {broker.gain >= 0 ? (
+                      <span class="material-symbols-outlined text-sm text-retirement">
+                        arrow_upward
+                      </span>
+                    ) : (
+                      <span class="material-symbols-outlined text-sm text-error">
+                        arrow_downward
+                      </span>
+                    )}
+                    <p
+                      class:list={[
+                        "text-sm font-medium",
+                        broker.gain >= 0 ? "text-retirement" : "text-error",
+                      ]}
+                    >
+                      {broker.gain >= 0 ? "+" : ""}
+                      {formatCurrency(broker.gain)}
+                    </p>
+                  </div>
                 </div>
               </div>
             );
