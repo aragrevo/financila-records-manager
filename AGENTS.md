@@ -24,6 +24,7 @@ Requires `.env` file with:
 ```
 UPSTASH_REDIS_REST_URL=...
 UPSTASH_REDIS_REST_TOKEN=...
+GEMINI_API_KEY=...
 ```
 
 ## Build
@@ -52,6 +53,8 @@ Upstash Redis is used for persistent storage. Data structure:
 - `GET /api/transactions/[id]` — Get transaction by ID
 - `PUT /api/transactions/[id]` — Update transaction
 - `DELETE /api/transactions/[id]` — Delete transaction
+- `GET /api/ai/insights` — AI analysis of funds (Gemini, cached 24h in Redis; `?refresh=1` to force)
+- `GET /api/ai/portfolio-insights` — AI analysis of stock portfolio (Gemini, cached 24h; `?refresh=1` to force)
 
 ## No Tooling
 
@@ -98,7 +101,8 @@ src/
 │   ├── transactions.service.ts       # Transaction data access (Redis)
 │   ├── dashboard.service.ts          # Dashboard computed data
 │   ├── summary.service.ts            # Wealth summary computed data
-│   └── billing.service.ts            # Billing records data access (Redis)
+│   ├── billing.service.ts            # Billing records data access (Redis)
+│   └── insights.service.ts           # AI insights (Gemini + Redis cache)
 ├── data/
 │   └── dashboard.ts                  # Dashboard display data (hardcoded)
 └── styles/
