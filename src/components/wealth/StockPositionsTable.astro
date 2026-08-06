@@ -31,6 +31,12 @@ const {
 const failedPriceSymbolSet = new Set(
   failedPriceSymbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean),
 );
+const activeBrokerFilters = [...new Set(holdings.map((holding) => holding.broker))].sort(
+  (left, right) => STOCK_BROKERS[left].localeCompare(STOCK_BROKERS[right]),
+);
+const activeAssetTypeFilters = [...new Set(holdings.map((holding) => holding.assetType))].sort(
+  (left, right) => STOCK_ASSET_TYPES[left].localeCompare(STOCK_ASSET_TYPES[right]),
+);
 
 const getPriceDifferencePercentage = (holding: HoldingWithContext): number => {
   if (holding.averageCost <= 0) return 0;
@@ -60,187 +66,263 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
 
   {
     holdings.length > 0 ? (
-      <table class="w-full table-fixed text-left">
-        <thead>
-          <tr class="border-b border-outline-variant bg-surface-container-low/80 text-[11px] uppercase tracking-wide text-on-surface-variant">
-            <th class="px-3 py-3 font-bold">Ticker</th>
-            <th class="px-3 py-3 font-bold">Activo</th>
-            <th class="px-3 py-3 font-bold">Tipo</th>
-            <th class="px-3 py-3 font-bold">Cuenta</th>
-            <th class="px-3 py-3 text-right font-bold">Qty</th>
-            <th class="px-3 py-3 text-right font-bold">Costo</th>
-            <th class="px-3 py-3 text-right font-bold">Precio</th>
-            <th class="px-3 py-3 text-right font-bold">Valor</th>
-            <th class="px-3 py-3 text-right font-bold">P/L</th>
-            <th class="w-20 max-w-20 px-1 py-3 text-right font-bold" />
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-outline-variant/30">
-          {holdings.map((holding) => (
-            <tr
-              data-stock-position-row={holding.id}
-              class="align-top transition-colors hover:bg-surface-container-low/50"
-            >
-              <td class="px-3 py-3 font-mono font-semibold text-on-surface">
-                <div class="flex flex-col items-start gap-1">
-                  <span>{holding.symbol}</span>
-                  {failedPriceSymbolSet.has(holding.symbol.toUpperCase()) ? (
-                    <span class="inline-flex items-center gap-1 rounded-full bg-emergency/10 px-2 py-0.5 text-[11px] font-medium text-emergency">
-                      <span class="material-symbols-outlined text-[14px]">
-                        sync_problem
-                      </span>
-                      Sin actualizar
-                    </span>
-                  ) : null}
-                </div>
-              </td>
-              <td class="px-3 py-3">
-                <div>
-                  <p class="font-medium text-on-surface">{holding.name}</p>
-                  <p class="mt-1 text-xs text-on-surface-variant">
-                    {holding.sector || "Sin sector"} ·{" "}
-                    {holding.region || "Sin región"}
-                  </p>
-                </div>
-              </td>
-              <td class="px-3 py-3">
-                <Chip variant={assetVariant[holding.assetType]} size="sm">
-                  {STOCK_ASSET_TYPES[holding.assetType]}
-                </Chip>
-              </td>
-              <td class="px-3 py-3">
-                <div class="flex flex-col items-start gap-1">
-                  <Chip variant={brokerVariant[holding.broker]} size="sm">
-                    {STOCK_BROKERS[holding.broker]}
-                  </Chip>
-                  <span class="text-xs text-on-surface-variant">
-                    {holding.accountName}
-                  </span>
-                </div>
-              </td>
-              <td class="px-3 py-3 text-right font-mono flex items-center gap-1 justify-end">
-                <span class="material-symbols-outlined text-on-surface-variant text-sm">
-                  package_2
-                </span>
-                {holding.shares}
-              </td>
-              <td class="px-3 py-3 text-right font-mono">
-                {formatCurrency(holding.averageCost)}
-              </td>
-              <td class="px-3 py-3 text-right font-mono">
-                <div class="flex flex-col items-end gap-1">
-                  <div
-                    data-current-price-display
-                    class="flex flex-col items-end gap-1"
-                  >
-                    <span class="inline-flex items-center gap-1">
-                      <span>{formatCurrency(holding.currentPrice)}</span>
-                      {getPriceTrend(holding) === "up" ? (
-                        <span class="material-symbols-outlined text-sm text-retirement">
-                          arrow_upward
-                        </span>
-                      ) : getPriceTrend(holding) === "down" ? (
-                        <span class="material-symbols-outlined text-sm text-error">
-                          arrow_downward
-                        </span>
-                      ) : null}
-                    </span>
+      <div data-stock-positions-table>
+        <table class="w-full table-fixed text-left">
+          <thead>
+            <tr class="border-b border-outline-variant bg-surface-container-low/80 text-[11px] uppercase tracking-wide text-on-surface-variant">
+              <th class="px-3 py-3 font-bold">Ticker</th>
+              <th class="px-3 py-3 font-bold">Activo</th>
+              <th class="px-3 py-3 font-bold">
+                <details class="relative inline-block text-left" data-stock-filter-menu>
+                  <summary class="flex cursor-pointer list-none items-center gap-1">
+                    <span>Tipo</span>
                     <span
-                      class:list={[
-                        "text-[11px]",
-                        getPriceTrend(holding) === "up"
-                          ? "text-retirement"
-                          : getPriceTrend(holding) === "down"
-                            ? "text-error"
-                            : "text-on-surface-variant",
-                      ]}
+                      class="rounded-full bg-surface-container px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant"
+                      data-stock-filter-count="assetType"
                     >
-                      {getPriceDifferencePercentage(holding) > 0 ? "+" : ""}
-                      {formatPercentage(getPriceDifferencePercentage(holding))}
+                      0
+                    </span>
+                    <span class="material-symbols-outlined text-sm text-on-surface-variant">
+                      filter_list
+                    </span>
+                  </summary>
+                  <div class="absolute right-0 z-20 mt-2 w-52 rounded-xl border border-outline-variant bg-surface p-3 normal-case shadow-lg">
+                    <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                      Filtrar tipos
+                    </p>
+                    <div class="space-y-2">
+                      {activeAssetTypeFilters.map((assetType) => (
+                        <label class="flex items-center gap-2 text-sm font-normal text-on-surface">
+                          <input
+                            type="checkbox"
+                            value={assetType}
+                            class="h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary"
+                            data-stock-filter-asset-type-option
+                          />
+                          <span>{STOCK_ASSET_TYPES[assetType]}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </details>
+              </th>
+              <th class="px-3 py-3 font-bold">
+                <details class="relative inline-block text-left" data-stock-filter-menu>
+                  <summary class="flex cursor-pointer list-none items-center gap-1">
+                    <span>Cuenta</span>
+                    <span
+                      class="rounded-full bg-surface-container px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant"
+                      data-stock-filter-count="broker"
+                    >
+                      0
+                    </span>
+                    <span class="material-symbols-outlined text-sm text-on-surface-variant">
+                      filter_list
+                    </span>
+                  </summary>
+                  <div class="absolute right-0 z-20 mt-2 w-52 rounded-xl border border-outline-variant bg-surface p-3 normal-case shadow-lg">
+                    <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                      Filtrar brokers
+                    </p>
+                    <div class="space-y-2">
+                      {activeBrokerFilters.map((broker) => (
+                        <label class="flex items-center gap-2 text-sm font-normal text-on-surface">
+                          <input
+                            type="checkbox"
+                            value={broker}
+                            class="h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary"
+                            data-stock-filter-broker-option
+                          />
+                          <span>{STOCK_BROKERS[broker]}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </details>
+              </th>
+              <th class="px-3 py-3 text-right font-bold">Qty</th>
+              <th class="px-3 py-3 text-right font-bold">Costo</th>
+              <th class="px-3 py-3 text-right font-bold">Precio</th>
+              <th class="px-3 py-3 text-right font-bold">Valor</th>
+              <th class="px-3 py-3 text-right font-bold">P/L</th>
+              <th class="w-20 max-w-20 px-1 py-3 text-right font-bold" />
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant/30">
+            {holdings.map((holding) => (
+              <tr
+                data-stock-position-row={holding.id}
+                data-stock-position-broker={holding.broker}
+                data-stock-position-asset-type={holding.assetType}
+                class="align-top transition-colors hover:bg-surface-container-low/50"
+              >
+                <td class="px-3 py-3 font-mono font-semibold text-on-surface">
+                  <div class="flex flex-col items-start gap-1">
+                    <span>{holding.symbol}</span>
+                    {failedPriceSymbolSet.has(holding.symbol.toUpperCase()) ? (
+                      <span class="inline-flex items-center gap-1 rounded-full bg-emergency/10 px-2 py-0.5 text-[11px] font-medium text-emergency">
+                        <span class="material-symbols-outlined text-[14px]">
+                          sync_problem
+                        </span>
+                        Sin actualizar
+                      </span>
+                    ) : null}
+                  </div>
+                </td>
+                <td class="px-3 py-3">
+                  <div>
+                    <p class="font-medium text-on-surface">{holding.name}</p>
+                    <p class="mt-1 text-xs text-on-surface-variant">
+                      {holding.sector || "Sin sector"} ·{" "}
+                      {holding.region || "Sin región"}
+                    </p>
+                  </div>
+                </td>
+                <td class="px-3 py-3">
+                  <Chip variant={assetVariant[holding.assetType]} size="sm">
+                    {STOCK_ASSET_TYPES[holding.assetType]}
+                  </Chip>
+                </td>
+                <td class="px-3 py-3">
+                  <div class="flex flex-col items-start gap-1">
+                    <Chip variant={brokerVariant[holding.broker]} size="sm">
+                      {STOCK_BROKERS[holding.broker]}
+                    </Chip>
+                    <span class="text-xs text-on-surface-variant">
+                      {holding.accountName}
                     </span>
                   </div>
-                  
-                  <form
-                    class="hidden items-center gap-2"
-                    data-inline-price-form
-                    data-stock-position-id={holding.id}
-                  >
-                    <input
-                      type="number"
-                      name="currentPrice"
-                      step="0.0001"
-                      min="0"
-                      value={holding.currentPrice}
-                      class="w-24 rounded-lg border border-outline-variant bg-surface px-2 py-1 text-right font-mono text-sm text-on-surface outline-none focus:border-primary"
-                    />
-                  </form>
-                </div>
-              </td>
-              <td class="px-3 py-3 text-right">
-                <p class="font-mono font-semibold text-on-surface">
-                  {formatCurrency(holding.currentValue)}
-                </p>
-                <p class="text-xs text-on-surface-variant">
-                  {formatPercentage(holding.weight)}
-                </p>
-              </td>
-              <td
-                class:list={[
-                  "px-3 py-3 text-right font-mono font-semibold",
-                  holding.gain >= 0 ? "text-retirement" : "text-error",
-                ]}
-              >
-                {holding.gain >= 0 ? "+" : ""}
-                {formatCurrency(holding.gain)}
-              </td>
-              <td class="w-20 max-w-20 px-1 py-3 text-right">
-                <div class="flex justify-end gap-1">
-                  <button
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-full text-contingency transition-colors hover:bg-contingency/10"
-                    data-edit-stock-position={holding.id}
-                    title="Editar precio"
-                    aria-label="Editar precio"
-                  >
-                    <span class="material-symbols-outlined text-[18px]">
-                      edit
-                    </span>
-                  </button>
-                  <button
-                    class="hidden h-8 w-8 items-center justify-center rounded-full text-retirement transition-colors hover:bg-retirement/10"
-                    data-save-stock-position={holding.id}
-                    title="Guardar cambios"
-                    aria-label="Guardar cambios"
-                  >
-                    <span class="material-symbols-outlined text-[18px]">
-                      save
-                    </span>
-                  </button>
-                  <button
-                    class="hidden h-8 w-8 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high"
-                    data-cancel-edit-stock-position={holding.id}
-                    title="Cancelar edición"
-                    aria-label="Cancelar edición"
-                  >
-                    <span class="material-symbols-outlined text-[18px]">
-                      close
-                    </span>
-                  </button>
-                  <button
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-full text-error transition-colors hover:bg-error/10"
-                    data-close-stock-position={holding.id}
-                    title="Cerrar posición"
-                    aria-label="Cerrar posición"
-                  >
-                    <span class="material-symbols-outlined text-[18px]">
-                      task_alt
-                    </span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                </td>
+                <td class="px-3 py-3 text-right font-mono flex items-center justify-end gap-1">
+                  <span class="material-symbols-outlined text-on-surface-variant text-sm">
+                    package_2
+                  </span>
+                  {holding.shares}
+                </td>
+                <td class="px-3 py-3 text-right font-mono">
+                  {formatCurrency(holding.averageCost)}
+                </td>
+                <td class="px-3 py-3 text-right font-mono">
+                  <div class="flex flex-col items-end gap-1">
+                    <div
+                      data-current-price-display
+                      class="flex flex-col items-end gap-1"
+                    >
+                      <span class="inline-flex items-center gap-1">
+                        <span>{formatCurrency(holding.currentPrice)}</span>
+                        {getPriceTrend(holding) === "up" ? (
+                          <span class="material-symbols-outlined text-sm text-retirement">
+                            arrow_upward
+                          </span>
+                        ) : getPriceTrend(holding) === "down" ? (
+                          <span class="material-symbols-outlined text-sm text-error">
+                            arrow_downward
+                          </span>
+                        ) : null}
+                      </span>
+                      <span
+                        class:list={[
+                          "text-[11px]",
+                          getPriceTrend(holding) === "up"
+                            ? "text-retirement"
+                            : getPriceTrend(holding) === "down"
+                              ? "text-error"
+                              : "text-on-surface-variant",
+                        ]}
+                      >
+                        {getPriceDifferencePercentage(holding) > 0 ? "+" : ""}
+                        {formatPercentage(getPriceDifferencePercentage(holding))}
+                      </span>
+                    </div>
+
+                    <form
+                      class="hidden items-center gap-2"
+                      data-inline-price-form
+                      data-stock-position-id={holding.id}
+                    >
+                      <input
+                        type="number"
+                        name="currentPrice"
+                        step="0.0001"
+                        min="0"
+                        value={holding.currentPrice}
+                        class="w-24 rounded-lg border border-outline-variant bg-surface px-2 py-1 text-right font-mono text-sm text-on-surface outline-none focus:border-primary"
+                      />
+                    </form>
+                  </div>
+                </td>
+                <td class="px-3 py-3 text-right">
+                  <p class="font-mono font-semibold text-on-surface">
+                    {formatCurrency(holding.currentValue)}
+                  </p>
+                  <p class="text-xs text-on-surface-variant">
+                    {formatPercentage(holding.weight)}
+                  </p>
+                </td>
+                <td
+                  class:list={[
+                    "px-3 py-3 text-right font-mono font-semibold",
+                    holding.gain >= 0 ? "text-retirement" : "text-error",
+                  ]}
+                >
+                  {holding.gain >= 0 ? "+" : ""}
+                  {formatCurrency(holding.gain)}
+                </td>
+                <td class="w-20 max-w-20 px-1 py-3 text-right">
+                  <div class="flex justify-end gap-1">
+                    <button
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-full text-contingency transition-colors hover:bg-contingency/10"
+                      data-edit-stock-position={holding.id}
+                      title="Editar precio"
+                      aria-label="Editar precio"
+                    >
+                      <span class="material-symbols-outlined text-[18px]">
+                        edit
+                      </span>
+                    </button>
+                    <button
+                      class="hidden h-8 w-8 items-center justify-center rounded-full text-retirement transition-colors hover:bg-retirement/10"
+                      data-save-stock-position={holding.id}
+                      title="Guardar cambios"
+                      aria-label="Guardar cambios"
+                    >
+                      <span class="material-symbols-outlined text-[18px]">
+                        save
+                      </span>
+                    </button>
+                    <button
+                      class="hidden h-8 w-8 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high"
+                      data-cancel-edit-stock-position={holding.id}
+                      title="Cancelar edición"
+                      aria-label="Cancelar edición"
+                    >
+                      <span class="material-symbols-outlined text-[18px]">
+                        close
+                      </span>
+                    </button>
+                    <button
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-full text-error transition-colors hover:bg-error/10"
+                      data-close-stock-position={holding.id}
+                      title="Cerrar posición"
+                      aria-label="Cerrar posición"
+                    >
+                      <span class="material-symbols-outlined text-[18px]">
+                        task_alt
+                      </span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div
+          class="hidden border-t border-outline-variant/30 px-6 py-4 text-sm text-on-surface-variant"
+          data-stock-filter-empty-state
+        >
+          No hay posiciones que coincidan con los filtros seleccionados.
+        </div>
+      </div>
     ) : (
       <div class="p-6 text-sm text-on-surface-variant">
         No hay posiciones activas registradas.
@@ -248,6 +330,83 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
     )
   }
 </Card>
+
+<script>
+  const brokerFilterOptions = Array.from(
+    document.querySelectorAll("[data-stock-filter-broker-option]"),
+  ) as HTMLInputElement[];
+  const assetTypeFilterOptions = Array.from(
+    document.querySelectorAll("[data-stock-filter-asset-type-option]"),
+  ) as HTMLInputElement[];
+  const brokerFilterCount = document.querySelector(
+    '[data-stock-filter-count="broker"]',
+  ) as HTMLElement | null;
+  const assetTypeFilterCount = document.querySelector(
+    '[data-stock-filter-count="assetType"]',
+  ) as HTMLElement | null;
+  const filterEmptyState = document.querySelector(
+    "[data-stock-filter-empty-state]",
+  ) as HTMLElement | null;
+  const positionRows = Array.from(
+    document.querySelectorAll("[data-stock-position-row]"),
+  ) as HTMLElement[];
+
+  function getSelectedFilterValues(inputs: HTMLInputElement[]) {
+    return new Set(
+      inputs.filter((input) => input.checked).map((input) => input.value),
+    );
+  }
+
+  function syncFilterCount(label: HTMLElement | null, total: number, selected: number) {
+    if (!label) return;
+    label.textContent = String(selected);
+    label.classList.toggle("text-primary", selected > 0);
+    label.classList.toggle("text-on-surface-variant", selected === 0);
+    label.classList.toggle("bg-primary/10", selected > 0);
+    label.classList.toggle("bg-surface-container", selected === 0);
+    label.title =
+      selected === 0 ? "Sin filtros activos" : `${selected} de ${total} filtro(s) activos`;
+  }
+
+  function applyStockTableFilters() {
+    if (!positionRows.length) return;
+
+    const selectedBrokers = getSelectedFilterValues(brokerFilterOptions);
+    const selectedAssetTypes = getSelectedFilterValues(assetTypeFilterOptions);
+    syncFilterCount(brokerFilterCount, brokerFilterOptions.length, selectedBrokers.size);
+    syncFilterCount(
+      assetTypeFilterCount,
+      assetTypeFilterOptions.length,
+      selectedAssetTypes.size,
+    );
+
+    let visibleRows = 0;
+
+    positionRows.forEach((row) => {
+      const rowBroker = row.getAttribute("data-stock-position-broker") ?? "";
+      const rowAssetType = row.getAttribute("data-stock-position-asset-type") ?? "";
+      const matchesBroker = selectedBrokers.size === 0 || selectedBrokers.has(rowBroker);
+      const matchesAssetType =
+        selectedAssetTypes.size === 0 || selectedAssetTypes.has(rowAssetType);
+      const shouldShow = matchesBroker && matchesAssetType;
+
+      row.classList.toggle("hidden", !shouldShow);
+      if (shouldShow) {
+        visibleRows += 1;
+      }
+    });
+
+    filterEmptyState?.classList.toggle("hidden", visibleRows > 0);
+  }
+
+  brokerFilterOptions.forEach((input) => {
+    input.addEventListener("change", applyStockTableFilters);
+  });
+  assetTypeFilterOptions.forEach((input) => {
+    input.addEventListener("change", applyStockTableFilters);
+  });
+  applyStockTableFilters();
+</script>
 
 <Card class="overflow-hidden p-0">
   <div
