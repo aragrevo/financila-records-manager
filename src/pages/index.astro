@@ -4,6 +4,7 @@ import SummaryCard from "../components/dashboard/SummaryCard.astro";
 import TreemapChart from "../components/dashboard/TreemapChart.astro";
 import MovementsTable from "../components/dashboard/MovementsTable.astro";
 import FundStatusTable from "../components/dashboard/FundStatusTable.astro";
+import AiInsights from "../components/dashboard/AiInsights.astro";
 import { dashboardService } from "../services/dashboard.service";
 import { formatCurrencyCOP } from "../utils/format";
 
@@ -71,4 +72,7 @@ const formattedFundStatus = fundStatus.map((fund) => ({
 
   <!-- Funds Detail Table -->
   <FundStatusTable funds={formattedFundStatus} />
+
+  <!-- AI Insights -->
+  <AiInsights />
 </Layout>

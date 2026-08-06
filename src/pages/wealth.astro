@@ -7,6 +7,7 @@ import PortfolioInsights from "../components/wealth/PortfolioInsights.astro";
 import PortfolioSummaryCards from "../components/wealth/PortfolioSummaryCards.astro";
 import StockManagementModals from "../components/wealth/StockManagementModals.astro";
 import StockPositionsTable from "../components/wealth/StockPositionsTable.astro";
+import AiInsights from "../components/dashboard/AiInsights.astro";
 import type {
   AccountMetric,
   AssetTypeSummaryItem,
@@ -270,6 +271,12 @@ const assetTypeSummary: AssetTypeSummaryItem[] = Object.values(
     </div>
 
     <PortfolioSummaryCards metrics={summaryMetrics} />
+
+    <AiInsights
+      endpoint="/api/ai/portfolio-insights"
+      title="Análisis IA del Portafolio"
+      icon="monitoring"
+    />
 
     <BrokerOverview
       brokerSummary={brokerSummary}

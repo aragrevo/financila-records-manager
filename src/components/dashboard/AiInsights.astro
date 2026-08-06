@@ -1,0 +1,183 @@
+---
+interface Props {
+  endpoint?: string;
+  title?: string;
+  icon?: string;
+}
+
+const {
+  endpoint = "/api/ai/insights",
+  title = "Análisis IA",
+  icon = "auto_awesome",
+} = Astro.props;
+---
+
+<div
+  id="ai-insights"
+  data-endpoint={endpoint}
+  class="mt-gutter bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden"
+>
+  <div class="p-6 border-b border-outline-variant bg-surface-container-low/50 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary">{icon}</span>
+      <h3 class="text-headline-md font-headline-md text-primary">{title}</h3>
+    </div>
+    <button
+      id="ai-refresh"
+      class="flex items-center gap-1 text-label-caps font-label-caps text-on-surface-variant hover:text-primary transition-colors"
+      title="Regenerar análisis"
+    >
+      <span class="material-symbols-outlined text-sm">refresh</span>
+      REFRESH
+    </button>
+  </div>
+
+  <div id="ai-loading" class="p-6 flex items-center gap-3 text-on-surface-variant">
+    <span class="material-symbols-outlined animate-spin">progress_activity</span>
+    <span class="text-body-md">Generando análisis de tus fondos...</span>
+  </div>
+
+  <div id="ai-error" class="hidden p-6 text-body-md text-red-600"></div>
+
+  <div id="ai-content" class="hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter p-6">
+      <!-- Score -->
+      <div class="flex flex-col items-center justify-center gap-2 p-6 rounded-lg bg-surface-container-low">
+        <div class="relative w-28 h-28">
+          <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
+            <circle cx="50" cy="50" r="42" fill="none" stroke-width="10" class="stroke-outline-variant" />
+            <circle
+              id="ai-score-ring"
+              cx="50"
+              cy="50"
+              r="42"
+              fill="none"
+              stroke-width="10"
+              stroke-linecap="round"
+              stroke-dasharray="263.9"
+              stroke-dashoffset="263.9"
+              class="stroke-primary transition-all duration-700"
+            />
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span id="ai-score" class="text-headline-lg font-headline-lg text-primary font-mono-data">--</span>
+            <span class="text-label-caps font-label-caps text-on-surface-variant">/ 100</span>
+          </div>
+        </div>
+        <span id="ai-score-label" class="text-label-caps font-label-caps text-on-surface-variant"></span>
+        <p id="ai-summary" class="text-body-sm text-on-surface-variant text-center mt-2"></p>
+      </div>
+
+      <!-- Observations -->
+      <div class="p-6 rounded-lg bg-surface-container-low">
+        <h4 class="text-label-caps font-label-caps text-on-surface-variant mb-4">OBSERVACIONES</h4>
+        <ul id="ai-observations" class="space-y-3"></ul>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="p-6 rounded-lg bg-surface-container-low">
+        <h4 class="text-label-caps font-label-caps text-on-surface-variant mb-4">RECOMENDACIONES</h4>
+        <ul id="ai-recommendations" class="space-y-4"></ul>
+      </div>
+    </div>
+    <div class="px-6 pb-4 flex items-center justify-between">
+      <p class="text-body-xs text-on-surface-variant italic">
+        Generado por IA. No constituye asesoría financiera.
+      </p>
+      <span id="ai-generated-at" class="text-body-xs text-on-surface-variant font-mono-data"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SENTIMENT_META: Record<string, { icon: string; className: string }> = {
+    positive: { icon: "trending_up", className: "text-emerald-600" },
+    warning: { icon: "warning", className: "text-amber-600" },
+    info: { icon: "info", className: "text-blue-600" },
+  };
+
+  const PRIORITY_META: Record<string, { label: string; className: string }> = {
+    high: { label: "ALTA", className: "bg-red-500/10 text-red-700" },
+    medium: { label: "MEDIA", className: "bg-amber-500/10 text-amber-700" },
+    low: { label: "BAJA", className: "bg-blue-500/10 text-blue-700" },
+  };
+
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  const render = (data: any) => {
+    const score = Math.max(0, Math.min(100, Number(data.healthScore) || 0));
+    document.getElementById("ai-score")!.textContent = String(score);
+    document.getElementById("ai-score-label")!.textContent = data.healthLabel;
+    document.getElementById("ai-summary")!.textContent = data.summary;
+
+    const circumference = 2 * Math.PI * 42;
+    const ring = document.getElementById("ai-score-ring")!;
+    ring.setAttribute("stroke-dashoffset", String(circumference * (1 - score / 100)));
+
+    document.getElementById("ai-observations")!.innerHTML = (data.observations || [])
+      .map((o: any) => {
+        const meta = SENTIMENT_META[o.sentiment] || SENTIMENT_META.info;
+        return `<li class="flex items-start gap-2">
+          <span class="material-symbols-outlined text-base ${meta.className}">${meta.icon}</span>
+          <span class="text-body-sm text-on-surface">${escapeHtml(o.text)}</span>
+        </li>`;
+      })
+      .join("");
+
+    document.getElementById("ai-recommendations")!.innerHTML = (data.recommendations || [])
+      .map((r: any) => {
+        const meta = PRIORITY_META[r.priority] || PRIORITY_META.low;
+        return `<li>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-body-sm font-bold text-primary">${escapeHtml(r.title)}</span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${meta.className}">${meta.label}</span>
+          </div>
+          <p class="text-body-sm text-on-surface-variant">${escapeHtml(r.detail)}</p>
+        </li>`;
+      })
+      .join("");
+
+    document.getElementById("ai-generated-at")!.textContent = new Date(
+      data.generatedAt,
+    ).toLocaleString("es-CO");
+
+    document.getElementById("ai-loading")!.classList.add("hidden");
+    document.getElementById("ai-error")!.classList.add("hidden");
+    document.getElementById("ai-content")!.classList.remove("hidden");
+  };
+
+  const showError = (message: string) => {
+    const errorEl = document.getElementById("ai-error")!;
+    errorEl.textContent = message;
+    document.getElementById("ai-loading")!.classList.add("hidden");
+    document.getElementById("ai-content")!.classList.add("hidden");
+    errorEl.classList.remove("hidden");
+  };
+
+  const root = document.getElementById("ai-insights")!;
+  const endpoint = root.dataset.endpoint || "/api/ai/insights";
+
+  const loadInsights = async (refresh = false) => {
+    document.getElementById("ai-loading")!.classList.remove("hidden");
+    document.getElementById("ai-content")!.classList.add("hidden");
+    document.getElementById("ai-error")!.classList.add("hidden");
+
+    try {
+      const url = refresh ? `${endpoint}?refresh=1` : endpoint;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error generando análisis");
+      render(data);
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Error generando análisis");
+    }
+  };
+
+  document.getElementById("ai-refresh")!.addEventListener("click", () => loadInsights(true));
+  loadInsights();
+</script>
