@@ -29,18 +29,26 @@ const {
   failedPriceSymbols,
 } = Astro.props as Props;
 const failedPriceSymbolSet = new Set(
-  failedPriceSymbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean),
+  failedPriceSymbols
+    .map((symbol) => symbol.trim().toUpperCase())
+    .filter(Boolean),
 );
-const activeBrokerFilters = [...new Set(holdings.map((holding) => holding.broker))].sort(
-  (left, right) => STOCK_BROKERS[left].localeCompare(STOCK_BROKERS[right]),
+const activeBrokerFilters = [
+  ...new Set(holdings.map((holding) => holding.broker)),
+].sort((left, right) =>
+  STOCK_BROKERS[left].localeCompare(STOCK_BROKERS[right]),
 );
-const activeAssetTypeFilters = [...new Set(holdings.map((holding) => holding.assetType))].sort(
-  (left, right) => STOCK_ASSET_TYPES[left].localeCompare(STOCK_ASSET_TYPES[right]),
+const activeAssetTypeFilters = [
+  ...new Set(holdings.map((holding) => holding.assetType)),
+].sort((left, right) =>
+  STOCK_ASSET_TYPES[left].localeCompare(STOCK_ASSET_TYPES[right]),
 );
 
 const getPriceDifferencePercentage = (holding: HoldingWithContext): number => {
   if (holding.averageCost <= 0) return 0;
-  return ((holding.currentPrice - holding.averageCost) / holding.averageCost) * 100;
+  return (
+    ((holding.currentPrice - holding.averageCost) / holding.averageCost) * 100
+  );
 };
 
 const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
@@ -52,7 +60,7 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
 
 <Card class="overflow-hidden p-0">
   <div
-    class="flex items-center justify-between border-b border-outline-variant px-6 py-4"
+    class="flex items-center justify-between border-b border-outline-variant px-0 py-4"
   >
     <div>
       <h2 class="text-headline-md font-bold text-on-surface">
@@ -73,7 +81,10 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
               <th class="px-3 py-3 font-bold">Ticker</th>
               <th class="px-3 py-3 font-bold">Activo</th>
               <th class="px-3 py-3 font-bold">
-                <details class="relative inline-block text-left" data-stock-filter-menu>
+                <details
+                  class="relative inline-block text-left"
+                  data-stock-filter-menu
+                >
                   <summary class="flex cursor-pointer list-none items-center gap-1">
                     <span>Tipo</span>
                     <span
@@ -107,7 +118,10 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
                 </details>
               </th>
               <th class="px-3 py-3 font-bold">
-                <details class="relative inline-block text-left" data-stock-filter-menu>
+                <details
+                  class="relative inline-block text-left"
+                  data-stock-filter-menu
+                >
                   <summary class="flex cursor-pointer list-none items-center gap-1">
                     <span>Cuenta</span>
                     <span
@@ -231,7 +245,9 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
                         ]}
                       >
                         {getPriceDifferencePercentage(holding) > 0 ? "+" : ""}
-                        {formatPercentage(getPriceDifferencePercentage(holding))}
+                        {formatPercentage(
+                          getPriceDifferencePercentage(holding),
+                        )}
                       </span>
                     </div>
 
@@ -357,7 +373,11 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
     );
   }
 
-  function syncFilterCount(label: HTMLElement | null, total: number, selected: number) {
+  function syncFilterCount(
+    label: HTMLElement | null,
+    total: number,
+    selected: number,
+  ) {
     if (!label) return;
     label.textContent = String(selected);
     label.classList.toggle("text-primary", selected > 0);
@@ -365,7 +385,9 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
     label.classList.toggle("bg-primary/10", selected > 0);
     label.classList.toggle("bg-surface-container", selected === 0);
     label.title =
-      selected === 0 ? "Sin filtros activos" : `${selected} de ${total} filtro(s) activos`;
+      selected === 0
+        ? "Sin filtros activos"
+        : `${selected} de ${total} filtro(s) activos`;
   }
 
   function applyStockTableFilters() {
@@ -373,7 +395,11 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
 
     const selectedBrokers = getSelectedFilterValues(brokerFilterOptions);
     const selectedAssetTypes = getSelectedFilterValues(assetTypeFilterOptions);
-    syncFilterCount(brokerFilterCount, brokerFilterOptions.length, selectedBrokers.size);
+    syncFilterCount(
+      brokerFilterCount,
+      brokerFilterOptions.length,
+      selectedBrokers.size,
+    );
     syncFilterCount(
       assetTypeFilterCount,
       assetTypeFilterOptions.length,
@@ -384,8 +410,10 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
 
     positionRows.forEach((row) => {
       const rowBroker = row.getAttribute("data-stock-position-broker") ?? "";
-      const rowAssetType = row.getAttribute("data-stock-position-asset-type") ?? "";
-      const matchesBroker = selectedBrokers.size === 0 || selectedBrokers.has(rowBroker);
+      const rowAssetType =
+        row.getAttribute("data-stock-position-asset-type") ?? "";
+      const matchesBroker =
+        selectedBrokers.size === 0 || selectedBrokers.has(rowBroker);
       const matchesAssetType =
         selectedAssetTypes.size === 0 || selectedAssetTypes.has(rowAssetType);
       const shouldShow = matchesBroker && matchesAssetType;
@@ -410,7 +438,7 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
 
 <Card class="overflow-hidden p-0">
   <div
-    class="flex items-center justify-between border-b border-outline-variant px-6 py-4"
+    class="flex items-center justify-between border-b border-outline-variant px-0 py-4"
   >
     <div>
       <h2 class="text-headline-md font-bold text-on-surface">
