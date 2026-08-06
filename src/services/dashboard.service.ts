@@ -154,27 +154,24 @@ export class DashboardService {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    let monthlyIncome = 0;
-    let monthlyExpenses = 0;
+    let monthlyBalanceDelta = 0;
 
     for (const t of transactions) {
       const d = new Date(t.date);
       if (d.getMonth() !== currentMonth || d.getFullYear() !== currentYear) {
         continue;
       }
-      if (t.type === "income") {
-        monthlyIncome += t.amount;
-      } else if (t.type === "expense") {
-        monthlyExpenses += Math.abs(t.amount);
-      }
+
+      // Account balances are updated with the raw transaction amount, so the
+      // month-over-month delta must use every movement that changed balances.
+      monthlyBalanceDelta += t.amount;
     }
 
-    const netFlow = monthlyIncome - monthlyExpenses;
-    const balanceStartOfMonth = totalBalance - netFlow;
+    const previousMonthBalance = totalBalance - monthlyBalanceDelta;
 
     let changePercent = 0;
-    if (balanceStartOfMonth > 0) {
-      changePercent = (netFlow / balanceStartOfMonth) * 100;
+    if (previousMonthBalance > 0) {
+      changePercent = (monthlyBalanceDelta / previousMonthBalance) * 100;
     }
 
     const sign = changePercent >= 0 ? "+" : "";
