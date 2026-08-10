@@ -37,7 +37,9 @@ const [stockAccounts, stockPositions] = await Promise.all([
   stocksService.getAccounts(),
   stocksService.getPositions(),
 ]);
-const activeStockPositions = stockPositions.filter((position) => position.status === "active");
+const activeStockPositions = stockPositions.filter(
+  (position) => position.status === "active",
+);
 const closedStockPositions = stockPositions
   .filter((position) => position.status === "closed")
   .sort((left, right) => {
@@ -47,7 +49,9 @@ const closedStockPositions = stockPositions
   });
 
 const accountMetrics: AccountMetric[] = stockAccounts.map((account) => {
-  const positions = activeStockPositions.filter((position) => position.accountId === account.id);
+  const positions = activeStockPositions.filter(
+    (position) => position.accountId === account.id,
+  );
   const investedCapital = positions.reduce(
     (sum, position) => sum + position.shares * position.averageCost,
     0,
@@ -67,15 +71,27 @@ const accountMetrics: AccountMetric[] = stockAccounts.map((account) => {
   };
 });
 
-const investedCapital = accountMetrics.reduce((sum, account) => sum + account.investedCapital, 0);
-const marketValue = accountMetrics.reduce((sum, account) => sum + account.marketValue, 0);
-const availableCash = stockAccounts.reduce((sum, account) => sum + account.availableCash, 0);
+const investedCapital = accountMetrics.reduce(
+  (sum, account) => sum + account.investedCapital,
+  0,
+);
+const marketValue = accountMetrics.reduce(
+  (sum, account) => sum + account.marketValue,
+  0,
+);
+const availableCash = stockAccounts.reduce(
+  (sum, account) => sum + account.availableCash,
+  0,
+);
 
 const summaryMetrics: SummaryMetrics = {
   portfolioValue: marketValue + availableCash,
   investedCapital,
   unrealizedGain: marketValue - investedCapital,
-  performance: investedCapital > 0 ? ((marketValue - investedCapital) / investedCapital) * 100 : 0,
+  performance:
+    investedCapital > 0
+      ? ((marketValue - investedCapital) / investedCapital) * 100
+      : 0,
   totalMonthlyContribution: stockAccounts.reduce(
     (sum, account) => sum + account.monthlyContribution,
     0,
@@ -93,7 +109,9 @@ const priceSyncMessage =
 
 const holdingsWithContext: HoldingWithContext[] = activeStockPositions
   .map((position) => {
-    const account = stockAccounts.find((item) => item.id === position.accountId);
+    const account = stockAccounts.find(
+      (item) => item.id === position.accountId,
+    );
     const currentValue = position.shares * position.currentPrice;
     const costBasis = position.shares * position.averageCost;
 
@@ -110,22 +128,29 @@ const holdingsWithContext: HoldingWithContext[] = activeStockPositions
   .sort((left, right) => right.currentValue - left.currentValue);
 
 const repeatedTickers: RepeatedTickerSummaryItem[] = Object.values(
-  holdingsWithContext.reduce<Record<string, HoldingWithContext[]>>((summary, holding) => {
-    if (!summary[holding.symbol]) {
-      summary[holding.symbol] = [];
-    }
+  holdingsWithContext.reduce<Record<string, HoldingWithContext[]>>(
+    (summary, holding) => {
+      if (!summary[holding.symbol]) {
+        summary[holding.symbol] = [];
+      }
 
-    summary[holding.symbol].push(holding);
-    return summary;
-  }, {}),
+      summary[holding.symbol].push(holding);
+      return summary;
+    },
+    {},
+  ),
 )
   .map((holdings) => {
-    const accountsCount = new Set(holdings.map((holding) => holding.accountId)).size;
+    const accountsCount = new Set(holdings.map((holding) => holding.accountId))
+      .size;
     if (accountsCount < 2) {
       return null;
     }
 
-    const marketValue = holdings.reduce((sum, holding) => sum + holding.currentValue, 0);
+    const marketValue = holdings.reduce(
+      (sum, holding) => sum + holding.currentValue,
+      0,
+    );
     const brokers = [...new Set(holdings.map((holding) => holding.broker))];
 
     return {
@@ -140,18 +165,26 @@ const repeatedTickers: RepeatedTickerSummaryItem[] = Object.values(
   })
   .filter((ticker): ticker is RepeatedTickerSummaryItem => Boolean(ticker));
 
-const totalRepeatedTickersValue = repeatedTickers.reduce((sum, ticker) => sum + ticker.marketValue, 0);
+const totalRepeatedTickersValue = repeatedTickers.reduce(
+  (sum, ticker) => sum + ticker.marketValue,
+  0,
+);
 
 const repeatedTickersChart = repeatedTickers
   .map((ticker) => ({
     ...ticker,
-    percentage: totalRepeatedTickersValue > 0 ? (ticker.marketValue / totalRepeatedTickersValue) * 100 : 0,
+    percentage:
+      totalRepeatedTickersValue > 0
+        ? (ticker.marketValue / totalRepeatedTickersValue) * 100
+        : 0,
   }))
   .sort((left, right) => right.marketValue - left.marketValue);
 
-const closedHoldingsWithContext: HoldingWithContext[] = closedStockPositions
-  .map((position) => {
-    const account = stockAccounts.find((item) => item.id === position.accountId);
+const closedHoldingsWithContext: HoldingWithContext[] =
+  closedStockPositions.map((position) => {
+    const account = stockAccounts.find(
+      (item) => item.id === position.accountId,
+    );
     const currentValue = position.shares * position.currentPrice;
     const costBasis = position.shares * position.averageCost;
 
@@ -213,21 +246,24 @@ const brokerSummary: BrokerSummaryItem[] = Object.values(
 ).filter((broker) => broker.accounts > 0 || broker.positions > 0);
 
 const assetTypeSummary: AssetTypeSummaryItem[] = Object.values(
-  holdingsWithContext.reduce<Record<string, AssetTypeSummaryItem>>((summary, holding) => {
-    const assetType = holding.assetType;
-    if (!summary[assetType]) {
-      summary[assetType] = {
-        assetType,
-        label: STOCK_ASSET_TYPES[assetType],
-        value: 0,
-        percentage: 0,
-        color: assetVariant[assetType],
-      };
-    }
+  holdingsWithContext.reduce<Record<string, AssetTypeSummaryItem>>(
+    (summary, holding) => {
+      const assetType = holding.assetType;
+      if (!summary[assetType]) {
+        summary[assetType] = {
+          assetType,
+          label: STOCK_ASSET_TYPES[assetType],
+          value: 0,
+          percentage: 0,
+          color: assetVariant[assetType],
+        };
+      }
 
-    summary[assetType].value += holding.currentValue;
-    return summary;
-  }, {}),
+      summary[assetType].value += holding.currentValue;
+      return summary;
+    },
+    {},
+  ),
 )
   .map((item) => ({
     ...item,
@@ -238,17 +274,24 @@ const assetTypeSummary: AssetTypeSummaryItem[] = Object.values(
 
 <Layout title="Acciones" activePage="wealth">
   <div class="space-y-6">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div
+      class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
+    >
       <div>
-        <h1 class="text-headline-lg font-bold text-on-surface">Gestión de Acciones</h1>
+        <h1 class="text-headline-lg font-bold text-on-surface">
+          Gestión de Acciones
+        </h1>
         <p class="mt-1 text-body-md text-on-surface-variant">
-          Registra brokers, cuentas y posiciones reales para consolidar tu portafolio.
+          Registra brokers, cuentas y posiciones reales para consolidar tu
+          portafolio.
         </p>
-        {priceSyncMessage ? (
-          <p class="mt-2 text-body-sm text-on-surface-variant">
-            {priceSyncMessage}
-          </p>
-        ) : null}
+        {
+          priceSyncMessage ? (
+            <p class="mt-2 text-body-sm text-on-surface-variant">
+              {priceSyncMessage}
+            </p>
+          ) : null
+        }
       </div>
       <div class="flex flex-wrap gap-3">
         <button
@@ -271,12 +314,6 @@ const assetTypeSummary: AssetTypeSummaryItem[] = Object.values(
     </div>
 
     <PortfolioSummaryCards metrics={summaryMetrics} />
-
-    <AiInsights
-      endpoint="/api/ai/portfolio-insights"
-      title="Análisis IA del Portafolio"
-      icon="monitoring"
-    />
 
     <BrokerOverview
       brokerSummary={brokerSummary}
@@ -303,4 +340,10 @@ const assetTypeSummary: AssetTypeSummaryItem[] = Object.values(
   </div>
 
   <StockManagementModals stockAccounts={stockAccounts} />
+
+  <AiInsights
+    endpoint="/api/ai/portfolio-insights"
+    title="Análisis IA del Portafolio"
+    icon="monitoring"
+  />
 </Layout>
