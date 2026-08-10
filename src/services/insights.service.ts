@@ -33,7 +33,8 @@ const RESPONSE_SCHEMA = {
     },
     healthLabel: {
       type: Type.STRING,
-      description: "Short label for the score, e.g. 'Crítico', 'Estable', 'Óptimo'",
+      description:
+        "Short label for the score, e.g. 'Crítico', 'Estable', 'Óptimo'",
     },
     summary: {
       type: Type.STRING,
@@ -69,7 +70,13 @@ const RESPONSE_SCHEMA = {
       },
     },
   },
-  required: ["healthScore", "healthLabel", "summary", "observations", "recommendations"],
+  required: [
+    "healthScore",
+    "healthLabel",
+    "summary",
+    "observations",
+    "recommendations",
+  ],
 };
 
 const BASE_RULES = `Reglas:
@@ -98,7 +105,8 @@ const buildFundsSnapshot = async (): Promise<string> => {
     name: f.name,
     target: f.expected,
     current: f.current,
-    progressPct: f.expected > 0 ? Math.round((f.current / f.expected) * 100) : null,
+    progressPct:
+      f.expected > 0 ? Math.round((f.current / f.expected) * 100) : null,
     difference: f.difference,
   }));
 
@@ -152,7 +160,8 @@ const buildPortfolioSnapshot = async (): Promise<string> => {
         currentPrice: p.currentPrice,
         currentValue,
         gain: currentValue - costBasis,
-        gainPct: costBasis > 0 ? ((currentValue - costBasis) / costBasis) * 100 : 0,
+        gainPct:
+          costBasis > 0 ? ((currentValue - costBasis) / costBasis) * 100 : 0,
         weightPct: marketValue > 0 ? (currentValue / marketValue) * 100 : 0,
       };
     })
@@ -200,11 +209,21 @@ const buildPortfolioSnapshot = async (): Promise<string> => {
 
 export class InsightsService {
   async getFundsInsights(forceRefresh = false): Promise<AiInsights> {
-    return this.getInsights(FUNDS_CACHE_KEY, FUNDS_SYSTEM_PROMPT, buildFundsSnapshot, forceRefresh);
+    return this.getInsights(
+      FUNDS_CACHE_KEY,
+      FUNDS_SYSTEM_PROMPT,
+      buildFundsSnapshot,
+      forceRefresh,
+    );
   }
 
   async getPortfolioInsights(forceRefresh = false): Promise<AiInsights> {
-    return this.getInsights(PORTFOLIO_CACHE_KEY, PORTFOLIO_SYSTEM_PROMPT, buildPortfolioSnapshot, forceRefresh);
+    return this.getInsights(
+      PORTFOLIO_CACHE_KEY,
+      PORTFOLIO_SYSTEM_PROMPT,
+      buildPortfolioSnapshot,
+      forceRefresh,
+    );
   }
 
   private async getInsights(
@@ -218,7 +237,8 @@ export class InsightsService {
       if (cached) return cached;
     }
 
-    const apiKey = import.meta.env?.GEMINI_API_KEY ?? process.env.GEMINI_API_KEY;
+    const apiKey =
+      import.meta.env?.GEMINI_API_KEY ?? process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not configured");
     }
