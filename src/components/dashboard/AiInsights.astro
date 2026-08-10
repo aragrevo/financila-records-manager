@@ -32,7 +32,18 @@ const {
     </button>
   </div>
 
-  <div id="ai-loading" class="p-6 flex items-center gap-3 text-on-surface-variant">
+  <div id="ai-idle" class="p-6 flex flex-col items-center gap-3 text-on-surface-variant">
+    <p class="text-body-md">El análisis de IA se genera solo cuando lo solicitas.</p>
+    <button
+      id="ai-generate"
+      class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-label-caps hover:opacity-90 transition-opacity"
+    >
+      <span class="material-symbols-outlined text-sm">auto_awesome</span>
+      GENERAR ANÁLISIS
+    </button>
+  </div>
+
+  <div id="ai-loading" class="hidden p-6 flex items-center gap-3 text-on-surface-variant">
     <span class="material-symbols-outlined animate-spin">progress_activity</span>
     <span class="text-body-md">Generando análisis de tus fondos...</span>
   </div>
@@ -148,6 +159,7 @@ const {
 
     document.getElementById("ai-loading")!.classList.add("hidden");
     document.getElementById("ai-error")!.classList.add("hidden");
+    document.getElementById("ai-idle")!.classList.add("hidden");
     document.getElementById("ai-content")!.classList.remove("hidden");
   };
 
@@ -156,6 +168,7 @@ const {
     errorEl.textContent = message;
     document.getElementById("ai-loading")!.classList.add("hidden");
     document.getElementById("ai-content")!.classList.add("hidden");
+    document.getElementById("ai-idle")!.classList.add("hidden");
     errorEl.classList.remove("hidden");
   };
 
@@ -166,6 +179,7 @@ const {
     document.getElementById("ai-loading")!.classList.remove("hidden");
     document.getElementById("ai-content")!.classList.add("hidden");
     document.getElementById("ai-error")!.classList.add("hidden");
+    document.getElementById("ai-idle")!.classList.add("hidden");
 
     try {
       const url = refresh ? `${endpoint}?refresh=1` : endpoint;
@@ -178,6 +192,6 @@ const {
     }
   };
 
+  document.getElementById("ai-generate")!.addEventListener("click", () => loadInsights(false));
   document.getElementById("ai-refresh")!.addEventListener("click", () => loadInsights(true));
-  loadInsights();
 </script>
