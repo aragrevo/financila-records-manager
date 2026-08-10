@@ -16,8 +16,8 @@ import {
   hydrateTransactions,
   withAccountNames,
 } from "../lib/queries";
+import { fundGoalsService, type FundGoal } from "./fund-goals.service";
 
-const EMERGENCY_TARGET = 24000000;
 const MOVEMENT_TYPES = ["income", "expense", "transfer", "investment"];
 
 const CATEGORY_META: Record<string, { label: string; color: string }> = {
@@ -73,13 +73,24 @@ export class DashboardService {
     recentMovements: Movement[];
     fundStatus: FundStatus[];
   }> {
-    const [accounts, transactions] = await Promise.all([
+    const [accounts, transactions, goalOverrides] = await Promise.all([
       fetchAllAccounts(),
       this.getTransactions(),
+      fundGoalsService.getOverrides(),
     ]);
 
+    const goalsByCategory = new Map(
+      fundGoalsService
+        .computeGoals(accounts, transactions, goalOverrides)
+        .map((g) => [g.category, g]),
+    );
+
     return {
-      summaryCards: this.buildSummaryCards(accounts, transactions),
+      summaryCards: this.buildSummaryCards(
+        accounts,
+        transactions,
+        goalsByCategory,
+      ),
       chartEntities: this.buildChartEntities(accounts),
       recentMovements: this.buildMovements(transactions.slice(0, 5)).map(
         (m) => ({
@@ -89,7 +100,7 @@ export class DashboardService {
           amount: formatCurrencyCOP(m.amount as number),
         }),
       ),
-      fundStatus: this.buildFundStatus(accounts, transactions),
+      fundStatus: this.buildFundStatus(accounts, transactions, goalsByCategory),
     };
   }
 
@@ -141,14 +152,18 @@ export class DashboardService {
   private buildSummaryCards(
     accounts: Account[],
     transactions: TransactionWithAccount[],
+    goalsByCategory: Map<string, FundGoal>,
   ): SummaryCard[] {
     const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
     const byCategory = sumByCategory(accounts);
 
     const emergencyCurrent = byCategory["emergency"] || 0;
-    const emergencyPct = Math.round(
-      (emergencyCurrent / EMERGENCY_TARGET) * 100,
-    );
+    const emergencyTarget =
+      goalsByCategory.get("emergency")?.target ?? emergencyCurrent;
+    const emergencyPct =
+      emergencyTarget > 0
+        ? Math.round((emergencyCurrent / emergencyTarget) * 100)
+        : 100;
 
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -190,7 +205,7 @@ export class DashboardService {
       {
         title: "Emergency Fund",
         value: emergencyCurrent,
-        subtitle: `Target: ${formatCurrencyCOP(EMERGENCY_TARGET)} (${emergencyPct}%)`,
+        subtitle: `Target: ${formatCurrencyCOP(emergencyTarget)} (${emergencyPct}%)`,
         subtitleType: "neutral" as const,
         icon: "emergency",
         accentColor: "emergency" as const,
@@ -261,6 +276,7 @@ export class DashboardService {
   private buildFundStatus(
     accounts: Account[],
     transactions: TransactionWithAccount[],
+    goalsByCategory: Map<string, FundGoal>,
   ): FundStatus[] {
     const byCategory: Record<
       string,
@@ -279,65 +295,44 @@ export class DashboardService {
       }
     }
 
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    let monthlyIncome = 0;
-    for (const t of transactions) {
-      const d = new Date(t.date);
-      if (
-        t.type === "income" &&
-        d.getMonth() === currentMonth &&
-        d.getFullYear() === currentYear
-      ) {
-        monthlyIncome += t.amount;
-      }
-    }
-
-    const investmentExpected = Math.round(monthlyIncome * 0.1) || 798231;
-    const contingencyExpected = 568611;
-    const retirementExpected = byCategory["retirement"].current;
-
     const institutions = (category: string) =>
       Array.from(byCategory[category].institutions).join(" - ") || "N/A";
 
+    const goal = (category: string): FundGoal =>
+      goalsByCategory.get(category) ?? {
+        category: category as FundGoal["category"],
+        target: byCategory[category].current,
+        source: "formula",
+        formulaTarget: byCategory[category].current,
+        formulaDescription: "",
+      };
+
+    const fund = (
+      category: "emergency" | "investment" | "contingency" | "retirement",
+      name: string,
+      term: string,
+    ): FundStatus => {
+      const g = goal(category);
+      return {
+        name,
+        term,
+        expected: g.target,
+        current: byCategory[category].current,
+        institution: institutions(category),
+        color: category,
+        difference: byCategory[category].current - g.target,
+        category,
+        goalSource: g.source,
+        formulaTarget: g.formulaTarget,
+        formulaDescription: g.formulaDescription,
+      };
+    };
+
     return [
-      {
-        name: "Emergencia",
-        term: "6 meses",
-        expected: EMERGENCY_TARGET,
-        current: byCategory["emergency"].current,
-        institution: institutions("emergency"),
-        color: "emergency",
-        difference: byCategory["emergency"].current - EMERGENCY_TARGET,
-      },
-      {
-        name: "Inversión",
-        term: "10% Save",
-        expected: investmentExpected,
-        current: byCategory["investment"].current,
-        institution: institutions("investment"),
-        color: "investment",
-        difference: byCategory["investment"].current - investmentExpected,
-      },
-      {
-        name: "Imprevistos",
-        term: "Vacaciones",
-        expected: contingencyExpected,
-        current: byCategory["contingency"].current,
-        institution: institutions("contingency"),
-        color: "contingency",
-        difference: byCategory["contingency"].current - contingencyExpected,
-      },
-      {
-        name: "Retiro",
-        term: "Cesantias, Prima",
-        expected: retirementExpected,
-        current: byCategory["retirement"].current,
-        institution: institutions("retirement"),
-        color: "retirement",
-        difference: 0,
-      },
+      fund("emergency", "Emergencia", "6 meses"),
+      fund("investment", "Inversión", "10% Save"),
+      fund("contingency", "Imprevistos", "Vacaciones"),
+      fund("retirement", "Retiro", "Cesantias, Prima"),
     ];
   }
 

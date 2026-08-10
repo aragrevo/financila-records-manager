@@ -42,6 +42,10 @@ export interface FundStatus {
   institution: string;
   color: "emergency" | "investment" | "contingency" | "retirement";
   difference: number;
+  category: "emergency" | "investment" | "contingency" | "retirement";
+  goalSource: "manual" | "formula";
+  formulaTarget: number;
+  formulaDescription: string;
 }
 
 export interface EntitySummary {

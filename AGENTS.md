@@ -55,6 +55,8 @@ Upstash Redis is used for persistent storage. Data structure:
 - `DELETE /api/transactions/[id]` — Delete transaction
 - `GET /api/ai/insights` — AI analysis of funds (Gemini, cached 24h in Redis; `?refresh=1` to force)
 - `GET /api/ai/portfolio-insights` — AI analysis of stock portfolio (Gemini, cached 24h; `?refresh=1` to force)
+- `GET /api/fund-goals` — Fund goal overrides + computed goals (formula defaults)
+- `PUT /api/fund-goals` — Set goal override `{ category, target }` (`target: null` resets to formula)
 
 ## No Tooling
 
@@ -103,6 +105,7 @@ src/
 │   ├── summary.service.ts            # Wealth summary computed data
 │   ├── billing.service.ts            # Billing records data access (Redis)
 │   └── insights.service.ts           # AI insights (Gemini + Redis cache)
+│   └── fund-goals.service.ts         # Fund goals (formula defaults + manual overrides in Redis)
 ├── data/
 │   └── dashboard.ts                  # Dashboard display data (hardcoded)
 └── styles/

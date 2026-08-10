@@ -8,6 +8,11 @@ interface Fund {
   color: 'emergency' | 'investment' | 'contingency' | 'retirement';
   difference: string;
   isNegative: boolean;
+  category: 'emergency' | 'investment' | 'contingency' | 'retirement';
+  goalSource: 'manual' | 'formula';
+  rawExpected: number;
+  formattedFormulaTarget: string;
+  formulaDescription: string;
 }
 
 interface Props {
@@ -50,7 +55,26 @@ const colorClasses = {
               </div>
             </td>
             <td class="px-6 py-4 text-on-surface-variant">{fund.term}</td>
-            <td class="px-6 py-4 text-right font-mono-data">{fund.expected}</td>
+            <td class="px-6 py-4 text-right">
+              <div class="inline-flex items-center gap-2">
+                <span class="font-mono-data">{fund.expected}</span>
+                {fund.goalSource === 'manual' ? (
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary">MANUAL</span>
+                ) : null}
+                <button
+                  class="fund-goal-edit text-on-surface-variant hover:text-primary transition-colors"
+                  title={`Editar meta de ${fund.name}`}
+                  aria-label={`Editar meta de ${fund.name}`}
+                  data-category={fund.category}
+                  data-name={fund.name}
+                  data-expected={fund.rawExpected}
+                  data-formula-target={fund.formattedFormulaTarget}
+                  data-formula-description={fund.formulaDescription}
+                >
+                  <span class="material-symbols-outlined text-base">edit</span>
+                </button>
+              </div>
+            </td>
             <td class="px-6 py-4 text-on-surface-variant text-[11px]">{fund.institution}</td>
             <td class="px-6 py-4 text-right">
               <span class:list={[
@@ -72,3 +96,97 @@ const colorClasses = {
     </table>
   </div>
 </div>
+
+<div
+  id="fund-goal-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
+>
+  <div class="w-full max-w-md rounded-xl bg-surface shadow-xl">
+    <div class="flex items-center justify-between border-b border-outline-variant p-6">
+      <h3 id="fund-goal-title" class="text-headline-md font-headline-md text-on-surface">Meta del fondo</h3>
+      <button id="fund-goal-close" class="text-on-surface-variant hover:text-on-surface" aria-label="Cerrar">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <form id="fund-goal-form" class="space-y-4 p-6">
+      <input type="hidden" id="fund-goal-category" />
+      <div>
+        <label for="fund-goal-target" class="mb-1 block text-label-md text-on-surface-variant">Meta (COP)</label>
+        <input
+          id="fund-goal-target"
+          type="number"
+          min="0"
+          step="1"
+          required
+          class="w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2 font-mono-data"
+        />
+      </div>
+      <p id="fund-goal-formula-hint" class="text-body-sm text-on-surface-variant"></p>
+      <div class="flex gap-3 pt-2">
+        <button
+          type="button"
+          id="fund-goal-reset"
+          class="flex-1 rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface hover:bg-surface-container transition-colors"
+        >
+          Usar fórmula
+        </button>
+        <button
+          type="submit"
+          class="flex-1 rounded-lg bg-primary px-4 py-2 font-bold text-on-primary hover:opacity-90 transition-opacity"
+        >
+          Guardar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const modal = document.getElementById("fund-goal-modal")!;
+  const titleEl = document.getElementById("fund-goal-title")!;
+  const categoryInput = document.getElementById("fund-goal-category") as HTMLInputElement;
+  const targetInput = document.getElementById("fund-goal-target") as HTMLInputElement;
+  const formulaHint = document.getElementById("fund-goal-formula-hint")!;
+
+  const openModal = (button: HTMLButtonElement) => {
+    titleEl.textContent = `Meta del fondo: ${button.dataset.name}`;
+    categoryInput.value = button.dataset.category || "";
+    targetInput.value = button.dataset.expected || "0";
+    formulaHint.textContent = `Fórmula actual: ${button.dataset.formulaTarget} (${button.dataset.formulaDescription})`;
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+    targetInput.focus();
+    targetInput.select();
+  };
+
+  const closeModal = () => {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  };
+
+  const saveGoal = async (target: number | null) => {
+    await fetch("/api/fund-goals", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category: categoryInput.value, target }),
+    });
+    window.location.reload();
+  };
+
+  document.querySelectorAll<HTMLButtonElement>(".fund-goal-edit").forEach((button) => {
+    button.addEventListener("click", () => openModal(button));
+  });
+
+  document.getElementById("fund-goal-close")!.addEventListener("click", closeModal);
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) closeModal();
+  });
+
+  document.getElementById("fund-goal-form")!.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const value = Number(targetInput.value);
+    if (Number.isFinite(value) && value >= 0) saveGoal(value);
+  });
+
+  document.getElementById("fund-goal-reset")!.addEventListener("click", () => saveGoal(null));
+</script>

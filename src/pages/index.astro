@@ -17,6 +17,8 @@ const formattedFundStatus = fundStatus.map((fund) => ({
   current: formatCurrencyCOP(fund.current),
   difference: formatCurrencyCOP(fund.difference),
   isNegative: fund.difference < 0,
+  rawExpected: fund.expected,
+  formattedFormulaTarget: formatCurrencyCOP(fund.formulaTarget),
 }));
 ---
 
