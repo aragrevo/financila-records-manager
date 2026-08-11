@@ -13,12 +13,8 @@ const {
   queryParam = "page",
 } = Astro.props;
 
-const maxVisiblePages = 3;
-const startPage = Math.max(
-  1,
-  Math.min(currentPage - 1, totalPages - maxVisiblePages + 1),
-);
-const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+const startPage = 1;
+const endPage = totalPages;
 const pages = Array.from(
   { length: Math.max(0, endPage - startPage + 1) },
   (_, i) => startPage + i,
@@ -45,6 +41,8 @@ const buildPageHref = (page: number) => {
   <div class="flex gap-2">
     <a
       href={buildPageHref(Math.max(1, currentPage - 1))}
+      data-pagination-page={Math.max(1, currentPage - 1)}
+      data-pagination-direction="previous"
       aria-disabled={currentPage <= 1}
       class:list={[
         "px-2 py-1 border border-outline-variant rounded-lg text-label-caps transition-colors",
@@ -59,6 +57,8 @@ const buildPageHref = (page: number) => {
       pages.map((page) => (
         <a
           href={buildPageHref(page)}
+          data-pagination-page={page}
+          data-pagination-number
           aria-current={page === currentPage ? "page" : undefined}
           class:list={[
             "px-4 py-2 rounded-lg text-label-caps",
@@ -73,6 +73,8 @@ const buildPageHref = (page: number) => {
     }
     <a
       href={buildPageHref(Math.min(totalPages, currentPage + 1))}
+      data-pagination-page={Math.min(totalPages, currentPage + 1)}
+      data-pagination-direction="next"
       aria-disabled={currentPage >= totalPages}
       class:list={[
         "p-1 border border-outline-variant rounded-lg text-label-caps transition-colors",
@@ -85,6 +87,6 @@ const buildPageHref = (page: number) => {
     </a>
   </div>
   <div class="text-label-caps font-label-caps text-on-surface-variant">
-    Página {currentPage} de {totalPages}
+    <span id="pagination-status">Página {currentPage} de {totalPages}</span>
   </div>
 </div>

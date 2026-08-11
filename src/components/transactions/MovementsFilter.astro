@@ -8,30 +8,8 @@ interface Props {
 const { accounts, types, totalRecords } = Astro.props;
 ---
 
-<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 mb-6 flex flex-wrap gap-4 items-center">
-  <div class="flex items-center gap-2">
-    <label class="text-label-caps font-label-caps text-on-surface-variant">Cuenta:</label>
-    <select class="bg-surface border border-outline-variant rounded-lg px-3 py-1.5 text-table-data font-table-data focus:ring-1 focus:ring-primary outline-none">
-      <option>Todas las cuentas</option>
-      {accounts.map((acc) => (
-        <option>{acc}</option>
-      ))}
-    </select>
-  </div>
-  <div class="flex items-center gap-2">
-    <label class="text-label-caps font-label-caps text-on-surface-variant">Tipo:</label>
-    <select class="bg-surface border border-outline-variant rounded-lg px-3 py-1.5 text-table-data font-table-data focus:ring-1 focus:ring-primary outline-none">
-      <option>Todos los tipos</option>
-      {types.map((type) => (
-        <option>{type}</option>
-      ))}
-    </select>
-  </div>
-  <div class="flex items-center gap-2">
-    <label class="text-label-caps font-label-caps text-on-surface-variant">Rango:</label>
-    <input class="bg-surface border border-outline-variant rounded-lg px-3 py-1.5 text-table-data font-table-data" type="date" />
-  </div>
-  <div class="ml-auto">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 mb-6 flex justify-end">
+  <div>
     <span class="text-body-md font-body-md text-on-surface-variant">Mostrando {totalRecords} registros</span>
   </div>
 </div>

@@ -4,22 +4,20 @@ import MovementsFilter from "../components/transactions/MovementsFilter.astro";
 import MovementsTable from "../components/transactions/MovementsTable.astro";
 import Pagination from "../components/transactions/Pagination.astro";
 import { dashboardService } from "../services/dashboard.service";
-import { formatCurrencyCOP } from "../utils/format";
 import { TRANSACTION_TYPES, ACCOUNT_CATEGORIES } from "../lib/constants";
 
 const { movements, accounts, types } =
   await dashboardService.getHistoryPageData();
 
-const formattedMovements = movements.map((mov) => ({
-  ...mov,
-  amount:
-    mov.amount < 0
-      ? `- $ ${formatCurrencyCOP(Math.abs(mov.amount)).replace("$", "").trim()}`
-      : `$ ${formatCurrencyCOP(mov.amount).replace("$", "").trim()}`,
-  isNegative: mov.amount < 0,
-  type: mov.type,
-  category: mov.category,
-}));
+const pageSize = 10;
+const requestedPage = Number.parseInt(
+  Astro.url.searchParams.get("page") ?? "1",
+  10,
+);
+const totalPages = Math.max(1, Math.ceil(movements.length / pageSize));
+const currentPage = Number.isFinite(requestedPage)
+  ? Math.min(Math.max(requestedPage, 1), totalPages)
+  : 1;
 ---
 
 <Layout title="Movimientos" activePage="history">
@@ -50,21 +48,11 @@ const formattedMovements = movements.map((mov) => ({
     </div>
   </div>
 
-  <!-- Filter Bar -->
-  <MovementsFilter
-    accounts={accounts}
-    types={types}
-    totalRecords={formattedMovements.length}
-  />
-
   <!-- Data Table -->
   <MovementsTable movements={movements} />
 
   <!-- Pagination -->
-  <Pagination
-    currentPage={1}
-    totalPages={Math.ceil(formattedMovements.length / 10)}
-  />
+  <Pagination currentPage={currentPage} totalPages={totalPages} />
 
   <!-- Create Transaction Modal -->
   <div
@@ -334,4 +322,144 @@ const formattedMovements = movements.map((mov) => ({
       alert("Error de conexión");
     }
   });
+
+  const movementRows = Array.from(
+    document.querySelectorAll<HTMLElement>(".movement-row"),
+  );
+  const paginationLinks = Array.from(
+    document.querySelectorAll<HTMLAnchorElement>("[data-pagination-page]"),
+  );
+  const paginationNumbers = Array.from(
+    document.querySelectorAll<HTMLAnchorElement>("[data-pagination-number]"),
+  );
+  const paginationControls = Array.from(
+    document.querySelectorAll<HTMLAnchorElement>("[data-pagination-direction]"),
+  );
+  const movementFilters = Array.from(
+    document.querySelectorAll<HTMLInputElement>(
+      "[data-movement-filter-option]",
+    ),
+  );
+  const movementFilterCounts = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-movement-filter-count]"),
+  );
+  const movementFilterMenus = Array.from(
+    document.querySelectorAll<HTMLDetailsElement>(
+      "[data-movement-filter-menu]",
+    ),
+  );
+  const paginationStatus = document.getElementById("pagination-status");
+  const pageSize = 10;
+  let filteredRows = movementRows;
+  let totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  let currentPage = Number.parseInt(
+    new URLSearchParams(window.location.search).get("page") ?? "1",
+    10,
+  );
+  currentPage = Number.isFinite(currentPage)
+    ? Math.min(Math.max(currentPage, 1), totalPages)
+    : 1;
+
+  function renderPage(page: number) {
+    currentPage = Math.min(Math.max(page, 1), totalPages);
+    filteredRows.forEach((row, index) => {
+      row.hidden =
+        index < (currentPage - 1) * pageSize || index >= currentPage * pageSize;
+    });
+    movementRows
+      .filter((row) => !filteredRows.includes(row))
+      .forEach((row) => (row.hidden = true));
+
+    paginationNumbers.forEach((link) => {
+      const linkPage = Number(link.dataset.paginationPage);
+      const isCurrent = linkPage === currentPage;
+      link.hidden = linkPage > totalPages;
+      link.toggleAttribute("aria-current", isCurrent);
+      link.classList.toggle("bg-primary", isCurrent);
+      link.classList.toggle("text-on-primary", isCurrent);
+      link.classList.toggle("border", !isCurrent);
+    });
+
+    paginationControls.forEach((link) => {
+      const direction = link.dataset.paginationDirection;
+      const targetPage =
+        direction === "previous"
+          ? Math.max(1, currentPage - 1)
+          : Math.min(totalPages, currentPage + 1);
+      const isDisabled =
+        direction === "previous"
+          ? currentPage === 1
+          : currentPage === totalPages;
+      link.dataset.paginationPage = String(targetPage);
+      link.setAttribute("aria-disabled", String(isDisabled));
+      link.classList.toggle("opacity-50", isDisabled);
+      link.classList.toggle("pointer-events-none", isDisabled);
+    });
+
+    if (paginationStatus) {
+      paginationStatus.textContent = `Página ${currentPage} de ${totalPages}`;
+    }
+  }
+
+  function applyFilters() {
+    const selected = new Map<string, Set<string>>();
+    movementFilters.forEach((filter) => {
+      const key = filter.dataset.movementFilterOption;
+      if (!key || !filter.checked) return;
+      if (!selected.has(key)) selected.set(key, new Set());
+      selected.get(key)?.add(filter.value);
+    });
+    filteredRows = movementRows.filter((row) =>
+      (["account", "type", "category"] as const).every((key) => {
+        const values = selected.get(key);
+        return !values?.size || values.has(row.dataset[key] ?? "");
+      }),
+    );
+    movementFilterCounts.forEach((count) => {
+      count.textContent = String(
+        selected.get(count.dataset.movementFilterCount ?? "")?.size ?? 0,
+      );
+    });
+    totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+    renderPage(1);
+  }
+
+  paginationLinks.forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      const page = Number(link.dataset.paginationPage);
+      if (page >= 1 && page <= totalPages && page !== currentPage) {
+        renderPage(page);
+        window.history.replaceState({}, "", link.href);
+      }
+    });
+  });
+
+  movementFilters.forEach((filter) => {
+    filter.addEventListener("change", applyFilters);
+  });
+
+  movementFilterMenus.forEach((menu) => {
+    const panel = menu.querySelector<HTMLElement>(":scope > div");
+    const summary = menu.querySelector<HTMLElement>(":scope > summary");
+    if (!panel || !summary) return;
+
+    menu.addEventListener("toggle", () => {
+      if (!menu.open) {
+        panel.style.position = "";
+        panel.style.top = "";
+        panel.style.left = "";
+        panel.style.right = "";
+        return;
+      }
+
+      const bounds = summary.getBoundingClientRect();
+      panel.style.position = "fixed";
+      panel.style.top = `${bounds.bottom + 8}px`;
+      panel.style.left = `${Math.max(8, bounds.left)}px`;
+      panel.style.right = "auto";
+    });
+  });
+
+  renderPage(currentPage);
 </script>

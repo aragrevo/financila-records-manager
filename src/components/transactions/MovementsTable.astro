@@ -17,6 +17,11 @@ interface Props {
 }
 
 const { movements } = Astro.props;
+const accounts = [...new Set(movements.map((movement) => movement.account))].sort();
+const types = [...new Set(movements.map((movement) => movement.type))].sort();
+const categories = [
+  ...new Set(movements.map((movement) => movement.category)),
+].sort();
 
 const typeStyles: Record<string, string> = {
   income: "bg-emerald-100 text-emerald-800 border border-emerald-200",
@@ -52,22 +57,70 @@ const categoryStyles: Record<string, string> = {
               >arrow_downward</span
             >
           </th>
-          <th
-            class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant"
-            >Cuenta</th
-          >
-          <th
-            class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant"
-            >Tipo</th
-          >
+          <th class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant">
+            <details class="relative inline-block text-left" data-movement-filter-menu>
+              <summary class="flex cursor-pointer list-none items-center gap-1">
+                <span>Cuenta</span>
+                <span class="rounded-full bg-surface-container px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant" data-movement-filter-count="account">0</span>
+                <span class="material-symbols-outlined text-sm text-on-surface-variant">filter_list</span>
+              </summary>
+              <div class="absolute left-0 z-20 mt-2 w-52 rounded-xl border border-outline-variant bg-surface p-3 normal-case shadow-lg">
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">Filtrar cuentas</p>
+                <div class="space-y-2">
+                  {accounts.map((account) => (
+                    <label class="flex items-center gap-2 text-sm font-normal text-on-surface">
+                      <input type="checkbox" value={account} class="h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary" data-movement-filter-option="account" />
+                      <span>{account}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </details>
+          </th>
+          <th class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant">
+            <details class="relative inline-block text-left" data-movement-filter-menu>
+              <summary class="flex cursor-pointer list-none items-center gap-1">
+                <span>Tipo</span>
+                <span class="rounded-full bg-surface-container px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant" data-movement-filter-count="type">0</span>
+                <span class="material-symbols-outlined text-sm text-on-surface-variant">filter_list</span>
+              </summary>
+              <div class="absolute left-0 z-20 mt-2 w-52 rounded-xl border border-outline-variant bg-surface p-3 normal-case shadow-lg">
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">Filtrar tipos</p>
+                <div class="space-y-2">
+                  {types.map((type) => (
+                    <label class="flex items-center gap-2 text-sm font-normal text-on-surface">
+                      <input type="checkbox" value={type} class="h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary" data-movement-filter-option="type" />
+                      <span>{TRANSACTION_TYPES[type as keyof typeof TRANSACTION_TYPES] || type}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </details>
+          </th>
           <th
             class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant"
             >Descripción</th
           >
-          <th
-            class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant"
-            >Categoría</th
-          >
+          <th class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant">
+            <details class="relative inline-block text-left" data-movement-filter-menu>
+              <summary class="flex cursor-pointer list-none items-center gap-1">
+                <span>Categoría</span>
+                <span class="rounded-full bg-surface-container px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant" data-movement-filter-count="category">0</span>
+                <span class="material-symbols-outlined text-sm text-on-surface-variant">filter_list</span>
+              </summary>
+              <div class="absolute right-0 z-20 mt-2 w-52 rounded-xl border border-outline-variant bg-surface p-3 normal-case shadow-lg">
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">Filtrar categorías</p>
+                <div class="space-y-2">
+                  {categories.map((category) => (
+                    <label class="flex items-center gap-2 text-sm font-normal text-on-surface">
+                      <input type="checkbox" value={category} class="h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary" data-movement-filter-option="category" />
+                      <span>{ACCOUNT_CATEGORIES[category as keyof typeof ACCOUNT_CATEGORIES] || category}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </details>
+          </th>
           <th
             class="px-6 py-4 text-label-caps font-label-caps text-on-surface-variant text-right"
             >Valor</th
@@ -78,7 +131,12 @@ const categoryStyles: Record<string, string> = {
       <tbody class="divide-y divide-outline-variant">
         {
           movements.map((mov) => (
-            <tr class="hover:bg-surface-container transition-colors group">
+            <tr
+              class="movement-row hover:bg-surface-container transition-colors group"
+              data-account={mov.account}
+              data-type={mov.type}
+              data-category={mov.category}
+            >
               <td class="px-6 py-4 text-mono-data font-table-data">
                 {mov.date}
               </td>
