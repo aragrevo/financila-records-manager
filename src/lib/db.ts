@@ -24,4 +24,9 @@ export const KEYS = {
   BILLING_BALANCE_SNAPSHOT: 'billing-balance-snapshot',
   BILLING_BALANCE_SNAPSHOTS_INDEX: 'billing-balance-snapshots:index',
   BILLING_SEED_VERSION: 'billing:seed-version',
+  EXPENSE: 'expense',
+  EXPENSES_INDEX: 'expenses:index',
+  EXPENSES_BY_DATE: 'expenses:by-date',
+  EXPENSE_SETTINGS: 'expenses:settings',
+  NOTIFICATION_LOG: 'notification-log',
 } as const;

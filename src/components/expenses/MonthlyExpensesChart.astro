@@ -1,0 +1,150 @@
+---
+import { EXPENSE_CATEGORY_COLORS } from "../../lib/expense-constants";
+
+interface SummaryRow {
+  category: string;
+  values: Record<string, number>;
+  total: number;
+}
+
+interface Props {
+  months: string[];
+  summary: SummaryRow[];
+  monthTotals: Record<string, number>;
+  monthLabel: (month: string) => string;
+  money: (amount: number) => string;
+}
+
+const { months, summary, monthTotals, monthLabel, money } = Astro.props;
+const chartMonths = [...months].slice(0, 12).reverse();
+const maxTotal = Math.max(
+  1,
+  ...chartMonths.map((month) => Math.abs(monthTotals[month] ?? 0)),
+);
+const visibleCategories = summary.filter((row) =>
+  chartMonths.some((month) => Math.abs(row.values[month] ?? 0) > 0),
+);
+---
+
+<div class="p-5 sm:p-6">
+  <div
+    class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
+  >
+    <div>
+      <h3 class="text-headline-md font-headline-md text-on-surface">
+        Evolución de gastos
+      </h3>
+      <p class="text-sm text-on-surface-variant">
+        Total mensual y composición por categoría.
+      </p>
+    </div>
+    <span
+      class="inline-flex w-fit items-center gap-2 rounded-full bg-surface-container-low px-3 py-1 text-xs text-on-surface-variant"
+    >
+      <span class="h-2 w-2 rounded-full bg-primary"></span>Más reciente a la
+      derecha
+    </span>
+  </div>
+
+  {
+    chartMonths.length > 0 ? (
+      <div class="overflow-y-visible pb-2">
+        <div class="flex min-w-[620px] items-end gap-3" style="height: 270px">
+          {chartMonths.map((month, monthIndex) => {
+            const total = monthTotals[month] ?? 0;
+            return (
+              <div class="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
+                <div class="flex h-8 flex-col items-center justify-end text-center">
+                  <span class="font-mono text-xs font-bold text-on-surface">
+                    {money(total)}
+                  </span>
+                </div>
+                <div
+                  class="monthly-expense-bar group relative flex w-full max-w-[58px] flex-col-reverse overflow-visible"
+                  style={`height: ${Math.max(4, (Math.abs(total) / maxTotal) * 190)}px`}
+                >
+                  <div class="flex h-full w-full flex-col-reverse overflow-hidden rounded-t-lg bg-surface-container-high">
+                    {visibleCategories.map((row, categoryIndex) => {
+                      const value = row.values[month] ?? 0;
+                      return value !== 0 ? (
+                        <div
+                          style={`height: ${(Math.abs(value) / Math.abs(total || 1)) * 100}%; background-color: ${EXPENSE_CATEGORY_COLORS[row.category] || "#64748b"}`}
+                        />
+                      ) : null;
+                    })}
+                  </div>
+                  <div class="monthly-expense-tooltip pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-44 -translate-x-1/2 rounded-lg bg-on-surface p-3 text-left text-white shadow-lg">
+                    <p class="mb-2 border-b border-white/20 pb-2 text-xs font-bold uppercase tracking-wide">
+                      {monthLabel(month)}
+                    </p>
+                    <p class="mb-2 flex justify-between gap-3 font-mono text-sm font-bold">
+                      <span>Total</span>
+                      <span>{money(total)}</span>
+                    </p>
+                    <div class="grid gap-1">
+                      {visibleCategories.map((row, categoryIndex) => {
+                        const value = row.values[month] ?? 0;
+                        return value !== 0 ? (
+                          <p class="flex justify-between gap-3 text-[11px]">
+                            <span class="flex items-center gap-1.5">
+                              <span
+                                class="h-2 w-2 rounded-sm"
+                                style={`background-color: ${EXPENSE_CATEGORY_COLORS[row.category] || "#64748b"}`}
+                              />
+                              {row.category}
+                            </span>
+                            <span class="font-mono">{money(value)}</span>
+                          </p>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <span class="text-center text-[11px] font-semibold text-on-surface-variant">
+                  {monthLabel(month)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    ) : (
+      <p class="py-12 text-center text-sm text-on-surface-variant">
+        Aún no hay gastos registrados.
+      </p>
+    )
+  }
+
+  <div
+    class="mt-6 flex flex-wrap gap-x-4 gap-y-2 border-t border-outline-variant pt-4"
+  >
+    {
+      visibleCategories.map((row, index) => (
+        <span class="inline-flex items-center gap-2 text-xs text-on-surface-variant">
+          <span
+            class="h-2.5 w-2.5 rounded-sm"
+            style={`background-color: ${EXPENSE_CATEGORY_COLORS[row.category] || "#64748b"}`}
+          />
+          {row.category}
+        </span>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .monthly-expense-tooltip {
+    opacity: 0;
+    bottom: 0;
+    transform: translate(-50%, 4px);
+    transition:
+      opacity 150ms ease,
+      transform 150ms ease;
+  }
+
+  .monthly-expense-bar:hover .monthly-expense-tooltip,
+  .monthly-expense-bar:focus-within .monthly-expense-tooltip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+</style>

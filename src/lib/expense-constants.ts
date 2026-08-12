@@ -1,0 +1,31 @@
+export const EXPENSE_CATEGORIES = [
+  "Buy",
+  "Carro",
+  "Colombia",
+  "Datos",
+  "Deuda",
+  "Gastos",
+  "Madrid",
+  "Novobanco",
+  "NU",
+  "Other",
+  "Pension",
+  "Porto",
+  "Sueldo",
+] as const;
+
+export const EXPENSE_CATEGORY_COLORS: Record<string, string> = {
+  Buy: "#2563eb",
+  Carro: "#16a34a",
+  Colombia: "#dc2626",
+  Datos: "#eab308",
+  Deuda: "#7c3aed",
+  Gastos: "#0891b2",
+  Madrid: "#ea580c",
+  Novobanco: "#db2777",
+  NU: "#4f46e5",
+  Other: "#64748b",
+  Pension: "#059669",
+  Porto: "#c026d3",
+  Sueldo: "#ca8a04",
+};

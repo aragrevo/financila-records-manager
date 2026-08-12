@@ -36,6 +36,28 @@ export interface Transaction {
   createdAt: string;
 }
 
+export interface Expense {
+  id: string;
+  userId: string;
+  date: string;
+  amount: number;
+  currency: string;
+  description: string;
+  category: string;
+  status: "active" | "deleted";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExpenseSettings {
+  currency: string;
+  recipientEmail: string;
+  notificationsEnabled: boolean;
+  notifyOnCreate: boolean;
+  notifyOnUpdate: boolean;
+  notifyOnDelete: boolean;
+}
+
 export interface TransactionWithAccount extends Transaction {
   accountName: string;
 }

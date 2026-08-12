@@ -24,6 +24,24 @@ pnpm dev
 
 Open `http://localhost:4321` in your browser.
 
+## Expense Email Notifications
+
+The independent `/expenses` module supports automatic email notifications for
+created, edited, and deleted expenses. Configure Resend on the server with:
+
+```text
+RESEND_API_KEY=...
+NOTIFICATION_FROM_EMAIL=Finance <notifications@your-domain.com>
+```
+
+Both variables are required. The sender domain must be verified in Resend (or
+use `onboarding@resend.dev` for Resend's restricted testing mode).
+
+Then open the expense configuration panel to set recipient email, currency, and
+which events should send notifications. Expenses remain saved if email delivery
+fails. The notification service is channel-based so WhatsApp, Telegram, or SMS
+can be added later.
+
 ## Commands
 
 | Command | Action |
