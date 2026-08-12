@@ -17,7 +17,9 @@ const {
   data-endpoint={endpoint}
   class="mt-gutter bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden"
 >
-  <div class="p-6 border-b border-outline-variant bg-surface-container-low/50 flex items-center justify-between">
+  <div
+    class="p-6 border-b border-outline-variant bg-surface-container-low/50 flex items-center justify-between"
+  >
     <div class="flex items-center gap-2">
       <span class="material-symbols-outlined text-primary">{icon}</span>
       <h3 class="text-headline-md font-headline-md text-primary">{title}</h3>
@@ -32,8 +34,13 @@ const {
     </button>
   </div>
 
-  <div id="ai-idle" class="p-6 flex flex-col items-center gap-3 text-on-surface-variant">
-    <p class="text-body-md">El análisis de IA se genera solo cuando lo solicitas.</p>
+  <div
+    id="ai-idle"
+    class="p-6 flex flex-col items-center gap-3 text-on-surface-variant"
+  >
+    <p class="text-body-md">
+      El análisis de IA se genera solo cuando lo solicitas.
+    </p>
     <button
       id="ai-generate"
       class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-lg font-bold text-label-caps hover:opacity-90 transition-opacity"
@@ -43,59 +50,136 @@ const {
     </button>
   </div>
 
-  <div id="ai-loading" class="hidden p-6 flex items-center gap-3 text-on-surface-variant">
-    <span class="material-symbols-outlined animate-spin">progress_activity</span>
+  <div
+    id="ai-loading"
+    class="hidden p-6 flex items-center gap-3 text-on-surface-variant"
+  >
+    <span class="material-symbols-outlined animate-spin">progress_activity</span
+    >
     <span class="text-body-md">Generando análisis de tus fondos...</span>
   </div>
 
   <div id="ai-error" class="hidden p-6 text-body-md text-red-600"></div>
 
-  <div id="ai-content" class="hidden">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter p-6">
-      <!-- Score -->
-      <div class="flex flex-col items-center justify-center gap-2 p-6 rounded-lg bg-surface-container-low">
-        <div class="relative w-28 h-28">
-          <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
-            <circle cx="50" cy="50" r="42" fill="none" stroke-width="10" class="stroke-outline-variant" />
-            <circle
-              id="ai-score-ring"
-              cx="50"
-              cy="50"
-              r="42"
-              fill="none"
-              stroke-width="10"
-              stroke-linecap="round"
-              stroke-dasharray="263.9"
-              stroke-dashoffset="263.9"
-              class="stroke-primary transition-all duration-700"
-            />
-          </svg>
-          <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <span id="ai-score" class="text-headline-lg font-headline-lg text-primary font-mono-data">--</span>
-            <span class="text-label-caps font-label-caps text-on-surface-variant">/ 100</span>
+  <div id="ai-content" class="hidden p-4 sm:p-6">
+    <section
+      class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 sm:p-6"
+    >
+      <div class="grid grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_360px]">
+        <div>
+          <div class="mb-4 flex items-center gap-3">
+            <span
+              class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary"
+            >
+              <span class="material-symbols-outlined text-3xl">favorite</span>
+            </span>
+            <div>
+              <h4 class="text-2xl font-bold tracking-tight text-primary">
+                SALUD FINANCIERA
+              </h4>
+            </div>
+          </div>
+          <div class="rounded-xl bg-black/5 p-5 shadow-sm">
+            <p class="text-label-caps font-label-caps opacity-80">
+              ANÁLISIS GENERAL
+            </p>
+            <p id="ai-summary" class="mt-2 text-body-md leading-relaxed"></p>
           </div>
         </div>
-        <span id="ai-score-label" class="text-label-caps font-label-caps text-on-surface-variant"></span>
-        <p id="ai-summary" class="text-body-sm text-on-surface-variant text-center mt-2"></p>
-      </div>
 
-      <!-- Observations -->
-      <div class="p-6 rounded-lg bg-surface-container-low">
-        <h4 class="text-label-caps font-label-caps text-on-surface-variant mb-4">OBSERVACIONES</h4>
-        <ul id="ai-observations" class="space-y-3"></ul>
+        <div
+          class="rounded-xl border border-outline-variant bg-surface p-5 text-center"
+        >
+          <h4 class="text-lg font-bold text-primary">
+            ÍNDICE DE SALUD FINANCIERA
+          </h4>
+          <div class="relative mx-auto mt-3 h-36 w-60">
+            <svg
+              viewBox="0 0 200 120"
+              class="h-full w-full"
+              role="img"
+              aria-label="Índice de salud financiera"
+            >
+              <path
+                d="M 14 100 A 86 86 0 0 1 52 28"
+                fill="none"
+                stroke="#ff3b30"
+                stroke-width="16"></path>
+              <path
+                d="M 52 28 A 86 86 0 0 1 128 20"
+                fill="none"
+                stroke="#ffb21c"
+                stroke-width="16"></path>
+              <path
+                d="M 128 20 A 86 86 0 0 1 186 100"
+                fill="none"
+                stroke="#83bd32"
+                stroke-width="16"></path>
+              <path
+                id="ai-score-needle"
+                d="M 100 24 L 107 38 Q 100 47 93 38 Z"
+                fill="#0f172a"
+                stroke="#0f172a"
+                stroke-width="2"
+                stroke-linejoin="round"
+                stroke-linecap="round"></path>
+            </svg>
+            <div class="absolute inset-x-0 bottom-2 flex flex-col items-center">
+              <span
+                id="ai-score"
+                class="text-4xl font-bold leading-none text-primary font-mono-data"
+                >--</span
+              >
+              <span class="text-xs font-bold text-on-surface-variant">/100</span
+              >
+            </div>
+          </div>
+          <span
+            id="ai-score-label"
+            class="inline-flex min-w-28 justify-center rounded-full bg-lime-100 px-5 py-1 text-sm font-bold uppercase text-lime-700"
+          ></span>
+        </div>
       </div>
+    </section>
 
-      <!-- Recommendations -->
-      <div class="p-6 rounded-lg bg-surface-container-low">
-        <h4 class="text-label-caps font-label-caps text-on-surface-variant mb-4">RECOMENDACIONES</h4>
-        <ul id="ai-recommendations" class="space-y-4"></ul>
+    <section
+      class="mt-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 sm:p-6"
+    >
+      <div class="mb-4 flex items-center gap-3">
+        <span
+          class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700"
+        >
+          <span class="material-symbols-outlined">visibility</span>
+        </span>
+        <h4 class="text-xl font-bold text-primary">OBSERVACIONES CLAVE</h4>
       </div>
-    </div>
-    <div class="px-6 pb-4 flex items-center justify-between">
+      <ul id="ai-observations" class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      </ul>
+    </section>
+
+    <section
+      class="mt-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 sm:p-6"
+    >
+      <div class="mb-4 flex items-center gap-3">
+        <span
+          class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary"
+        >
+          <span class="material-symbols-outlined">track_changes</span>
+        </span>
+        <h4 class="text-xl font-bold text-primary">RECOMENDACIONES</h4>
+      </div>
+      <ul id="ai-recommendations" class="space-y-3"></ul>
+    </section>
+
+    <div
+      class="flex flex-col gap-2 px-1 pt-4 sm:flex-row sm:items-center sm:justify-between"
+    >
       <p class="text-body-xs text-on-surface-variant italic">
         Generado por IA. No constituye asesoría financiera.
       </p>
-      <span id="ai-generated-at" class="text-body-xs text-on-surface-variant font-mono-data"></span>
+      <span
+        id="ai-generated-at"
+        class="text-body-xs text-on-surface-variant font-mono-data"></span>
     </div>
   </div>
 </div>
@@ -125,30 +209,94 @@ const {
     document.getElementById("ai-score")!.textContent = String(score);
     document.getElementById("ai-score-label")!.textContent = data.healthLabel;
     document.getElementById("ai-summary")!.textContent = data.summary;
+    const needle = document.getElementById("ai-score-needle")!;
+    const angle = Math.PI - (score / 100) * Math.PI;
+    const innerRadius = 76;
+    const outerRadius = 104;
+    const point = (radius: number) => ({
+      x: 100 + radius * Math.cos(angle),
+      y: 100 - radius * Math.sin(angle),
+    });
+    const inner = point(innerRadius);
+    const outer = point(outerRadius);
+    const perpendicular = {
+      x: Math.sin(angle),
+      y: Math.cos(angle),
+    };
+    const baseHalfWidth = 7;
+    const tipHalfWidth = 1;
+    const baseLeft = {
+      x: inner.x - perpendicular.x * baseHalfWidth,
+      y: inner.y - perpendicular.y * baseHalfWidth,
+    };
+    const baseRight = {
+      x: inner.x + perpendicular.x * baseHalfWidth,
+      y: inner.y + perpendicular.y * baseHalfWidth,
+    };
+    const tipLeft = {
+      x: outer.x - perpendicular.x * tipHalfWidth,
+      y: outer.y - perpendicular.y * tipHalfWidth,
+    };
+    const tipRight = {
+      x: outer.x + perpendicular.x * tipHalfWidth,
+      y: outer.y + perpendicular.y * tipHalfWidth,
+    };
+    const belly = {
+      x: inner.x - perpendicular.x * 0 - Math.cos(angle) * 9,
+      y: inner.y + Math.sin(angle) * 9,
+    };
+    needle.setAttribute(
+      "d",
+      `M ${tipLeft.x.toFixed(2)} ${tipLeft.y.toFixed(2)} ` +
+        `L ${baseLeft.x.toFixed(2)} ${baseLeft.y.toFixed(2)} ` +
+        `Q ${belly.x.toFixed(2)} ${belly.y.toFixed(2)} ${baseRight.x.toFixed(2)} ${baseRight.y.toFixed(2)} ` +
+        `L ${tipRight.x.toFixed(2)} ${tipRight.y.toFixed(2)} Z`,
+    );
 
-    const circumference = 2 * Math.PI * 42;
-    const ring = document.getElementById("ai-score-ring")!;
-    ring.setAttribute("stroke-dashoffset", String(circumference * (1 - score / 100)));
-
-    document.getElementById("ai-observations")!.innerHTML = (data.observations || [])
+    document.getElementById("ai-observations")!.innerHTML = (
+      data.observations || []
+    )
       .map((o: any) => {
         const meta = SENTIMENT_META[o.sentiment] || SENTIMENT_META.info;
-        return `<li class="flex items-start gap-2">
-          <span class="material-symbols-outlined text-base ${meta.className}">${meta.icon}</span>
-          <span class="text-body-sm text-on-surface">${escapeHtml(o.text)}</span>
+        const cardClass =
+          o.sentiment === "warning"
+            ? "border-amber-200 bg-amber-50/60"
+            : o.sentiment === "positive"
+              ? "border-emerald-200 bg-emerald-50/60"
+              : "border-blue-200 bg-blue-50/60";
+        return `<li class="flex items-start gap-3 rounded-xl border p-4 ${cardClass}">
+          <span class="material-symbols-outlined mt-0.5 text-xl ${meta.className}">${meta.icon}</span>
+          <span class="text-body-sm leading-relaxed text-on-surface">${escapeHtml(o.text)}</span>
         </li>`;
       })
       .join("");
 
-    document.getElementById("ai-recommendations")!.innerHTML = (data.recommendations || [])
+    document.getElementById("ai-recommendations")!.innerHTML = (
+      data.recommendations || []
+    )
       .map((r: any) => {
         const meta = PRIORITY_META[r.priority] || PRIORITY_META.low;
-        return `<li>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="text-body-sm font-bold text-primary">${escapeHtml(r.title)}</span>
-            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${meta.className}">${meta.label}</span>
+        const priorityClass =
+          r.priority === "high"
+            ? "border-red-200 bg-red-50/60"
+            : r.priority === "medium"
+              ? "border-amber-200 bg-amber-50/60"
+              : "border-emerald-200 bg-emerald-50/60";
+        const priorityIcon =
+          r.priority === "high"
+            ? "local_fire_department"
+            : r.priority === "medium"
+              ? "event"
+              : "pie_chart";
+        return `<li class="grid grid-cols-[96px_40px_1fr] items-stretch overflow-hidden rounded-xl border ${priorityClass}">
+          <span class="flex items-center justify-center bg-black/5 px-2 text-center text-xs font-bold ${meta.className}">${meta.label} PRIORIDAD</span>
+          <span class="flex items-center justify-center ${meta.className}"><span class="material-symbols-outlined text-2xl">${priorityIcon}</span></span>
+          <div class="p-4">
+            <div class="mb-1 flex items-center gap-2">
+              <span class="text-body-md font-bold ${meta.className}">${escapeHtml(r.title)}</span>
+            </div>
+            <p class="text-body-sm leading-relaxed text-on-surface-variant">${escapeHtml(r.detail)}</p>
           </div>
-          <p class="text-body-sm text-on-surface-variant">${escapeHtml(r.detail)}</p>
         </li>`;
       })
       .join("");
@@ -188,10 +336,16 @@ const {
       if (!res.ok) throw new Error(data.error || "Error generando análisis");
       render(data);
     } catch (err) {
-      showError(err instanceof Error ? err.message : "Error generando análisis");
+      showError(
+        err instanceof Error ? err.message : "Error generando análisis",
+      );
     }
   };
 
-  document.getElementById("ai-generate")!.addEventListener("click", () => loadInsights(false));
-  document.getElementById("ai-refresh")!.addEventListener("click", () => loadInsights(true));
+  document
+    .getElementById("ai-generate")!
+    .addEventListener("click", () => loadInsights(false));
+  document
+    .getElementById("ai-refresh")!
+    .addEventListener("click", () => loadInsights(true));
 </script>
