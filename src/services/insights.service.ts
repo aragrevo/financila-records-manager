@@ -5,7 +5,6 @@ import { stocksService } from "./stocks.service";
 
 const FUNDS_CACHE_KEY = "ai:insights:cache";
 const PORTFOLIO_CACHE_KEY = "ai:portfolio-insights:cache";
-const CACHE_TTL_SECONDS = 24 * 60 * 60;
 const MODEL = "gemini-flash-latest";
 
 export interface AiInsights {
@@ -367,6 +366,7 @@ export class InsightsService {
     if (!forceRefresh) {
       const cached = await redis.get<AiInsights>(cacheKey);
       if (cached) return cached;
+      throw new Error("No hay un análisis guardado");
     }
 
     const apiKey =
@@ -395,7 +395,7 @@ export class InsightsService {
       generatedAt: new Date().toISOString(),
     };
 
-    await redis.set(cacheKey, insights, { ex: CACHE_TTL_SECONDS });
+    await redis.set(cacheKey, insights);
     return insights;
   }
 }

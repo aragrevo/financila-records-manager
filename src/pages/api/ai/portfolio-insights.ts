@@ -9,10 +9,12 @@ export const GET: APIRoute = async ({ url }) => {
     return jsonResponse(insights);
   } catch (error) {
     console.error("Error generating AI portfolio insights:", error);
+    const rawMessage = error instanceof Error ? error.message : "";
     const message =
-      error instanceof Error && error.message.includes("GEMINI_API_KEY")
-        ? error.message
-        : "Failed to generate insights";
-    return jsonResponse({ error: message }, 500);
+      rawMessage.includes("GEMINI_API_KEY") || rawMessage === "No hay un análisis guardado"
+        ? rawMessage
+        : "Failed to load insights";
+    const status = message === "No hay un análisis guardado" ? 404 : 500;
+    return jsonResponse({ error: message }, status);
   }
 };
