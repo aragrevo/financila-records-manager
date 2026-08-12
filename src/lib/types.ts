@@ -78,6 +78,17 @@ export interface BillingBalanceSummaryRow {
   total: number;
 }
 
+export interface ProjectionSettings {
+  currentAge: number;
+  targetAge: number;
+  startingCapital: number;
+  monthlyContribution: number;
+  annualReturn: number;
+  startDate: string;
+  monthlyContributions: Record<string, number>;
+  updatedAt: string;
+}
+
 export interface MonthlyBillingTrendPoint {
   monthLabel: string;
   monthKey: string;

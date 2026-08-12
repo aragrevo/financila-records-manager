@@ -1,0 +1,15 @@
+---
+import type { ProjectionResult } from "../../lib/projection";
+import { formatCurrencyCOP } from "../../utils/format";
+
+interface Props { projection: ProjectionResult; }
+const { projection } = Astro.props;
+const interestShare = projection.futureValue ? Math.round((projection.interest / projection.futureValue) * 100) : 0;
+---
+
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <article class="projection-card border-l-4 border-l-primary"><p class="metric-label">Future value</p><p class="metric-value">{formatCurrencyCOP(projection.futureValue)}</p><p class="metric-note">At target age</p></article>
+  <article class="projection-card border-l-4 border-l-retirement"><p class="metric-label">Total contributions</p><p class="metric-value">{formatCurrencyCOP(projection.deposited)}</p><p class="metric-note">Starting capital + deposits</p></article>
+  <article class="projection-card border-l-4 border-l-investment"><p class="metric-label">Interest earned</p><p class="metric-value">{formatCurrencyCOP(projection.interest)}</p><p class="metric-note">{interestShare}% of future value</p></article>
+  <article class="projection-card border-l-4 border-l-contingency"><p class="metric-label">Monthly rate</p><p class="metric-value">{(projection.monthlyRate * 100).toFixed(2)}%</p><p class="metric-note">{projection.months.toLocaleString()} monthly periods</p></article>
+</div>

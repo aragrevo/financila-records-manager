@@ -1,0 +1,115 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { calculateProjection } from "../lib/projection";
+import { projectionService } from "../services/projection.service";
+import ProjectionAssumptions from "../components/projection/ProjectionAssumptions.astro";
+import ProjectionCharts from "../components/projection/ProjectionCharts.astro";
+import ProjectionHeader from "../components/projection/ProjectionHeader.astro";
+import ProjectionMetrics from "../components/projection/ProjectionMetrics.astro";
+import ProjectionSchedule from "../components/projection/ProjectionSchedule.astro";
+
+const projectionSettings = await projectionService.getSettings();
+const projection = calculateProjection(projectionSettings);
+---
+
+<Layout title="Compound Projection" activePage="projection">
+  <div class="space-y-6" id="projection-app">
+    <ProjectionHeader />
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
+      <ProjectionAssumptions settings={projectionSettings} />
+      <div class="space-y-4">
+        <ProjectionMetrics projection={projection} />
+        <ProjectionCharts projection={projection} settings={projectionSettings} />
+      </div>
+    </section>
+    <ProjectionSchedule projection={projection} settings={projectionSettings} />
+  </div>
+</Layout>
+
+<style is:global>
+  .projection-input { @apply w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 text-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10; }
+  .monthly-contribution-input { @apply w-36 rounded-md border border-outline-variant bg-surface-container-low px-2 py-1 text-right font-mono text-xs text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/10; }
+  .projection-card { @apply rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm; }
+  .metric-label { @apply text-label-caps font-label-caps text-on-surface-variant; }
+  .metric-value { @apply mt-2 font-mono text-xl font-bold tracking-tight text-on-surface; }
+  .metric-note { @apply mt-1 text-xs text-on-surface-variant; }
+  .legend-dot { @apply inline-block h-2.5 w-2.5 rounded-full; }
+  .grid-line { stroke: #e6e8ea; stroke-width: 1; }
+  .current-line { stroke: #2563eb; stroke-width: 1.5; stroke-dasharray: 4 4; }
+  .current-label { fill: #2563eb; font: 700 10px Inter, sans-serif; }
+  .current-projection-row { background-color: rgba(37, 99, 235, 0.06); box-shadow: inset 3px 0 0 #2563eb; }
+  .current-month-badge { @apply ml-2 rounded-full bg-contingency/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-contingency; }
+</style>
+
+<script define:vars={{ projectionSettings }}>
+  const monthlyContributions = { ...projectionSettings.monthlyContributions };
+  const value = (id) => document.getElementById(id);
+  const number = (id) => Number(value(id).value) || 0;
+  const readSettings = () => ({
+    currentAge: number("current-age"),
+    targetAge: number("target-age"),
+    startingCapital: number("starting-capital"),
+    monthlyContribution: number("monthly-contribution"),
+    annualReturn: number("annual-return"),
+    startDate: value("start-date").value,
+    monthlyContributions,
+  });
+
+  function setInlineState(month, editing) {
+    const row = document.querySelector(`[data-projection-row="${month}"]`);
+    if (!row) return;
+    row.querySelector("[data-contribution-display]")?.classList.toggle("hidden", editing);
+    row.querySelector("[data-inline-contribution-form]")?.classList.toggle("hidden", !editing);
+    row.querySelector("[data-inline-contribution-form]")?.classList.toggle("flex", editing);
+    row.querySelector(`[data-edit-projection-month="${month}"]`)?.classList.toggle("hidden", editing);
+    row.querySelector(`[data-save-projection-month="${month}"]`)?.classList.toggle("hidden", !editing);
+    row.querySelector(`[data-save-projection-month="${month}"]`)?.classList.toggle("inline-flex", editing);
+    row.querySelector(`[data-cancel-projection-month="${month}"]`)?.classList.toggle("hidden", !editing);
+    row.querySelector(`[data-cancel-projection-month="${month}"]`)?.classList.toggle("inline-flex", editing);
+    if (editing) {
+      const input = row.querySelector("[data-contribution-month]");
+      input?.focus();
+      input?.select();
+    }
+  }
+
+  async function saveMonth(month) {
+    const row = document.querySelector(`[data-projection-row="${month}"]`);
+    const input = row?.querySelector("[data-contribution-month]");
+    const amount = Number(input?.value);
+    if (!row || !Number.isFinite(amount) || amount < 0) return;
+    const previous = monthlyContributions[month];
+    monthlyContributions[month] = amount;
+    value("save-status").textContent = "Saving monthly contribution...";
+    try {
+      const response = await fetch("/api/projection", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(readSettings()) });
+      if (response.ok) {
+        window.location.reload();
+        return;
+      }
+    } catch {
+      // Keep row editable when network request fails.
+    }
+    if (previous === undefined) delete monthlyContributions[month];
+    else monthlyContributions[month] = previous;
+    value("save-status").textContent = "Could not save monthly contribution";
+    setInlineState(month, true);
+  }
+
+  document.querySelectorAll("[data-edit-projection-month]").forEach((button) => button.addEventListener("click", () => setInlineState(button.dataset.editProjectionMonth, true)));
+  document.querySelectorAll("[data-cancel-projection-month]").forEach((button) => button.addEventListener("click", () => setInlineState(button.dataset.cancelProjectionMonth, false)));
+  document.querySelectorAll("[data-save-projection-month]").forEach((button) => button.addEventListener("click", () => saveMonth(button.dataset.saveProjectionMonth)));
+  document.querySelector("[data-current-projection-row]")?.scrollIntoView({ block: "center" });
+
+  value("save-projection").addEventListener("click", async () => {
+    value("save-status").textContent = "Saving...";
+    const response = await fetch("/api/projection", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(readSettings()) });
+    if (response.ok) window.location.reload();
+    else value("save-status").textContent = "Could not save";
+  });
+
+  value("reset-projection").addEventListener("click", async () => {
+    const response = await fetch("/api/projection", { method: "DELETE" });
+    if (response.ok) window.location.reload();
+  });
+</script>
