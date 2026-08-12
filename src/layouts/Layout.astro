@@ -124,6 +124,33 @@ const navItems = [
         padding-left: 0;
         padding-right: 0;
       }
+      body.sidebar-collapsed #sidebar .sidebar-link[data-tooltip] {
+        position: relative;
+      }
+      body.sidebar-collapsed #sidebar .sidebar-link[data-tooltip]::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        left: calc(100% + 0.75rem);
+        top: 50%;
+        z-index: 60;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.375rem;
+        background: #262626;
+        color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transform: translate(-0.25rem, -50%);
+        transition: opacity 0.15s ease, transform 0.15s ease;
+      }
+      body.sidebar-collapsed #sidebar .sidebar-link[data-tooltip]:hover::after,
+      body.sidebar-collapsed #sidebar .sidebar-link[data-tooltip]:focus-visible::after {
+        opacity: 1;
+        transform: translate(0, -50%);
+      }
       body.sidebar-collapsed #sidebar .sidebar-brand {
         padding-left: 0.75rem;
         padding-right: 0.75rem;
@@ -172,6 +199,9 @@ const navItems = [
           navItems.map((item) => (
             <a
               href={item.href}
+              title={item.label}
+              aria-label={item.label}
+              data-tooltip={item.label}
               class:list={[
                 "sidebar-link flex items-center gap-3 px-3 py-2 transition-all",
                 activePage === item.page
@@ -189,6 +219,9 @@ const navItems = [
         <a
           href="https://investment-tracker-brown-one.vercel.app/"
           target="_blank"
+          title="Tracker"
+          aria-label="Tracker"
+          data-tooltip="Tracker"
           class:list={[
             "sidebar-link flex items-center gap-3 px-3 py-2 transition-all",
 
@@ -296,7 +329,7 @@ const navItems = [
       const toggleBtn = document.getElementById("toggle-btn");
       const STORAGE_KEY = "sidebar-collapsed";
 
-      if (localStorage.getItem(STORAGE_KEY) === "true") {
+      if (localStorage.getItem(STORAGE_KEY) !== "false") {
         body.classList.add("sidebar-collapsed");
       }
 
