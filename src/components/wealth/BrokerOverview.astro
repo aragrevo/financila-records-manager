@@ -3,10 +3,12 @@ import Card from "../ui/Card.astro";
 import Chip from "../ui/Chip.astro";
 import { STOCK_BROKERS } from "../../lib/constants";
 import { formatCurrency, formatPercentage } from "../../utils/format";
+import type { StockBrokerAccount } from "../../lib/types";
 import type { BrokerChipVariant, BrokerSummaryItem } from "./types";
 
 interface Props {
   brokerSummary: BrokerSummaryItem[];
+  stockAccounts: StockBrokerAccount[];
   portfolioValue: number;
   accountsCount: number;
   positionsCount: number;
@@ -16,6 +18,7 @@ interface Props {
 
 const {
   brokerSummary,
+  stockAccounts,
   portfolioValue,
   accountsCount,
   positionsCount,
@@ -47,6 +50,9 @@ const totalBrokerValue = brokerSummary.reduce(
             const brokerValue = broker.marketValue + broker.availableCash;
             const brokerWeight =
               portfolioValue > 0 ? (brokerValue / portfolioValue) * 100 : 0;
+            const brokerAccounts = stockAccounts.filter(
+              (account) => account.broker === broker.broker,
+            );
 
             return (
               <div class="rounded-xl border border-outline-variant bg-surface-container-low p-4">
@@ -61,9 +67,22 @@ const totalBrokerValue = brokerSummary.reduce(
                   </Chip>
                 </div>
                 <div class="mt-3 space-y-1">
-                  <p class="font-mono text-xl font-semibold text-on-surface">
-                    {formatCurrency(brokerValue)}
-                  </p>
+                  <div class="flex items-center justify-between gap-2">
+                    <p class="font-mono text-xl font-semibold text-on-surface">
+                      {formatCurrency(brokerValue)}
+                    </p>
+                    {brokerAccounts[0] ? (
+                      <button
+                        type="button"
+                        class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-contingency transition-colors hover:bg-contingency/10"
+                        data-edit-stock-account={brokerAccounts[0].id}
+                        title={`Editar ${brokerAccounts[0].name}`}
+                        aria-label={`Editar ${brokerAccounts[0].name}`}
+                      >
+                        <span class="material-symbols-outlined text-[18px]">edit</span>
+                      </button>
+                    ) : null}
+                  </div>
                   <div class="flex items-center justify-between gap-3 rounded-xl bg-surface px-2 py-1">
                     <span
                       class="material-symbols-outlined text-on-surface-variant"
@@ -123,6 +142,7 @@ const totalBrokerValue = brokerSummary.reduce(
         </div>
       )
     }
+
   </Card>
 
   <Card class="space-y-4">

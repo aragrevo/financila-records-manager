@@ -43,6 +43,18 @@ const activeAssetTypeFilters = [
 ].sort((left, right) =>
   STOCK_ASSET_TYPES[left].localeCompare(STOCK_ASSET_TYPES[right]),
 );
+const latestPriceUpdatedAt = holdings.reduce<string | null>(
+  (latest, holding) => {
+    if (
+      !latest ||
+      new Date(holding.updatedAt).getTime() > new Date(latest).getTime()
+    ) {
+      return holding.updatedAt;
+    }
+    return latest;
+  },
+  null,
+);
 
 const getPriceDifferencePercentage = (holding: HoldingWithContext): number => {
   if (holding.averageCost <= 0) return 0;
@@ -62,13 +74,26 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
   <div
     class="flex items-center justify-between border-b border-outline-variant px-0 py-4"
   >
-    <div>
+    <div class="w-full">
       <h2 class="text-headline-md font-bold text-on-surface">
         Posiciones activas
       </h2>
-      <p class="text-sm text-on-surface-variant">
-        Activos que siguen contando dentro del portafolio actual
-      </p>
+      <div class="flex items-center justify-between gap-3">
+        <p class="text-sm text-on-surface-variant">
+          Activos que siguen contando dentro del portafolio actual
+        </p>
+        {
+          latestPriceUpdatedAt ? (
+            <p class="text-xs text-right text-on-surface-variant">
+              Última actualización de precio:{" "}
+              {new Date(latestPriceUpdatedAt).toLocaleString("es-ES", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </p>
+          ) : null
+        }
+      </div>
     </div>
   </div>
 
@@ -157,8 +182,46 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
               <th class="px-3 py-3 text-right font-bold">Qty</th>
               <th class="px-3 py-3 text-right font-bold">Costo</th>
               <th class="px-3 py-3 text-right font-bold">Precio</th>
-              <th class="px-3 py-3 text-right font-bold">Valor</th>
-              <th class="px-3 py-3 text-right font-bold">P/L</th>
+              <th
+                class="px-3 py-3 text-right font-bold"
+                data-stock-sort-value-header
+                aria-sort="none"
+              >
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 text-right uppercase tracking-wide transition-colors hover:text-primary"
+                  data-stock-sort-value
+                  aria-label="Ordenar por valor"
+                >
+                  <span>Valor</span>
+                  <span
+                    class="material-symbols-outlined text-sm"
+                    data-stock-sort-value-icon
+                  >
+                    unfold_more
+                  </span>
+                </button>
+              </th>
+              <th
+                class="px-3 py-3 text-right font-bold"
+                data-stock-sort-gain-header
+                aria-sort="none"
+              >
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 text-right uppercase tracking-wide transition-colors hover:text-primary"
+                  data-stock-sort-gain
+                  aria-label="Ordenar por P/L"
+                >
+                  <span>P/L</span>
+                  <span
+                    class="material-symbols-outlined text-sm"
+                    data-stock-sort-gain-icon
+                  >
+                    unfold_more
+                  </span>
+                </button>
+              </th>
               <th class="w-20 max-w-20 px-1 py-3 text-right font-bold" />
             </tr>
           </thead>
@@ -168,6 +231,8 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
                 data-stock-position-row={holding.id}
                 data-stock-position-broker={holding.broker}
                 data-stock-position-asset-type={holding.assetType}
+                data-stock-position-gain={holding.gain}
+                data-stock-position-value={holding.currentValue}
                 class="align-top transition-colors hover:bg-surface-container-low/50"
               >
                 <td class="px-3 py-3 font-mono font-semibold text-on-surface">
@@ -366,6 +431,29 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
   const positionRows = Array.from(
     document.querySelectorAll("[data-stock-position-row]"),
   ) as HTMLElement[];
+  const positionsTableBody = document.querySelector(
+    "[data-stock-positions-table] tbody",
+  ) as HTMLTableSectionElement | null;
+  const gainSortButton = document.querySelector(
+    "[data-stock-sort-gain]",
+  ) as HTMLButtonElement | null;
+  const gainSortHeader = document.querySelector(
+    "[data-stock-sort-gain-header]",
+  ) as HTMLElement | null;
+  const gainSortIcon = document.querySelector(
+    "[data-stock-sort-gain-icon]",
+  ) as HTMLElement | null;
+  const valueSortButton = document.querySelector(
+    "[data-stock-sort-value]",
+  ) as HTMLButtonElement | null;
+  const valueSortHeader = document.querySelector(
+    "[data-stock-sort-value-header]",
+  ) as HTMLElement | null;
+  const valueSortIcon = document.querySelector(
+    "[data-stock-sort-value-icon]",
+  ) as HTMLElement | null;
+  let gainSortDirection: "asc" | "desc" = "asc";
+  let valueSortDirection: "asc" | "desc" = "asc";
 
   function getSelectedFilterValues(inputs: HTMLInputElement[]) {
     return new Set(
@@ -427,11 +515,49 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
     filterEmptyState?.classList.toggle("hidden", visibleRows > 0);
   }
 
+  function sortPositions(
+    attribute: "stockPositionGain" | "stockPositionValue",
+    direction: "asc" | "desc",
+  ) {
+    if (!positionsTableBody) return;
+
+    const sortedRows = [...positionRows].sort((left, right) => {
+      const leftValue = Number(left.dataset[attribute] ?? 0);
+      const rightValue = Number(right.dataset[attribute] ?? 0);
+      return direction === "asc"
+        ? leftValue - rightValue
+        : rightValue - leftValue;
+    });
+
+    sortedRows.forEach((row) => positionsTableBody.append(row));
+    if (attribute === "stockPositionGain") {
+      gainSortHeader?.setAttribute("aria-sort", direction);
+      if (gainSortIcon) {
+        gainSortIcon.textContent =
+          direction === "asc" ? "arrow_upward" : "arrow_downward";
+      }
+    } else {
+      valueSortHeader?.setAttribute("aria-sort", direction);
+      if (valueSortIcon) {
+        valueSortIcon.textContent =
+          direction === "asc" ? "arrow_upward" : "arrow_downward";
+      }
+    }
+  }
+
   brokerFilterOptions.forEach((input) => {
     input.addEventListener("change", applyStockTableFilters);
   });
   assetTypeFilterOptions.forEach((input) => {
     input.addEventListener("change", applyStockTableFilters);
+  });
+  gainSortButton?.addEventListener("click", () => {
+    gainSortDirection = gainSortDirection === "desc" ? "asc" : "desc";
+    sortPositions("stockPositionGain", gainSortDirection);
+  });
+  valueSortButton?.addEventListener("click", () => {
+    valueSortDirection = valueSortDirection === "desc" ? "asc" : "desc";
+    sortPositions("stockPositionValue", valueSortDirection);
   });
   applyStockTableFilters();
 </script>
