@@ -1,5 +1,11 @@
 # AGENTS.md
 
+## Communication Mode
+
+- Load `caveman` skill at session start.
+- Use `caveman lite` by default when starting a session.
+- Switch modes only when explicitly requested.
+
 ## Architecture
 
 - Astro 6.3.5 server-rendered site with Tailwind CSS 3.4.19 and TypeScript
