@@ -4,10 +4,6 @@ import type { ExpenseSettings } from "../lib/types";
 const DEFAULTS: ExpenseSettings = {
   currency: "EUR",
   recipientEmail: "",
-  notificationsEnabled: false,
-  notifyOnCreate: true,
-  notifyOnUpdate: true,
-  notifyOnDelete: true,
 };
 
 export class ExpenseSettingsService {
@@ -17,10 +13,6 @@ export class ExpenseSettingsService {
     return {
       ...DEFAULTS,
       ...stored,
-      notificationsEnabled: stored.notificationsEnabled === true || stored.notificationsEnabled === "true",
-      notifyOnCreate: stored.notifyOnCreate !== false && stored.notifyOnCreate !== "false",
-      notifyOnUpdate: stored.notifyOnUpdate !== false && stored.notifyOnUpdate !== "false",
-      notifyOnDelete: stored.notifyOnDelete !== false && stored.notifyOnDelete !== "false",
     };
   }
 
@@ -33,7 +25,8 @@ export class ExpenseSettingsService {
       recipientEmail: String(input.recipientEmail ?? current.recipientEmail).trim(),
     };
     if (!/^[A-Z]{3}$/.test(next.currency)) throw new Error("La moneda debe usar tres letras, por ejemplo EUR");
-    if (next.recipientEmail && !/^\S+@\S+\.\S+$/.test(next.recipientEmail)) throw new Error("El correo no es válido");
+    const recipients = next.recipientEmail.split(",").map((email) => email.trim()).filter(Boolean);
+    if (recipients.some((email) => !/^\S+@\S+\.\S+$/.test(email))) throw new Error("Uno de los correos no es válido");
     await redis.hset(KEYS.EXPENSE_SETTINGS, next as unknown as Record<string, unknown>);
     return next;
   }

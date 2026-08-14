@@ -32,10 +32,11 @@ created, edited, and deleted expenses. Configure Resend on the server with:
 ```text
 RESEND_API_KEY=...
 NOTIFICATION_FROM_EMAIL=Finance <notifications@your-domain.com>
+NOTIFICATION_REPLY_TO_EMAIL=notifications@your-domain.com
 ```
 
-Both variables are required. The sender domain must be verified in Resend (or
-use `onboarding@resend.dev` for Resend's restricted testing mode).
+`RESEND_API_KEY` and `NOTIFICATION_FROM_EMAIL` are required. Resend requires a
+verified domain for production sending.
 
 Then open the expense configuration panel to set recipient email, currency, and
 which events should send notifications. Expenses remain saved if email delivery

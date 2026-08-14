@@ -52,10 +52,6 @@ export interface Expense {
 export interface ExpenseSettings {
   currency: string;
   recipientEmail: string;
-  notificationsEnabled: boolean;
-  notifyOnCreate: boolean;
-  notifyOnUpdate: boolean;
-  notifyOnDelete: boolean;
 }
 
 export interface TransactionWithAccount extends Transaction {

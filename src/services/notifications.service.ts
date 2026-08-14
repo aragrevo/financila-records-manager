@@ -9,7 +9,8 @@ export class NotificationsService {
     const settings = await expenseSettingsService.get();
     const apiKey = import.meta.env?.RESEND_API_KEY ?? process.env.RESEND_API_KEY;
     const from = import.meta.env?.NOTIFICATION_FROM_EMAIL ?? process.env.NOTIFICATION_FROM_EMAIL;
-    if (!settings.recipientEmail) return { sent: false, reason: "missing-recipient" };
+    const recipients = settings.recipientEmail.split(",").map((email) => email.trim()).filter(Boolean);
+    if (!recipients.length) return { sent: false, reason: "missing-recipient" };
     if (!apiKey || !from) return { sent: false, reason: "missing-email-environment" };
 
     const currentMonth = new Date().toISOString().slice(0, 7);
@@ -22,6 +23,7 @@ export class NotificationsService {
       ? currentMonthExpenses.map((expense) => `<tr><td style="padding:10px;border-bottom:1px solid #e5e7eb;color:#374151">${escapeHtml(expense.date)}</td><td style="padding:10px;border-bottom:1px solid #e5e7eb;color:#374151">${escapeHtml(expense.description || "Sin descripción")}</td><td style="padding:10px;border-bottom:1px solid #e5e7eb;color:#374151">${escapeHtml(expense.category)}</td><td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;color:${expense.amount < 0 ? "#b91c1c" : "#047857"};font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${escapeHtml(formatMoney(expense.amount))}</td></tr>`).join("")
       : `<tr><td colspan="4" style="padding:12px;color:#6b7280">No hay movimientos en el mes actual.</td></tr>`;
     const subject = `Resumen de gastos - ${currentMonth}`;
+    const textContent = `Resumen de gastos\n\nTotal general: ${formatMoney(total)}\nTotal del mes (${periodLabel}): ${formatMoney(monthTotal)}\n\nDetalle del mes actual:\n${currentMonthExpenses.map((expense) => `${expense.date} | ${expense.category} | ${expense.description || "Sin descripción"} | ${formatMoney(expense.amount)}`).join("\n") || "No hay movimientos en el mes actual."}`;
     const html = `
       <table border="0" width="100%" cellpadding="0" cellspacing="0" role="presentation" align="center" style="background-color:#f4f4f5;color:#111827;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:155%;padding:24px 0">
         <tbody><tr><td align="center">
@@ -40,19 +42,24 @@ export class NotificationsService {
         </td></tr></tbody>
       </table>`;
     try {
-      await this.send(settings.recipientEmail, from, subject, html, apiKey);
+      await this.send(recipients, from, subject, html, textContent, apiKey);
       await this.log("report", "all", "sent");
       return { sent: true };
     } catch (error) {
-      await this.log("report", "all", "failed", error instanceof Error ? error.message : "Unknown error");
+      const message = error instanceof Error ? error.message : "Unknown error";
+      await this.log("report", "all", "failed", message);
       console.error("Expense report email failed:", error);
-      return { sent: false, reason: "send-failed" };
+      return { sent: false, reason: message.includes("unrecognised IP address") ? "unauthorized-ip" : "send-failed" };
     }
   }
 
-  private async send(to: string, from: string, subject: string, html: string, apiKey: string) {
-    const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: [to], subject, html }) });
-    if (!response.ok) throw new Error(`Resend returned ${response.status}`);
+  private async send(to: string[], from: string, subject: string, html: string, textContent: string, apiKey: string) {
+    const replyTo = import.meta.env?.NOTIFICATION_REPLY_TO_EMAIL ?? process.env.NOTIFICATION_REPLY_TO_EMAIL ?? from;
+    const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to, subject, html, text: textContent, reply_to: replyTo }) });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(`Resend returned ${response.status}: ${detail}`);
+    }
   }
 
   private async log(event: "report", expenseId: string, status: "sent" | "failed", error?: string) {
