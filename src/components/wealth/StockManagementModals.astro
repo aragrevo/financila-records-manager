@@ -85,7 +85,7 @@ const { stockAccounts } = Astro.props;
 >
   <div class="w-full max-w-2xl rounded-xl bg-surface shadow-xl">
     <div class="flex items-center justify-between border-b border-outline-variant p-6">
-      <h3 class="text-headline-md font-headline-md text-on-surface">Nueva Posición</h3>
+      <h3 id="stock-position-modal-title" class="text-headline-md font-headline-md text-on-surface">Nueva Posición</h3>
       <button id="stock-position-close" class="text-on-surface-variant hover:text-on-surface">
         <span class="material-symbols-outlined">close</span>
       </button>
@@ -148,7 +148,43 @@ const { stockAccounts } = Astro.props;
       </div>
       <div class="flex gap-3 pt-2">
         <button type="button" id="stock-position-cancel" class="flex-1 rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface hover:bg-surface-container transition-colors">Cancelar</button>
-        <button type="submit" class="flex-1 rounded-lg bg-primary px-4 py-2 font-bold text-on-primary hover:opacity-90 transition-opacity">Guardar Posición</button>
+        <button id="stock-position-submit" type="submit" class="flex-1 rounded-lg bg-primary px-4 py-2 font-bold text-on-primary hover:opacity-90 transition-opacity">Guardar Posición</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div
+  id="stock-close-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
+>
+  <div class="w-full max-w-md rounded-xl bg-surface shadow-xl">
+    <div class="flex items-center justify-between border-b border-outline-variant p-6">
+      <div>
+        <h3 class="text-headline-md font-headline-md text-on-surface">Cerrar posición</h3>
+        <p id="stock-close-position-summary" class="mt-1 text-sm text-on-surface-variant"></p>
+      </div>
+      <button type="button" id="stock-close-close" class="text-on-surface-variant hover:text-on-surface">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <form id="stock-close-form" class="space-y-4 p-6">
+      <input type="hidden" name="positionId" />
+      <label class="block text-sm text-on-surface">
+        Cantidad a cerrar
+        <input
+          required
+          type="number"
+          name="shares"
+          min="0.0001"
+          step="0.0001"
+          class="mt-1 w-full rounded-lg border border-outline-variant bg-surface-container px-3 py-2"
+        />
+      </label>
+      <p class="text-xs text-on-surface-variant">Puedes cerrar toda la cantidad o solo una parte.</p>
+      <div class="flex gap-3 pt-2">
+        <button type="button" id="stock-close-cancel" class="flex-1 rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface hover:bg-surface-container">Cancelar</button>
+        <button type="submit" class="flex-1 rounded-lg bg-error px-4 py-2 font-bold text-on-primary hover:opacity-90">Cerrar posición</button>
       </div>
     </form>
   </div>
@@ -169,6 +205,14 @@ const { stockAccounts } = Astro.props;
   const openPositionButton = document.getElementById("btn-new-stock-position");
   const closePositionButton = document.getElementById("stock-position-close");
   const cancelPositionButton = document.getElementById("stock-position-cancel");
+  const positionModalTitle = document.getElementById("stock-position-modal-title");
+  const positionSubmitButton = document.getElementById("stock-position-submit");
+  let editingPositionId: string | null = null;
+  const closePositionModal = document.getElementById("stock-close-modal");
+  const closePositionForm = document.getElementById("stock-close-form") as HTMLFormElement | null;
+  const closePositionModalButton = document.getElementById("stock-close-close");
+  const cancelClosePositionButton = document.getElementById("stock-close-cancel");
+  const closePositionSummary = document.getElementById("stock-close-position-summary");
   const averageCostInput = document.getElementById("stock-average-cost") as HTMLInputElement | null;
   const currentPriceInput = document.getElementById("stock-current-price") as HTMLInputElement | null;
   let currentPriceTouched = false;
@@ -184,8 +228,15 @@ const { stockAccounts } = Astro.props;
     form?.reset();
     currentPriceTouched = false;
     editingAccountId = null;
+    editingPositionId = null;
     if (accountModalTitle) accountModalTitle.textContent = "Nueva Cuenta de Broker";
     if (accountSubmitButton) accountSubmitButton.textContent = "Guardar Cuenta";
+    if (positionModalTitle) positionModalTitle.textContent = "Nueva Posición";
+    if (positionSubmitButton) positionSubmitButton.textContent = "Guardar Posición";
+  }
+
+  function closePositionDialog() {
+    closeModal(closePositionModal, closePositionForm);
   }
 
   function setAccountFormValue(name: string, value: string | number) {
@@ -199,92 +250,17 @@ const { stockAccounts } = Astro.props;
     ) as HTMLElement | null;
   }
 
-  function setInlineEditState(positionId: string, editing: boolean) {
-    const row = getPositionRow(positionId);
-    if (!row) return;
-
-    const display = row.querySelector("[data-current-price-display]") as HTMLElement | null;
-    const form = row.querySelector("[data-inline-price-form]") as HTMLFormElement | null;
-    const editButton = row.querySelector(
-      `[data-edit-stock-position="${positionId}"]`,
-    ) as HTMLButtonElement | null;
-    const saveButton = row.querySelector(
-      `[data-save-stock-position="${positionId}"]`,
-    ) as HTMLButtonElement | null;
-    const cancelButton = row.querySelector(
-      `[data-cancel-edit-stock-position="${positionId}"]`,
-    ) as HTMLButtonElement | null;
-    const closeButton = row.querySelector(
-      `[data-close-stock-position="${positionId}"]`,
-    ) as HTMLButtonElement | null;
-    const input = form?.querySelector('input[name="currentPrice"]') as HTMLInputElement | null;
-
-    display?.classList.toggle("hidden", editing);
-    form?.classList.toggle("hidden", !editing);
-    form?.classList.toggle("flex", editing);
-    editButton?.classList.toggle("hidden", editing);
-    saveButton?.classList.toggle("hidden", !editing);
-    saveButton?.classList.toggle("inline-flex", editing);
-    cancelButton?.classList.toggle("hidden", !editing);
-    cancelButton?.classList.toggle("inline-flex", editing);
-    closeButton?.classList.toggle("hidden", editing);
-
-    if (editing) {
-      input?.focus();
-      input?.select();
-    }
-  }
-
-  async function saveInlinePrice(positionId: string) {
-    const row = getPositionRow(positionId);
-    if (!row) return;
-
-    const form = row.querySelector("[data-inline-price-form]") as HTMLFormElement | null;
-    const input = form?.querySelector('input[name="currentPrice"]') as HTMLInputElement | null;
-    const saveButton = row.querySelector(
-      `[data-save-stock-position="${positionId}"]`,
-    ) as HTMLButtonElement | null;
-
-    const currentPrice = Number.parseFloat(input?.value || "");
-    if (!Number.isFinite(currentPrice) || currentPrice < 0) {
-      alert("Ingresa un precio valido.");
-      input?.focus();
-      return;
-    }
-
-    if (saveButton) {
-      saveButton.disabled = true;
-      saveButton.textContent = "Guardando...";
-    }
-
-    try {
-      const response = await fetch(`/api/stocks/positions/${positionId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPrice }),
-      });
-
-      if (response.ok) {
-        window.location.reload();
-        return;
-      }
-
-      alert("No se pudo actualizar el precio.");
-    } catch {
-      alert("Error de conexion al actualizar el precio.");
-    } finally {
-      if (saveButton) {
-        saveButton.disabled = false;
-        saveButton.textContent = "Guardar";
-      }
-    }
-  }
-
   openAccountButton?.addEventListener("click", () => openModal(accountModal));
   closeAccountButton?.addEventListener("click", () => closeModal(accountModal, accountForm));
   cancelAccountButton?.addEventListener("click", () => closeModal(accountModal, accountForm));
 
-  openPositionButton?.addEventListener("click", () => openModal(positionModal));
+  openPositionButton?.addEventListener("click", () => {
+    editingPositionId = null;
+    positionForm?.reset();
+    if (positionModalTitle) positionModalTitle.textContent = "Nueva Posición";
+    if (positionSubmitButton) positionSubmitButton.textContent = "Guardar Posición";
+    openModal(positionModal);
+  });
   closePositionButton?.addEventListener("click", () => closeModal(positionModal, positionForm));
   cancelPositionButton?.addEventListener("click", () => closeModal(positionModal, positionForm));
 
@@ -304,6 +280,12 @@ const { stockAccounts } = Astro.props;
 
   positionModal?.addEventListener("click", (event) => {
     if (event.target === positionModal) closeModal(positionModal, positionForm);
+  });
+
+  closePositionModalButton?.addEventListener("click", closePositionDialog);
+  cancelClosePositionButton?.addEventListener("click", closePositionDialog);
+  closePositionModal?.addEventListener("click", (event) => {
+    if (event.target === closePositionModal) closePositionDialog();
   });
 
   accountForm?.addEventListener("submit", async (event) => {
@@ -391,11 +373,16 @@ const { stockAccounts } = Astro.props;
     };
 
     try {
-      const response = await fetch("/api/stocks/positions", {
-        method: "POST",
+      const response = await fetch(
+        editingPositionId
+          ? `/api/stocks/positions/${editingPositionId}`
+          : "/api/stocks/positions",
+        {
+        method: editingPositionId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      });
+        },
+      );
 
       if (response.ok) {
         closeModal(positionModal, positionForm);
@@ -426,79 +413,60 @@ const { stockAccounts } = Astro.props;
   document.querySelectorAll("[data-edit-stock-position]").forEach((button) => {
     button.addEventListener("click", () => {
       const id = button.getAttribute("data-edit-stock-position");
-      if (!id) return;
-      setInlineEditState(id, true);
-    });
-  });
+      const position = JSON.parse(button.getAttribute("data-stock-position") || "null");
+      if (!id || !position || !positionForm) return;
 
-  document.querySelectorAll("[data-cancel-edit-stock-position]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const id = button.getAttribute("data-cancel-edit-stock-position");
-      if (!id) return;
-
-      const row = getPositionRow(id);
-      const form = row?.querySelector("[data-inline-price-form]") as HTMLFormElement | null;
-      form?.reset();
-      setInlineEditState(id, false);
-    });
-  });
-
-  document.querySelectorAll("[data-save-stock-position]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const id = button.getAttribute("data-save-stock-position");
-      if (!id) return;
-      await saveInlinePrice(id);
-    });
-  });
-
-  document.querySelectorAll("[data-inline-price-form]").forEach((form) => {
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const id = form.getAttribute("data-stock-position-id");
-      if (!id) return;
-      await saveInlinePrice(id);
-    });
-  });
-
-  document.querySelectorAll("[data-inline-price-form] input[name='currentPrice']").forEach((element) => {
-    const input = element as HTMLInputElement;
-
-    input.addEventListener("keydown", (event) => {
-      const keyboardEvent = event as KeyboardEvent;
-
-      if (keyboardEvent.key === "Escape") {
-        const row = input.closest("[data-stock-position-row]") as HTMLElement | null;
-        if (!row) return;
-
-        const id = row?.getAttribute("data-stock-position-row");
-        if (!id) return;
-
-        const form = row.querySelector("[data-inline-price-form]") as HTMLFormElement | null;
-        form?.reset();
-        setInlineEditState(id, false);
-      }
+      editingPositionId = id;
+      positionForm.reset();
+      Object.entries(position).forEach(([name, value]) => {
+        const field = positionForm.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null;
+        if (field && value !== undefined && value !== null) field.value = String(value);
+      });
+      if (positionModalTitle) positionModalTitle.textContent = "Editar Posición";
+      if (positionSubmitButton) positionSubmitButton.textContent = "Guardar Cambios";
+      openModal(positionModal);
     });
   });
 
   document.querySelectorAll("[data-close-stock-position]").forEach((button) => {
-    button.addEventListener("click", async () => {
+    button.addEventListener("click", () => {
       const id = button.getAttribute("data-close-stock-position");
-      if (!id || !confirm("La posición saldrá del portafolio activo y pasará al historial. ¿Continuar?")) return;
+      const row = id ? getPositionRow(id) : null;
+      const sharesInput = closePositionForm?.elements.namedItem("shares") as HTMLInputElement | null;
+      const positionIdInput = closePositionForm?.elements.namedItem("positionId") as HTMLInputElement | null;
+      const shares = row?.dataset.stockPositionShares ?? "";
+      if (!id || !row || !sharesInput || !positionIdInput) return;
+      positionIdInput.value = id;
+      sharesInput.value = shares;
+      sharesInput.max = shares;
+      if (closePositionSummary) {
+        closePositionSummary.textContent = `${row.dataset.stockPositionShares} acciones de ${row.querySelector("td")?.textContent?.trim() ?? "esta posición"}`;
+      }
+      openModal(closePositionModal);
+    });
+  });
 
+  closePositionForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formData = new FormData(closePositionForm);
+    const id = String(formData.get("positionId") || "");
+    const closeShares = Number(formData.get("shares"));
+    if (!id || !Number.isFinite(closeShares) || closeShares <= 0) return;
+
+    try {
       const response = await fetch(`/api/stocks/positions/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "closed",
-          closedAt: new Date().toISOString(),
-        }),
+        body: JSON.stringify({ closeShares }),
       });
-
       if (response.ok) {
         window.location.reload();
-      } else {
-        alert("No se pudo cerrar la posición.");
+        return;
       }
-    });
+      const result = await response.json().catch(() => null);
+      alert(result?.error || "No se pudo cerrar la posición.");
+    } catch {
+      alert("Error de conexión al cerrar la posición.");
+    }
   });
 </script>

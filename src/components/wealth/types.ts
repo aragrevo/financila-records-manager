@@ -63,6 +63,7 @@ export interface RepeatedTickerSummaryItem {
   accountsCount: number;
   brokers: StockBroker[];
   positionsCount: number;
+  shares: number;
   marketValue: number;
   percentage: number;
 }

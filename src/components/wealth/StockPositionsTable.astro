@@ -68,6 +68,64 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
   if (holding.currentPrice < holding.averageCost) return "down";
   return "flat";
 };
+
+const getSectorIcon = (sector?: string): string => {
+  const value = sector?.toLowerCase() ?? "";
+  if (
+    value.includes("energ") ||
+    value.includes("oil") ||
+    value.includes("petr")
+  )
+    return "bolt";
+  if (value.includes("techn") || value.includes("software")) return "memory";
+  if (
+    value.includes("salud") ||
+    value.includes("health") ||
+    value.includes("farm")
+  )
+    return "health_and_safety";
+  if (value.includes("financ") || value.includes("bank"))
+    return "account_balance";
+  if (
+    value.includes("consumo") ||
+    value.includes("retail") ||
+    value.includes("consumer")
+  )
+    return "shopping_cart";
+  if (value.includes("industrial") || value.includes("manufact"))
+    return "factory";
+  if (value.includes("inmob") || value.includes("real estate"))
+    return "real_estate_agent";
+  if (value.includes("telecom")) return "cell_tower";
+  if (value.includes("automo")) return "directions_car";
+  if (value.includes("entertainment")) return "movie";
+  if (value.includes("pharma")) return "medication";
+  return "category";
+};
+
+const getRegionFlag = (region?: string): string => {
+  const value = region?.toLowerCase() ?? "";
+  if (
+    value.includes("usa") ||
+    value.includes("estados unidos") ||
+    value.includes("united states")
+  )
+    return "🇺🇸";
+  if (value.includes("europa") || value.includes("europe")) return "🇪🇺";
+  if (value.includes("españa") || value.includes("spain")) return "🇪🇸";
+  if (value.includes("méxico") || value.includes("mexico")) return "🇲🇽";
+  if (value.includes("colombia")) return "🇨🇴";
+  if (value.includes("brasil") || value.includes("brazil")) return "🇧🇷";
+  if (value.includes("japón") || value.includes("japan")) return "🇯🇵";
+  if (value.includes("china")) return "🇨🇳";
+  if (
+    value.includes("reino unido") ||
+    value.includes("uk") ||
+    value.includes("united kingdom")
+  )
+    return "🇬🇧";
+  return "🌐";
+};
 ---
 
 <Card class="overflow-hidden p-0">
@@ -231,6 +289,7 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
                 data-stock-position-row={holding.id}
                 data-stock-position-broker={holding.broker}
                 data-stock-position-asset-type={holding.assetType}
+                data-stock-position-shares={holding.shares}
                 data-stock-position-gain={holding.gain}
                 data-stock-position-value={holding.currentValue}
                 class="align-top transition-colors hover:bg-surface-container-low/50"
@@ -250,11 +309,31 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
                 </td>
                 <td class="px-3 py-3">
                   <div>
-                    <p class="font-medium text-on-surface">{holding.name}</p>
-                    <p class="mt-1 text-xs text-on-surface-variant">
-                      {holding.sector || "Sin sector"} ·{" "}
-                      {holding.region || "Sin región"}
+                    <p class="font-medium text-on-surface text-nowrap">
+                      {holding.name}
                     </p>
+                    <div class="mt-1 flex items-center gap-2 text-on-surface-variant">
+                      <span
+                        class="wealth-tooltip relative inline-flex cursor-help"
+                        data-tooltip={holding.sector || "Sin sector"}
+                        tabindex="0"
+                        role="img"
+                        aria-label={holding.sector || "Sin sector"}
+                      >
+                        <span class="material-symbols-outlined text-base">
+                          {getSectorIcon(holding.sector)}
+                        </span>
+                      </span>
+                      <span
+                        class="wealth-tooltip relative inline-flex cursor-help text-base leading-none"
+                        data-tooltip={holding.region || "Sin región"}
+                        tabindex="0"
+                        role="img"
+                        aria-label={holding.region || "Sin región"}
+                      >
+                        {getRegionFlag(holding.region)}
+                      </span>
+                    </div>
                   </div>
                 </td>
                 <td class="px-3 py-3">
@@ -315,21 +394,6 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
                         )}
                       </span>
                     </div>
-
-                    <form
-                      class="hidden items-center gap-2"
-                      data-inline-price-form
-                      data-stock-position-id={holding.id}
-                    >
-                      <input
-                        type="number"
-                        name="currentPrice"
-                        step="0.0001"
-                        min="0"
-                        value={holding.currentPrice}
-                        class="w-24 rounded-lg border border-outline-variant bg-surface px-2 py-1 text-right font-mono text-sm text-on-surface outline-none focus:border-primary"
-                      />
-                    </form>
                   </div>
                 </td>
                 <td class="px-3 py-3 text-right">
@@ -354,31 +418,12 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
                     <button
                       class="inline-flex h-8 w-8 items-center justify-center rounded-full text-contingency transition-colors hover:bg-contingency/10"
                       data-edit-stock-position={holding.id}
-                      title="Editar precio"
-                      aria-label="Editar precio"
+                      data-stock-position={JSON.stringify(holding)}
+                      title="Editar posición"
+                      aria-label="Editar posición"
                     >
                       <span class="material-symbols-outlined text-[18px]">
                         edit
-                      </span>
-                    </button>
-                    <button
-                      class="hidden h-8 w-8 items-center justify-center rounded-full text-retirement transition-colors hover:bg-retirement/10"
-                      data-save-stock-position={holding.id}
-                      title="Guardar cambios"
-                      aria-label="Guardar cambios"
-                    >
-                      <span class="material-symbols-outlined text-[18px]">
-                        save
-                      </span>
-                    </button>
-                    <button
-                      class="hidden h-8 w-8 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high"
-                      data-cancel-edit-stock-position={holding.id}
-                      title="Cancelar edición"
-                      aria-label="Cancelar edición"
-                    >
-                      <span class="material-symbols-outlined text-[18px]">
-                        close
                       </span>
                     </button>
                     <button
@@ -411,6 +456,37 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
     )
   }
 </Card>
+
+<style>
+  .wealth-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 50%;
+    z-index: 30;
+    width: max-content;
+    max-width: 14rem;
+    transform: translateX(-50%) scale(0.95);
+    border-radius: 0.5rem;
+    background: var(--color-on-surface);
+    padding: 0.375rem 0.625rem;
+    color: var(--color-surface);
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    pointer-events: none;
+    opacity: 0;
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease;
+  }
+
+  .wealth-tooltip:hover::after,
+  .wealth-tooltip:focus-visible::after {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+</style>
 
 <script>
   const brokerFilterOptions = Array.from(
@@ -600,9 +676,8 @@ const getPriceTrend = (holding: HoldingWithContext): "up" | "down" | "flat" => {
               </td>
               <td class="px-3 py-3">
                 <div>
-                  <p class="font-medium text-on-surface">{holding.name}</p>
-                  <p class="mt-1 text-sm text-on-surface-variant">
-                    {holding.sector || "Sin sector"}
+                  <p class="font-medium text-on-surface text-nowrap">
+                    {holding.name}
                   </p>
                 </div>
               </td>

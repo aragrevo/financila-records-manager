@@ -338,11 +338,60 @@ export class StocksService {
     return normalizeStockPosition(updated);
   }
 
-  async closePosition(id: string): Promise<StockPosition | null> {
-    return this.updatePosition(id, {
+  async closePosition(
+    id: string,
+    closeShares?: number,
+  ): Promise<StockPosition | null> {
+    const existing = await this.getPositionById(id);
+    if (!existing) return null;
+
+    const sharesToClose = closeShares === undefined ? existing.shares : Number(closeShares);
+    if (
+      !Number.isFinite(sharesToClose) ||
+      sharesToClose <= 0 ||
+      sharesToClose > existing.shares
+    ) {
+      throw new Error("La cantidad a cerrar debe ser mayor que cero y no superar la posición");
+    }
+
+    if (sharesToClose === existing.shares) {
+      return this.updatePosition(id, {
+        status: "closed",
+        closedAt: new Date().toISOString(),
+      });
+    }
+
+    const now = new Date().toISOString();
+    const closedPosition: StockPosition = {
+      ...existing,
+      id: `stk-pos-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      shares: sharesToClose,
       status: "closed",
-      closedAt: new Date().toISOString(),
+      closedAt: now,
+      updatedAt: now,
+    };
+    const remainingPosition: StockPosition = {
+      ...existing,
+      shares: existing.shares - sharesToClose,
+      updatedAt: now,
+    };
+    const pipeline = redis.pipeline();
+    pipeline.hset(
+      `${KEYS.STOCK_POSITION}:${remainingPosition.id}`,
+      sanitizeRecord(remainingPosition as unknown as Record<string, unknown>),
+    );
+    pipeline.hset(
+      `${KEYS.STOCK_POSITION}:${closedPosition.id}`,
+      sanitizeRecord(closedPosition as unknown as Record<string, unknown>),
+    );
+    pipeline.sadd(KEYS.STOCK_POSITIONS_INDEX, closedPosition.id);
+    pipeline.zadd(`${KEYS.STOCK_POSITIONS_BY_ACCOUNT}:${closedPosition.accountId}`, {
+      score: new Date(now).getTime(),
+      member: closedPosition.id,
     });
+    await pipeline.exec();
+
+    return normalizeStockPosition(remainingPosition);
   }
 
   async deletePosition(id: string): Promise<boolean> {

@@ -26,7 +26,10 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
 
     const body = await request.json();
-    const updated = await stocksService.updatePosition(id, body);
+    const updated =
+      body.closeShares === undefined
+        ? await stocksService.updatePosition(id, body)
+        : await stocksService.closePosition(id, body.closeShares);
 
     if (!updated) {
       return jsonResponse({ error: "Stock position not found" }, 404);
@@ -35,7 +38,10 @@ export const PUT: APIRoute = async ({ params, request }) => {
     return jsonResponse(updated);
   } catch (error) {
     console.error("Error updating stock position:", error);
-    return jsonResponse({ error: "Failed to update stock position" }, 500);
+    return jsonResponse(
+      { error: error instanceof Error ? error.message : "Failed to update stock position" },
+      400,
+    );
   }
 };
 

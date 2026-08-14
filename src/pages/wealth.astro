@@ -151,6 +151,7 @@ const repeatedTickers: RepeatedTickerSummaryItem[] = Object.values(
       (sum, holding) => sum + holding.currentValue,
       0,
     );
+    const shares = holdings.reduce((sum, holding) => sum + holding.shares, 0);
     const brokers = [...new Set(holdings.map((holding) => holding.broker))];
 
     return {
@@ -159,6 +160,7 @@ const repeatedTickers: RepeatedTickerSummaryItem[] = Object.values(
       accountsCount,
       brokers,
       positionsCount: holdings.length,
+      shares,
       marketValue,
       percentage: 0,
     };
