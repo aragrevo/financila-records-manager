@@ -216,12 +216,7 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
       class="flex flex-col gap-3 border-b border-outline-variant p-5 md:flex-row md:items-center md:justify-between"
     >
       <div>
-        <h3 class="text-headline-md font-headline-md">Detalle de gastos</h3><p
-          id="expense-count"
-          class="text-sm text-on-surface-variant"
-        >
-          {expenses.length} registros
-        </p>
+        <h3 class="text-headline-md font-headline-md">Detalle de gastos</h3>
       </div><input
         id="description-filter"
         class="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm"
@@ -314,7 +309,7 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
               </details></th
             ><th class="px-5 py-3">Descripción</th><th
               class="px-5 py-3 text-right">Importe</th
-            ><th class="px-3 py-3"></th></tr
+            ><th class="px-3 py-3 max-w-16"></th></tr
           ></thead
         ><tbody id="expense-rows" class="divide-y divide-outline-variant"
           >{
@@ -350,7 +345,7 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
                   >
                     {money(expense.amount, expense.currency)}
                   </td>
-                  <td class="px-3 py-3">
+                  <td class="px-3 py-3 max-w-16">
                     <div class="flex gap-1">
                       <>
                         <button
@@ -360,6 +355,15 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
                         >
                           <span class="material-symbols-outlined text-lg">
                             edit
+                          </span>
+                        </button>
+                        <button
+                          class="clone-expense rounded p-1 text-on-surface-variant hover:text-primary"
+                          data-expense={JSON.stringify(expense)}
+                          aria-label="Clonar gasto"
+                        >
+                          <span class="material-symbols-outlined text-lg">
+                            content_copy
                           </span>
                         </button>
                         <button
@@ -377,7 +381,8 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
                 </>
               </tr>
             ))
-          }</tbody>
+          }</tbody
+        >
       </table>
     </div>
     <div
@@ -397,7 +402,8 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
           id="expense-page-next"
           type="button"
           class="rounded-lg border border-outline-variant px-3 py-1.5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40"
-          >Siguiente</button>
+          >Siguiente</button
+        >
       </div>
     </div>
   </section>
@@ -413,7 +419,8 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
         <h3 id="expense-modal-title" class="text-headline-md font-headline-md">
           Nuevo gasto
         </h3><button data-close="expense-modal" class="text-on-surface-variant"
-          ><span class="material-symbols-outlined">close</span></button>
+          ><span class="material-symbols-outlined">close</span></button
+        >
       </div><form id="expense-form" class="grid gap-4 p-5">
         <input type="hidden" name="id" /><div class="grid grid-cols-2 gap-4">
           <label class="text-sm"
@@ -431,7 +438,8 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
               name="amount"
               placeholder="-5.73 o 140.00"
               class="mt-1 w-full rounded-lg border border-outline-variant bg-surface-container-low p-2"
-            /></label>
+            /></label
+          >
         </div><div class="grid grid-cols-2 gap-4">
           <label class="text-sm"
             >Moneda<input
@@ -450,7 +458,8 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
                   <option value={category}>{category}</option>
                 ))
               }</select
-            ></label>
+            ></label
+          >
         </div><label class="text-sm"
           >Descripción<textarea
             name="description"
@@ -465,7 +474,8 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
             >Cancelar</button
           ><button
             class="rounded-lg bg-primary px-4 py-2 font-bold text-on-primary"
-            >Guardar gasto</button>
+            >Guardar gasto</button
+          >
         </div>
       </form>
     </div>
@@ -482,7 +492,8 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
         <h3 class="text-headline-md font-headline-md">Configuración</h3><button
           data-close="settings-modal"
           class="text-on-surface-variant"
-          ><span class="material-symbols-outlined">close</span></button>
+          ><span class="material-symbols-outlined">close</span></button
+        >
       </div><form id="settings-form" class="grid gap-4 p-5">
         <p
           class="rounded-lg bg-surface-container-low p-3 text-xs text-on-surface-variant"
@@ -516,7 +527,8 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
             >Cancelar</button
           ><button
             class="rounded-lg bg-primary px-4 py-2 font-bold text-on-primary"
-            >Guardar configuración</button>
+            >Guardar configuración</button
+          >
         </div>
       </form>
     </div>
@@ -567,6 +579,18 @@ const topCurrentCategory = currentMonthCategoryTotals[0];
       Object.entries(expense).forEach(([key, value]) => setValue(key, value));
       document.getElementById("expense-modal-title").textContent =
         "Editar gasto";
+      open(expenseModal);
+    }),
+  );
+  document.querySelectorAll(".clone-expense").forEach((button) =>
+    button.addEventListener("click", () => {
+      const expense = JSON.parse(button.dataset.expense);
+      expenseForm.reset();
+      Object.entries(expense).forEach(([key, value]) => setValue(key, value));
+      setValue("id", "");
+      setValue("date", new Date().toISOString().slice(0, 10));
+      document.getElementById("expense-modal-title").textContent =
+        "Clonar gasto";
       open(expenseModal);
     }),
   );
