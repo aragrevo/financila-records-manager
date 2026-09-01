@@ -274,6 +274,38 @@ const currentPage = Number.isFinite(requestedPage)
     if (e.target === modal) closeModal();
   });
 
+  // Clone a movement into the create form with today's date
+  document.addEventListener("click", (event) => {
+    const cloneBtn = (event.target as HTMLElement)?.closest<HTMLElement>(
+      "[data-clone-transaction]",
+    );
+    if (!cloneBtn) return;
+    const row = cloneBtn.closest<HTMLElement>("tr.movement-row");
+    if (!row) return;
+
+    const descriptionInput = document.getElementById(
+      "txn-description",
+    ) as HTMLInputElement;
+    const categorySelect = document.getElementById(
+      "txn-category",
+    ) as HTMLSelectElement;
+    const merchantInput = document.getElementById(
+      "txn-merchant",
+    ) as HTMLInputElement;
+
+    descriptionInput.value = row.dataset.description ?? "";
+    const amount = Number.parseFloat(row.dataset.amount ?? "0");
+    amountInput.value = String(Math.abs(amount));
+    typeSelect.value = row.dataset.type ?? "expense";
+    categorySelect.value = row.dataset.category ?? "";
+    accountSelect.value = row.dataset.accountId ?? "";
+    merchantInput.value = row.dataset.merchant ?? "";
+    dateInput.valueAsDate = new Date();
+
+    openModal();
+    descriptionInput.focus();
+  });
+
   // Adjust amount sign based on type
   typeSelect?.addEventListener("change", () => {
     const type = typeSelect.value;

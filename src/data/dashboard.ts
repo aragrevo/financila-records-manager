@@ -27,11 +27,13 @@ export type ChartEntity = AccountGroup;
 
 export interface Movement {
   account: string;
+  accountId: string;
   date: string;
   category: string;
   type: string;
   amount: string | number;
   description: string;
+  merchant?: string;
 }
 
 export interface FundStatus {

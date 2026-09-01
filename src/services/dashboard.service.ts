@@ -265,11 +265,13 @@ export class DashboardService {
   private buildMovements(transactions: TransactionWithAccount[]): Movement[] {
     return transactions.map((t) => ({
       account: t.accountName || t.accountId,
+      accountId: t.accountId,
       date: t.date,
       category: t.categoryId,
       type: t.type,
       amount: t.amount,
       description: t.description || "N/A",
+      merchant: t.merchant,
     }));
   }
 

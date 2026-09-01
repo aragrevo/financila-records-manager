@@ -5,11 +5,13 @@ import { formatCurrencyCOP } from "../../utils/format";
 interface Movement {
   date: string;
   account: string;
+  accountId: string;
   description?: string;
   category: string;
   type: string;
   amount: string;
   isNegative?: boolean;
+  merchant?: string;
 }
 
 interface Props {
@@ -134,8 +136,12 @@ const categoryStyles: Record<string, string> = {
             <tr
               class="movement-row hover:bg-surface-container transition-colors group"
               data-account={mov.account}
+              data-account-id={mov.accountId}
               data-type={mov.type}
               data-category={mov.category}
+              data-amount={mov.amount}
+              data-description={mov.description}
+              data-merchant={mov.merchant}
             >
               <td class="px-6 py-4 text-mono-data font-table-data">
                 {mov.date}
@@ -181,8 +187,13 @@ const categoryStyles: Record<string, string> = {
                 {formatCurrencyCOP(+mov.amount)}
               </td>
               <td class="px-2 py-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button class="material-symbols-outlined text-on-surface-variant hover:text-primary">
-                  more_vert
+                <button
+                  type="button"
+                  data-clone-transaction
+                  title="Clonar movimiento"
+                  class="material-symbols-outlined p-1 rounded text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors"
+                >
+                  content_copy
                 </button>
               </td>
             </tr>
