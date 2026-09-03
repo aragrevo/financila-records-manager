@@ -1,43 +1,238 @@
 ---
-import { getCurrentPeriods, type ProjectionResult } from "../../lib/projection";
+import {
+  calculateProjection,
+  getCurrentPeriods,
+  type ProjectionResult,
+} from "../../lib/projection";
 import type { ProjectionSettings } from "../../lib/types";
 import { formatCurrencyCOP } from "../../utils/format";
 
-interface Props { projection: ProjectionResult; settings: ProjectionSettings; }
+interface Props {
+  projection: ProjectionResult;
+  settings: ProjectionSettings;
+}
 const { projection, settings } = Astro.props;
 const currentPeriods = getCurrentPeriods(settings, projection.months);
 const currentRow = projection.rows[currentPeriods - 1];
 const currentValue = currentRow?.closing ?? settings.startingCapital;
 const currentDeposited = currentRow?.deposited ?? settings.startingCapital;
-const contributionPercent = currentValue ? Math.round((currentDeposited / currentValue) * 100) : 0;
+const contributionPercent = currentValue
+  ? Math.round((currentDeposited / currentValue) * 100)
+  : 0;
 const now = new Date();
-const samples = projection.rows.filter((row) => row.month % 12 === 0 || row.month === projection.rows.length || row.month === currentPeriods);
-const all = [{ month: 0, closing: settings.startingCapital, deposited: settings.startingCapital }, ...samples];
-const width = 720; const height = 260; const pad = { top: 14, right: 10, bottom: 22, left: 10 };
-const max = Math.max(1, ...all.map((item) => item.closing));
-const x = (index: number) => pad.left + index * ((width - pad.left - pad.right) / Math.max(1, all.length - 1));
-const y = (amount: number) => height - pad.bottom - (amount / max) * (height - pad.top - pad.bottom);
-const points = all.map((item, index) => `${x(index)},${y(item.closing)}`).join(" ");
-const depositPoints = all.map((item, index) => `${x(index)},${y(item.deposited)}`).join(" ");
+const samples = projection.rows.filter(
+  (row) =>
+    row.month % 12 === 0 ||
+    row.month === projection.rows.length ||
+    row.month === currentPeriods,
+);
+const FLAT_CONTRIBUTION = settings.monthlyContribution;
+const flatProjection = calculateProjection({
+  ...settings,
+  monthlyContributions: {},
+});
+const flatByMonth = new Map(
+  flatProjection.rows.map((row) => [row.month, row.closing]),
+);
+const gap = projection.futureValue - flatProjection.futureValue;
+const all = [
+  {
+    month: 0,
+    closing: settings.startingCapital,
+    deposited: settings.startingCapital,
+    flat: settings.startingCapital,
+  },
+  ...samples.map((row) => ({
+    month: row.month,
+    closing: row.closing,
+    deposited: row.deposited,
+    flat: flatByMonth.get(row.month) ?? row.closing,
+  })),
+];
+const width = 720;
+const height = 260;
+const pad = { top: 14, right: 10, bottom: 22, left: 10 };
+const max = Math.max(
+  1,
+  ...all.map((item) => Math.max(item.closing, item.flat)),
+);
+const x = (index: number) =>
+  pad.left +
+  index * ((width - pad.left - pad.right) / Math.max(1, all.length - 1));
+const y = (amount: number) =>
+  height - pad.bottom - (amount / max) * (height - pad.top - pad.bottom);
+const points = all
+  .map((item, index) => `${x(index)},${y(item.closing)}`)
+  .join(" ");
+const depositPoints = all
+  .map((item, index) => `${x(index)},${y(item.deposited)}`)
+  .join(" ");
+const flatPoints = all
+  .map((item, index) => `${x(index)},${y(item.flat)}`)
+  .join(" ");
 const area = `${x(0)},${height - pad.bottom} ${points} ${x(all.length - 1)},${height - pad.bottom}`;
 const currentIndex = all.findIndex((item) => item.month === currentPeriods);
 const lines = [0.25, 0.5, 0.75, 1];
 ---
 
 <div class="grid grid-cols-1 gap-gutter xl:grid-cols-[1.45fr_1fr]">
-  <section class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><p class="text-label-caps font-label-caps text-on-surface-variant">Growth trajectory</p><h2 class="mt-1 text-lg font-bold text-on-surface">Projected capital</h2></div><div class="flex gap-4 text-xs font-semibold text-on-surface-variant"><span><i class="legend-dot bg-primary"></i>Future value</span><span><i class="legend-dot bg-retirement"></i>Contributions</span></div></div>
-    <div class="mt-5 h-64"><svg viewBox="0 0 720 260" class="h-full w-full overflow-visible" role="img" aria-label="Projected capital growth chart">
-      {lines.map((ratio) => <line class="grid-line" x1={pad.left} x2={width - pad.right} y1={y(max * ratio)} y2={y(max * ratio)} />)}
-      <polygon points={area} fill="#000000" opacity="0.06" />
-      {currentIndex > 0 ? <><line class="current-line" x1={x(currentIndex)} x2={x(currentIndex)} y1={pad.top} y2={height - pad.bottom} /><text class="current-label" x={x(currentIndex)} y={pad.top - 3} text-anchor="middle">Today</text></> : null}
-      <polyline points={depositPoints} fill="none" stroke="#16a34a" stroke-width="2" stroke-dasharray="5 5" /><polyline points={points} fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" /><circle cx={x(all.length - 1)} cy={y(all[all.length - 1].closing)} r="5" fill="#000000" />
-    </svg></div>
-    <div class="mt-2 flex justify-between text-[10px] font-semibold text-on-surface-variant"><span>{settings.startDate}</span><span>{projection.years > 1 ? `${projection.years} years` : `${projection.months} months`}</span><span>Target age {settings.targetAge}</span></div>
+  <section
+    class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm"
+  >
+    <div
+      class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
+    >
+      <div>
+        <p class="text-label-caps font-label-caps text-on-surface-variant">
+          Growth trajectory
+        </p>
+        <h2 class="mt-1 text-lg font-bold text-on-surface">
+          Projected capital
+        </h2>
+      </div>
+      <div class="flex flex-col gap-1">
+        <div class="flex gap-2 text-xs font-semibold text-on-surface-variant">
+          <span><i class="legend-dot bg-primary"></i>Future value</span><span
+            ><i class="legend-dot bg-retirement"></i>Contributions</span
+          ><span><i class="legend-dot bg-investment"></i>Fixed/mo</span>
+        </div>
+        <p class="text-center text-xs font-semibold text-on-surface-variant">
+          Gap vs fixed /mo:
+          <span
+            class:list={[
+              "font-mono font-bold",
+              gap > 0
+                ? "text-retirement"
+                : gap < 0
+                  ? "text-emergency"
+                  : "text-on-surface",
+            ]}
+          >
+            {gap >= 0 ? "+" : "−"}{formatCurrencyCOP(Math.abs(gap))}
+          </span>
+        </p>
+      </div>
+    </div>
+    <div class="mt-5 h-64">
+      <svg
+        viewBox="0 0 720 260"
+        class="h-full w-full overflow-visible"
+        role="img"
+        aria-label="Projected capital growth chart"
+      >
+        {
+          lines.map((ratio) => (
+            <line
+              class="grid-line"
+              x1={pad.left}
+              x2={width - pad.right}
+              y1={y(max * ratio)}
+              y2={y(max * ratio)}
+            />
+          ))
+        }
+        <polygon points={area} fill="#000000" opacity="0.06"></polygon>
+        {
+          currentIndex > 0 ? (
+            <>
+              <>
+                <line
+                  class="current-line"
+                  x1={x(currentIndex)}
+                  x2={x(currentIndex)}
+                  y1={pad.top}
+                  y2={height - pad.bottom}
+                />
+                <text
+                  class="current-label"
+                  x={x(currentIndex)}
+                  y={pad.top - 3}
+                  text-anchor="middle"
+                >
+                  Today
+                </text>
+              </>
+            </>
+          ) : null
+        }
+        <polyline
+          points={depositPoints}
+          fill="none"
+          stroke="#16a34a"
+          stroke-width="2"
+          stroke-dasharray="5 5"></polyline><polyline
+          points={flatPoints}
+          fill="none"
+          stroke="#eab308"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-dasharray="1.5 5"></polyline><polyline
+          points={points}
+          fill="none"
+          stroke="#000000"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"></polyline><circle
+          cx={x(all.length - 1)}
+          cy={y(all[all.length - 1].closing)}
+          r="5"
+          fill="#000000"></circle><circle
+          cx={x(all.length - 1)}
+          cy={y(all[all.length - 1].flat)}
+          r="4"
+          fill="#eab308"></circle>
+      </svg>
+    </div>
+    <div
+      class="mt-2 flex justify-between text-[10px] font-semibold text-on-surface-variant"
+    >
+      <span>{settings.startDate}</span><span
+        >{
+          projection.years > 1
+            ? `${projection.years} years`
+            : `${projection.months} months`
+        }</span
+      ><span>Target age {settings.targetAge}</span>
+    </div>
   </section>
-  <section class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
-    <p class="text-label-caps font-label-caps text-on-surface-variant">Current composition</p><h2 class="mt-1 text-lg font-bold text-on-surface">Where your money stands today</h2>
-    <div class="mt-6 flex items-center justify-center"><div class="relative h-44 w-44 rounded-full" style={`background: conic-gradient(#16a34a 0 ${contributionPercent}%, #eab308 ${contributionPercent}% 100%)`}><div class="absolute inset-5 flex flex-col items-center justify-center rounded-full bg-surface-container-lowest text-center"><span class="text-xs text-on-surface-variant">{currentPeriods ? `Through ${now.toLocaleDateString("en-US", { month: "short", year: "numeric" })}` : "Before projection starts"}</span><strong class="financial-figure text-sm text-on-surface">{formatCurrencyCOP(currentValue)}</strong></div></div></div>
-    <div class="mt-6 space-y-3 text-sm"><div class="flex items-center justify-between"><span class="flex items-center gap-2 text-on-surface-variant"><i class="legend-dot bg-retirement"></i>Contributions</span><strong>{contributionPercent}%</strong></div><div class="flex items-center justify-between"><span class="flex items-center gap-2 text-on-surface-variant"><i class="legend-dot bg-investment"></i>Interest</span><strong>{100 - contributionPercent}%</strong></div></div>
+  <section
+    class="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm"
+  >
+    <p class="text-label-caps font-label-caps text-on-surface-variant">
+      Current composition
+    </p><h2 class="mt-1 text-lg font-bold text-on-surface">
+      Where your money stands today
+    </h2>
+    <div class="mt-6 flex items-center justify-center">
+      <div
+        class="relative h-44 w-44 rounded-full"
+        style={`background: conic-gradient(#16a34a 0 ${contributionPercent}%, #eab308 ${contributionPercent}% 100%)`}
+      >
+        <div
+          class="absolute inset-5 flex flex-col items-center justify-center rounded-full bg-surface-container-lowest text-center"
+        >
+          <span class="text-xs text-on-surface-variant"
+            >{
+              currentPeriods
+                ? `Through ${now.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`
+                : "Before projection starts"
+            }</span
+          ><strong class="financial-figure text-sm text-on-surface"
+            >{formatCurrencyCOP(currentValue)}</strong
+          >
+        </div>
+      </div>
+    </div>
+    <div class="mt-6 space-y-3 text-sm">
+      <div class="flex items-center justify-between">
+        <span class="flex items-center gap-2 text-on-surface-variant"
+          ><i class="legend-dot bg-retirement"></i>Contributions</span
+        ><strong>{contributionPercent}%</strong>
+      </div><div class="flex items-center justify-between">
+        <span class="flex items-center gap-2 text-on-surface-variant"
+          ><i class="legend-dot bg-investment"></i>Interest</span
+        ><strong>{100 - contributionPercent}%</strong>
+      </div>
+    </div>
   </section>
 </div>
