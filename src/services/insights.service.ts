@@ -6,6 +6,14 @@ import { stocksService } from "./stocks.service";
 const FUNDS_CACHE_KEY = "ai:insights:cache";
 const PORTFOLIO_CACHE_KEY = "ai:portfolio-insights:cache";
 const MODEL = "gemini-flash-latest";
+const FALLBACK_MODEL = "gemini-flash-lite-latest";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isRetryable = (error: unknown): boolean => {
+  const status = (error as { status?: number })?.status;
+  return status === 429 || status === 500 || status === 503;
+};
 
 export interface AiInsights {
   healthScore: number;
@@ -339,6 +347,38 @@ const buildPortfolioSnapshot = async (): Promise<string> => {
 };
 
 export class InsightsService {
+  private async generateWithRetry(
+    ai: GoogleGenAI,
+    snapshot: string,
+    systemPrompt: string,
+  ) {
+    const models = [MODEL, FALLBACK_MODEL];
+    let lastError: unknown;
+
+    for (const model of models) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          return await ai.models.generateContent({
+            model,
+            contents: snapshot,
+            config: {
+              systemInstruction: systemPrompt,
+              responseMimeType: "application/json",
+              responseSchema: RESPONSE_SCHEMA,
+              temperature: 0.4,
+            },
+          });
+        } catch (error) {
+          lastError = error;
+          if (!isRetryable(error)) throw error;
+          await sleep(2000 * (attempt + 1));
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
   async getFundsInsights(forceRefresh = false): Promise<AiInsights> {
     return this.getInsights(
       FUNDS_CACHE_KEY,
@@ -378,16 +418,7 @@ export class InsightsService {
     const ai = new GoogleGenAI({ apiKey });
     const snapshot = await buildSnapshot();
 
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents: snapshot,
-      config: {
-        systemInstruction: systemPrompt,
-        responseMimeType: "application/json",
-        responseSchema: RESPONSE_SCHEMA,
-        temperature: 0.4,
-      },
-    });
+    const response = await this.generateWithRetry(ai, snapshot, systemPrompt);
 
     const parsed = JSON.parse(response.text) as Omit<AiInsights, "generatedAt">;
     const insights: AiInsights = {
